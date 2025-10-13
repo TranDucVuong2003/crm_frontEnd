@@ -440,6 +440,22 @@ const DealModal = ({ isOpen, onClose, deal = null, onSave, stageId = null }) => 
                   <option value="high">Cao</option>
                 </select>
               </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Loại dịch vụ
+                </label>
+                <select
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  value={formData.serviceType}
+                  onChange={(e) => setFormData({...formData, serviceType: e.target.value})}
+                >
+                  <option value="">Chọn dịch vụ</option>
+                  <option value="website_design">Thiết kế website</option>
+                  <option value="webcare">Webcare</option>
+                  <option value="domain_purchase">Mua tên miền</option>
+                  <option value="digital_marketing">Digital marketing</option>
+                </select>
+              </div>
             </div>
           </div>
 
@@ -474,50 +490,7 @@ const DealModal = ({ isOpen, onClose, deal = null, onSave, stageId = null }) => 
               </div>
             </div>
           </div>
-
-          {/* Assignment Section */}
-          <div className="mb-6">
-            <h3 className="text-md font-medium text-gray-900 mb-4 border-b border-gray-200 pb-2">
-              Phân công
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Người phụ trách
-                </label>
-                <select
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                  value={formData.assignedTo}
-                  onChange={(e) => setFormData({...formData, assignedTo: e.target.value})}
-                >
-                  <option value="">Chọn người phụ trách</option>
-                  {users.map(user => (
-                    <option key={user.id} value={user.id}>
-                      {user.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Người tạo
-                </label>
-                <select
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                  value={formData.createdBy}
-                  onChange={(e) => setFormData({...formData, createdBy: e.target.value})}
-                >
-                  <option value="">Chọn người tạo</option>
-                  {users.map(user => (
-                    <option key={user.id} value={user.id}>
-                      {user.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          </div>
+          
 
           {/* Probability and Notes Section */}
           <div className="mb-6">
