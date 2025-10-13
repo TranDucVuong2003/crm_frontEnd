@@ -10,7 +10,7 @@ import {
   EnvelopeIcon as MailIcon,
   UsersIcon
 } from '@heroicons/react/24/outline';
-import { getAllCustomers } from '../../Service/ApiService';
+import { getAllCustomers, deleteCustomer } from '../../Service/ApiService';
 import CustomerRow from './CustomerRow';
 import CustomerModal from './CustomerModalCreate';
 
@@ -113,9 +113,22 @@ const CustomerManagement = () => {
     }
   };
 
-  const handleDeleteCustomer = (customerId) => {
+  const handleDeleteCustomer = async (customerId) => {
     if (confirm('Bạn có chắc chắn muốn xóa khách hàng này?')) {
-      setCustomers(customers.filter(c => c.id !== customerId));
+      try {
+        // Gọi API xóa khách hàng
+        await deleteCustomer(customerId);
+        
+        // Cập nhật state local sau khi xóa thành công
+        setCustomers(customers.filter(c => c.id !== customerId));
+        
+        // Thông báo thành công (có thể thêm toast notification)
+        console.log('Đã xóa khách hàng thành công');
+      } catch (error) {
+        // Xử lý lỗi
+        console.error('Lỗi khi xóa khách hàng:', error);
+        alert('Có lỗi xảy ra khi xóa khách hàng. Vui lòng thử lại.');
+      }
     }
   };
 
@@ -297,7 +310,7 @@ const CustomerManagement = () => {
                 Địa chỉ
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Nguồn
+                Đối tượng
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Ghi chú

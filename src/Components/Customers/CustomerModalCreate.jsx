@@ -4,43 +4,44 @@ import { createCustomer } from "../../Service/ApiService";
 
 const CustomerModal = ({ isOpen, onClose, customer = null, onSave }) => {
   const [customerType, setCustomerType] = useState("individual"); // individual or company
-  const [formData, setFormData] = useState(
-    customer || {
-      // Common fields
-      customerType: "individual",
-      status: "",
-      notes: "",
-      isActive: true,
+  
+  const initialFormData = {
+    // Common fields
+    customerType: "individual",
+    status: "",
+    notes: "",
+    isActive: true,
 
-      // Individual fields
-      name: "",
-      address: "",
-      birthDate: "",
-      idNumber: "",
-      phoneNumber: "",
-      email: "",
-      domain: "",
+    // Individual fields
+    name: "",
+    address: "",
+    birthDate: "",
+    idNumber: "",
+    phoneNumber: "",
+    email: "",
+    domain: "",
 
-      // Company fields
-      companyName: "",
-      companyAddress: "",
-      establishedDate: "",
-      taxCode: "",
-      companyDomain: "",
+    // Company fields
+    companyName: "",
+    companyAddress: "",
+    establishedDate: "",
+    taxCode: "",
+    companyDomain: "",
 
-      // Representative info
-      representativeName: "",
-      representativePosition: "",
-      representativeIdNumber: "",
-      representativePhone: "",
-      representativeEmail: "",
+    // Representative info
+    representativeName: "",
+    representativePosition: "",
+    representativeIdNumber: "",
+    representativePhone: "",
+    representativeEmail: "",
 
-      // Technical contact
-      techContactName: "",
-      techContactPhone: "",
-      techContactEmail: "",
-    }
-  );
+    // Technical contact
+    techContactName: "",
+    techContactPhone: "",
+    techContactEmail: "",
+  };
+
+  const [formData, setFormData] = useState(customer || initialFormData);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -48,6 +49,15 @@ const CustomerModal = ({ isOpen, onClose, customer = null, onSave }) => {
   useEffect(() => {
     setFormData(prev => ({ ...prev, customerType }));
   }, [customerType]);
+
+  // Reset form when modal opens for creating new customer
+  useEffect(() => {
+    if (isOpen && !customer) {
+      setFormData(initialFormData);
+      setCustomerType("individual");
+      setError("");
+    }
+  }, [isOpen, customer]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -57,34 +67,49 @@ const CustomerModal = ({ isOpen, onClose, customer = null, onSave }) => {
     try {
       // Prepare data for API - format dates and set customerType
       const apiData = {
-        ...formData,
         customerType: customerType,
-        // Format dates to ISO string or null
-        birthDate: formData.birthDate ? new Date(formData.birthDate).toISOString() : null,
-        establishedDate: formData.establishedDate ? new Date(formData.establishedDate).toISOString() : null,
-        // Ensure boolean values
-        isActive: formData.isActive !== undefined ? formData.isActive : true,
-        // Remove empty strings and replace with null for optional fields
-        domain: formData.domain || null,
-        companyDomain: formData.companyDomain || null,
+        isActive: true,
+        // Common fields
+        status: formData.status || null,
+        notes: formData.notes || null,
+        // Individual fields
+        name: formData.name || null,
+        address: formData.address || null,
+        birthDate: formData.birthDate ? new Date(formData.birthDate + 'T00:00:00Z').toISOString() : null,
         idNumber: formData.idNumber || null,
+        phoneNumber: formData.phoneNumber || null,
+        email: formData.email || null,
+        domain: formData.domain || null,
+        // Company fields
+        companyName: formData.companyName || null,
+        companyAddress: formData.companyAddress || null,
+        establishedDate: formData.establishedDate ? new Date(formData.establishedDate + 'T00:00:00Z').toISOString() : null,
         taxCode: formData.taxCode || null,
+        companyDomain: formData.companyDomain || null,
+        // Representative info
+        representativeName: formData.representativeName || null,
         representativePosition: formData.representativePosition || null,
         representativeIdNumber: formData.representativeIdNumber || null,
+        representativePhone: formData.representativePhone || null,
+        representativeEmail: formData.representativeEmail || null,
+        // Technical contact
         techContactName: formData.techContactName || null,
         techContactPhone: formData.techContactPhone || null,
         techContactEmail: formData.techContactEmail || null,
-        notes: formData.notes || null,
-        status: formData.status || null,
       };
 
       if (customer) {
         // Edit existing customer
         onSave(apiData);
+        alert("Cập nhật khách hàng thành công!");
       } else {
         // Create new customer using API
         const response = await createCustomer(apiData);
         onSave(response.data);
+        alert("Tạo khách hàng thành công!");
+        // Reset form after successful creation
+        setFormData(initialFormData);
+        setCustomerType("individual");
       }
       onClose();
     } catch (err) {
@@ -277,10 +302,9 @@ const CustomerModal = ({ isOpen, onClose, customer = null, onSave }) => {
                     }
                   >
                     <option value="">Chọn trạng thái</option>
-                    <option value="prospect">Khách hàng tiềm năng</option>
-                    <option value="qualified">Đã xác minh</option>
-                    <option value="customer">Khách hàng</option>
+                    <option value="active">Hoạt động</option>
                     <option value="inactive">Không hoạt động</option>
+                    <option value="pending">Đang chờ</option>
                   </select>
                 </div>
               </div>
@@ -395,10 +419,9 @@ const CustomerModal = ({ isOpen, onClose, customer = null, onSave }) => {
                       }
                     >
                       <option value="">Chọn trạng thái</option>
-                      <option value="prospect">Khách hàng tiềm năng</option>
-                      <option value="qualified">Đã xác minh</option>
-                      <option value="customer">Khách hàng</option>
+                      <option value="active">Hoạt động</option>
                       <option value="inactive">Không hoạt động</option>
+                      <option value="pending">Đang chờ</option>
                     </select>
                   </div>
                 </div>
