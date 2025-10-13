@@ -1,10 +1,12 @@
 import React, { useState } from 'react'
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { EyeIcon, EyeSlashIcon, LockClosedIcon, UserIcon } from '@heroicons/react/24/outline';
+import { login as apiLogin } from '../Service/ApiService';
+import { useAuth } from '../Context/AuthContext';
 
 function Login() {
   const [formData, setFormData] = useState({
-    username: '',
+    email: '',
     password: ''
   });
   const [showPassword, setShowPassword] = useState(false);
@@ -12,7 +14,16 @@ function Login() {
   const [error, setError] = useState('');
   const [validationErrors, setValidationErrors] = useState({});
   
+  const { login, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Redirect if already authenticated
+  React.useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/', { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -38,8 +49,8 @@ function Login() {
 
     // Simple validation
     const errors = {};
-    if (!formData.username.trim()) {
-      errors.username = 'Vui lòng nhập tài khoản';
+    if (!formData.email.trim()) {
+      errors.email = 'Vui lòng nhập email';
     }
     if (!formData.password.trim()) {
       errors.password = 'Vui lòng nhập mật khẩu';
@@ -52,23 +63,55 @@ function Login() {
     }
 
     try {
-      // Simple authentication logic
-      if (formData.username === 'admin' && formData.password === '123') {
-        // Set authentication in localStorage
-        localStorage.setItem('auth', 'true');
-        localStorage.setItem('user', JSON.stringify({
-          username: 'admin',
-          role: 'admin',
-          fullName: 'Quản trị viên'
-        }));
+      // Call real login API
+      const response = await apiLogin({
+        email: formData.email,
+        password: formData.password
+      });
+
+      console.log('Login API response:', response);
+
+      // Check if login successful
+      if (response.data) {
+        // Handle different response structures
+        const token = response.data.token;
+        const user = response.data.user;
         
-        // Navigate to dashboard
-        navigate('/dashboard');
+        console.log('Token:', token);
+        console.log('User:', user);
+        
+        if (token) {
+          // Use AuthContext login method
+          login(token, user || { email: formData.email });
+          
+          // Redirect to intended page or dashboard
+          const from = location.state?.from?.pathname || '/';
+          navigate(from, { replace: true });
+        } else {
+          setError('Không nhận được token từ server');
+        }
       } else {
-        setError('Tài khoản hoặc mật khẩu không đúng');
+        setError('Phản hồi từ server không hợp lệ');
       }
     } catch (err) {
-      setError('Có lỗi xảy ra. Vui lòng thử lại.');
+      // Handle different types of errors
+      if (err.response) {
+        // Server responded with error status
+        if (err.response.status === 401) {
+          setError('Email hoặc mật khẩu không đúng');
+        } else if (err.response.status === 400) {
+          setError('Thông tin đăng nhập không hợp lệ');
+        } else {
+          setError('Có lỗi xảy ra từ server. Vui lòng thử lại.');
+        }
+      } else if (err.request) {
+        // Network error
+        setError('Không thể kết nối đến server. Kiểm tra kết nối mạng.');
+      } else {
+        // Other errors
+        setError('Có lỗi xảy ra. Vui lòng thử lại.');
+      }
+      console.error('Login error:', err);
     } finally {
       setIsLoading(false);
     }
@@ -93,32 +136,32 @@ function Login() {
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-8 px-4 shadow-lg sm:rounded-lg sm:px-10 border border-gray-200">
           <form className="space-y-6" onSubmit={handleSubmit}>
-            {/* Username Field */}
+            {/* Email Field */}
             <div>
-              <label htmlFor="username" className="block text-sm font-medium text-gray-700">
-                Tài khoản
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                Email
               </label>
               <div className="mt-1 relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <UserIcon className="h-5 w-5 text-gray-400" />
                 </div>
                 <input
-                  id="username"
-                  name="username"
-                  type="text"
-                  autoComplete="username"
+                  id="email"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
                   required
                   className={`appearance-none block w-full pl-10 pr-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${
-                    validationErrors.username ? 'border-red-300' : 'border-gray-300'
+                    validationErrors.email ? 'border-red-300' : 'border-gray-300'
                   }`}
-                  placeholder="Nhập tài khoản"
-                  value={formData.username}
+                  placeholder="Nhập email"
+                  value={formData.email}
                   onChange={handleInputChange}
                   disabled={isLoading}
                 />
               </div>
-              {validationErrors.username && (
-                <p className="mt-2 text-sm text-red-600">{validationErrors.username}</p>
+              {validationErrors.email && (
+                <p className="mt-2 text-sm text-red-600">{validationErrors.email}</p>
               )}
             </div>
 
@@ -210,16 +253,12 @@ function Login() {
             <div className="mt-4 space-y-2">
               <div className="text-xs text-gray-600 space-y-1">
                 <div className="flex justify-between">
-                  <span className="font-medium">Admin:</span>
-                  <span className="font-mono">admin / 123</span>
+                  <span className="font-medium">Email:</span>
+                  <span className="font-mono">test@example.com</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="font-medium">Sales:</span>
-                  <span className="font-mono">sale / 123</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="font-medium">CSKH:</span>
-                  <span className="font-mono">cskh / 123</span>
+                  <span className="font-medium">Password:</span>
+                  <span className="font-mono">123456</span>
                 </div>
               </div>
             </div>

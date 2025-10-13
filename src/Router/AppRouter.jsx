@@ -15,6 +15,9 @@ import Helpdesk from '../Components/Helpdesk/Helpdesk';
 import TicketForm from '../Components/Helpdesk/TicketForm';
 import TicketEditPage from '../Components/Helpdesk/TicketEditPage';
 import TicketCreatePage from '../Components/Helpdesk/TicketCreatePage';
+import ProtectedRoute from './ProtectedRoute';
+import PublicRoute from './PublicRoute';
+import { AuthProvider } from '../Context/AuthContext';
 
 function AppRouter() {
 
@@ -22,9 +25,11 @@ function AppRouter() {
     {
       path: "/",
       element: (
-        <MainLayout>
-          <Outlet />
-        </MainLayout>
+        <ProtectedRoute>
+          <MainLayout>
+            <Outlet />
+          </MainLayout>
+        </ProtectedRoute>
       ),
       children: [
         {
@@ -70,7 +75,9 @@ function AppRouter() {
     {
       path: "/login",
       element: (
+        <PublicRoute>
           <AuthLayout />
+        </PublicRoute>
       ),
       children: [
         {
@@ -87,7 +94,11 @@ function AppRouter() {
     },
   ]);
 
-  return <RouterProvider router={router} />;
+  return (
+    <AuthProvider>
+      <RouterProvider router={router} />
+    </AuthProvider>
+  );
 }
 
 export default AppRouter

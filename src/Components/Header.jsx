@@ -3,14 +3,25 @@ import {
   BellIcon,
   MagnifyingGlassIcon as SearchIcon,
   UserIcon,
+  ArrowRightOnRectangleIcon,
 } from "@heroicons/react/24/outline";
+import { useAuth } from '../Context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 const Header = ({ title }) => {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     // This will run when the component mounts
   });
-    const theme = 
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
+  const theme = 
 {
     primary: 'bg-slate-800',
     primaryHover: 'hover:bg-slate-900',
@@ -20,7 +31,6 @@ const Header = ({ title }) => {
     border: 'border-slate-300',
     sidebar: 'bg-slate-800',
     sidebarActive: 'bg-slate-700'}
-     const user = 'ADMIN'; // Replace with actual user data
   return (
     <div>
       <header className="bg-white shadow-sm border-b border-gray-200">
@@ -57,17 +67,29 @@ const Header = ({ title }) => {
             </button>
 
             {/* User Menu */}
-            <div className="flex items-center space-x-2">
-              <div
-                className={`w-8 h-8 ${
-                  theme?.accent || "bg-indigo-500"
-                } rounded-full flex items-center justify-center`}
-              >
-                <UserIcon className="h-5 w-5 text-white" />
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-2">
+                <div
+                  className={`w-8 h-8 ${
+                    theme?.accent || "bg-indigo-500"
+                  } rounded-full flex items-center justify-center`}
+                >
+                  <UserIcon className="h-5 w-5 text-white" />
+                </div>
+                <span className="hidden md:block text-sm font-medium text-gray-700">
+                  {user?.name || user?.fullName || "User"}
+                </span>
               </div>
-              <span className="hidden md:block text-sm font-medium text-gray-700">
-                {user?.fullName || "User"}
-              </span>
+              
+              {/* Logout Button */}
+              <button
+                onClick={handleLogout}
+                className="flex items-center space-x-1 px-3 py-2 text-sm text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                title="Đăng xuất"
+              >
+                <ArrowRightOnRectangleIcon className="h-4 w-4" />
+                <span className="hidden md:block">Đăng xuất</span>
+              </button>
             </div>
           </div>
         </div>

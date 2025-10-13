@@ -2,8 +2,12 @@ import React from "react";
 import { Outlet } from "react-router";
 import SideBar from "../Components/SideBar";
 import Header from "../Components/Header";
+import { usePreventBackToLogin } from "../hooks/usePreventBackToLogin";
 
 function MainLayout() {
+  // Prevent going back to login when authenticated
+  usePreventBackToLogin();
+  
   return (
     <div className="min-h-screen bg-gray-100">
       {/* Sidebar */}
