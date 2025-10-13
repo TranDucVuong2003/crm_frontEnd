@@ -26,8 +26,10 @@ const CustomerRow = ({ customer, onEdit, onDelete, onView }) => {
     }
   };
 
-  // Get the display name - try fullName first, then name, then fallback
-  const displayName = customer.fullName || customer.name || 'N/A';
+  // Get the display name based on customer type
+  const displayName = customer.customerType === 'individual' 
+    ? (customer.name?.trim() || 'N/A')
+    : (customer.companyName?.trim() || 'N/A');
   const nameInitial = displayName !== 'N/A' ? displayName.charAt(0).toUpperCase() : '?';
 
   return (
@@ -43,29 +45,40 @@ const CustomerRow = ({ customer, onEdit, onDelete, onView }) => {
           </div>
           <div className="ml-4">
             <div className="text-sm font-medium text-gray-900">{displayName}</div>
-            <div className="text-sm text-gray-500">{customer.company || ''}</div>
+            <div className="text-sm text-gray-500">
+              {customer.customerType === 'individual' ? (customer.email || '') : (customer.representativeName || '')}
+            </div>
           </div>
         </div>
       </td>
       <td className="px-6 py-4 whitespace-nowrap">
         <div className="flex items-center text-sm text-gray-900">
           <PhoneIcon className="h-4 w-4 mr-2 text-gray-400" />
-          {customer.phoneNumber || 'N/A'}
+          {customer.customerType === 'individual' 
+            ? (customer.phoneNumber || 'N/A')
+            : (customer.representativePhone || customer.phoneNumber || 'N/A')
+          }
         </div>
         <div className="flex items-center text-sm text-gray-500 mt-1">
           <MailIcon className="h-4 w-4 mr-2 text-gray-400" />
-          {customer.email || 'N/A'}
+          {customer.customerType === 'individual' 
+            ? (customer.email || 'N/A')
+            : (customer.representativeEmail || customer.email || 'N/A')
+          }
         </div>
       </td>
       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-        {customer.address || 'N/A'}
+        {customer.customerType === 'individual' 
+          ? (customer.address || 'N/A')
+          : (customer.companyAddress || customer.address || 'N/A')
+        }
       </td>
       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
         <div className="flex flex-col">
           <span className="font-medium">
-            {(customer.source === 'Individual') ? 'Cá nhân' : 'Công ty'}
+            {(customer.customerType === 'individual') ? 'Cá nhân' : 'Công ty'}
           </span>
-          {customer.source === 'Individual' && customer.referrer && (
+          {customer.customerType === 'individual' && customer.referrer && (
             <span className="text-xs text-gray-500 mt-1">
               Giới thiệu: {customer.referrer}
             </span>
