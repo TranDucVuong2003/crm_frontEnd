@@ -8,6 +8,15 @@ const getToken = () => {
 
 const removeToken = () => {
   localStorage.removeItem('authToken');
+  localStorage.removeItem('user');
+  localStorage.removeItem('auth');
+  // Trigger custom event for logout
+  window.dispatchEvent(new CustomEvent('auth-logout'));
+};
+
+
+const setToken = (token) => {
+  localStorage.setItem('authToken', token);
 };
 
 // =============================
@@ -34,16 +43,34 @@ apiClient.interceptors.request.use(
 
 // Handle 401 Unauthorized
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    console.log('API Response:', response);
+    return response;
+  },
   (error) => {
+    console.error('API Error:', error);
+    
     if (error.response?.status === 401) {
-      removeToken();
-      // NOTE: Không thể dùng useNavigate ở đây (ngoài React context)
-      // Nên chỉ removeToken, việc redirect nên xử lý ở component khi gặp lỗi 401
+      // Only remove token if this is not a login request
+      if (!error.config?.url?.includes('/login')) {
+        removeToken();
+        window.location.reload();
+      }
     }
     return Promise.reject(error);
   }
 );
+
+// =============================
+// AUTH APIs
+// =============================
+export const login = (loginData) => {
+  return apiClient.post(API_ENDPOINT.AUTH.LOGIN, loginData);
+};
+
+export const register = (registerData) => {
+  return apiClient.post(API_ENDPOINT.AUTH.REGISTER, registerData);
+};
 
 // =============================
 // CUSTOMERS APIs
@@ -66,6 +93,10 @@ export const getCustomerById = (id) => {
 
 export const updateCustomer = (id, customerData) => {
   return apiClient.put(API_ENDPOINT.CUSTOMERS.UPDATE(id), customerData);
+};
+
+export const patchCustomer = (id, customerData) => {
+  return apiClient.patch(API_ENDPOINT.CUSTOMERS.PATCH(id), customerData);
 };
 
 export const deleteCustomer = (id) => {

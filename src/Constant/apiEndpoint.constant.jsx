@@ -1,18 +1,18 @@
+console.log('Environment BASE_URL:', import.meta.env.VITE_BASE_URL);
+
 const API_ENDPOINT = {
     BASE_URL: import.meta.env.VITE_BASE_URL,
-    // AUTH: {
-    //     LOGIN: '/auth/login',
-    //     LOGOUT: '/auth/logout',
-    //     REGISTER: '/auth/register',
-    //     FORGOT_PASSWORD: '/auth/forgot-password',  
-    //     RESET_PASSWORD: '/auth/reset-password',
-    // },
+    AUTH: {
+        LOGIN: '/api/Auth/login',
+        REGISTER: '/api/Auth/register',
+    },
     CUSTOMERS: {
         GET_ALL: '/api/Customers',
         CREATE: '/api/Customers',
         GET_ACTIVE: '/api/Customers/active',
         GET_BY_ID: (id) => `/api/Customers/${id}`,
         UPDATE: (id) => `/api/Customers/${id}`,
+        PATCH: (id) => `/api/Customers/${id}`,
         DELETE: (id) => `/api/Customers/${id}`,
         TOGGLE_STATUS: (id) => `/api/Customers/${id}/toggle-status`,
         GET_BY_TYPE: (customerType) => `/api/Customers/by-type/${customerType}`,
