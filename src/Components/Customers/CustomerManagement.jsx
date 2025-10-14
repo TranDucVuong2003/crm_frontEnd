@@ -10,9 +10,11 @@ import {
   EnvelopeIcon as MailIcon,
   UsersIcon
 } from '@heroicons/react/24/outline';
-import { getAllCustomers, deleteCustomer } from '../../Service/ApiService';
+import { getAllCustomers, deleteCustomer, updateCustomer, createCustomer } from '../../Service/ApiService';
 import CustomerRow from './CustomerRow';
 import CustomerModal from './CustomerModalCreate';
+import CustomerDetailModal from './CustomerDetailModal';
+import { showDeleteConfirm, showSuccess, showError } from '../../utils/sweetAlert';
 
 
 const CustomerManagement = () => {
@@ -23,6 +25,8 @@ const CustomerManagement = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [viewingCustomer, setViewingCustomer] = useState(null);
   
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
@@ -31,18 +35,17 @@ const CustomerManagement = () => {
   // Fetch customers on component mount
   useEffect(() => {
     fetchCustomers();
-    console.log("dataaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaádfasfasfsaa",customers);
   }, []);
 
   const fetchCustomers = async () => {
     try {
       setLoading(true);
       const response = await getAllCustomers();
-      console.log("dataaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",response.data);
       setCustomers(response.data);
       setError(null);
     } catch (err) {
       setError('Không thể tải danh sách khách hàng');
+      showError('Lỗi tải dữ liệu', 'Không thể tải danh sách khách hàng. Vui lòng thử lại.');
       console.error('Error fetching customers:', err);
     } finally {
       setLoading(false);
@@ -99,22 +102,44 @@ const CustomerManagement = () => {
     setIsModalOpen(true);
   };
 
-  const handleSaveCustomer = (customerData) => {
-    if (editingCustomer) {
-      setCustomers(customers.map(c => 
-        c.id === editingCustomer.id ? { ...customerData, id: editingCustomer.id } : c
-      ));
-    } else {
-      const newCustomer = {
-        ...customerData,
-        id: Math.max(...customers.map(c => c.id), 0) + 1
-      };
-      setCustomers([...customers, newCustomer]);
+  const handleViewCustomer = (customer) => {
+    setViewingCustomer(customer);
+    setIsDetailModalOpen(true);
+  };
+
+  const handleSaveCustomer = async (customerData) => {
+    try {
+      if (editingCustomer) {
+        // Cập nhật khách hàng hiện có
+        await updateCustomer(editingCustomer.id, customerData);
+        
+        // Cập nhật state local
+        setCustomers(customers.map(c => 
+          c.id === editingCustomer.id ? { ...customerData, id: editingCustomer.id } : c
+        ));
+        
+        showSuccess('Thành công!', 'Cập nhật khách hàng thành công');
+      } else {
+        // Tạo khách hàng mới
+        const response = await createCustomer(customerData);
+        const newCustomer = response.data;
+        setCustomers([...customers, newCustomer]);
+        
+        showSuccess('Thành công!', 'Tạo khách hàng thành công');
+      }
+      
+      setIsModalOpen(false);
+      setEditingCustomer(null);
+    } catch (error) {
+      console.error('Lỗi khi lưu khách hàng:', error);
+      showError('Lỗi!', 'Có lỗi xảy ra khi lưu thông tin khách hàng. Vui lòng thử lại.');
     }
   };
 
   const handleDeleteCustomer = async (customerId) => {
-    if (confirm('Bạn có chắc chắn muốn xóa khách hàng này?')) {
+    const result = await showDeleteConfirm('khách hàng này');
+    
+    if (result.isConfirmed) {
       try {
         // Gọi API xóa khách hàng
         await deleteCustomer(customerId);
@@ -122,12 +147,12 @@ const CustomerManagement = () => {
         // Cập nhật state local sau khi xóa thành công
         setCustomers(customers.filter(c => c.id !== customerId));
         
-        // Thông báo thành công (có thể thêm toast notification)
-        console.log('Đã xóa khách hàng thành công');
+        // Thông báo thành công
+        showSuccess('Thành công!', 'Đã xóa khách hàng thành công');
       } catch (error) {
         // Xử lý lỗi
         console.error('Lỗi khi xóa khách hàng:', error);
-        alert('Có lỗi xảy ra khi xóa khách hàng. Vui lòng thử lại.');
+        showError('Lỗi!', 'Có lỗi xảy ra khi xóa khách hàng. Vui lòng thử lại.');
       }
     }
   };
@@ -330,7 +355,7 @@ const CustomerManagement = () => {
                 customer={customer}
                 onEdit={handleEditCustomer}
                 onDelete={handleDeleteCustomer}
-                onView={(customer) => console.log('View customer:', customer)}
+                onView={handleViewCustomer}
               />
             ))}
           </tbody>
@@ -499,6 +524,16 @@ const CustomerManagement = () => {
         onClose={() => setIsModalOpen(false)}
         customer={editingCustomer}
         onSave={handleSaveCustomer}
+      />
+
+      {/* Customer Detail Modal */}
+      <CustomerDetailModal
+        isOpen={isDetailModalOpen}
+        onClose={() => {
+          setIsDetailModalOpen(false);
+          setViewingCustomer(null);
+        }}
+        customer={viewingCustomer}
       />
     </div>
   );

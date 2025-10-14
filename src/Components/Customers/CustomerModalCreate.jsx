@@ -1,6 +1,7 @@
 import React from "react";
 import { useState, useEffect } from "react";
 import { createCustomer } from "../../Service/ApiService";
+import { successToast, showError } from "../../utils/sweetAlert";
 
 const CustomerModal = ({ isOpen, onClose, customer = null, onSave }) => {
   const [customerType, setCustomerType] = useState("individual"); // individual or company
@@ -50,13 +51,29 @@ const CustomerModal = ({ isOpen, onClose, customer = null, onSave }) => {
     setFormData(prev => ({ ...prev, customerType }));
   }, [customerType]);
 
-  // Reset form when modal opens for creating new customer
+  // Handle form population when modal opens
   useEffect(() => {
-    if (isOpen && !customer) {
-      setFormData(initialFormData);
-      setCustomerType("individual");
-      setError("");
+    if (isOpen) {
+      if (customer) {
+        // Editing existing customer - populate form with customer data
+        const editFormData = {
+          ...initialFormData,
+          ...customer,
+          // Convert dates to proper format for inputs
+          birthDate: customer.birthDate ? new Date(customer.birthDate).toISOString().split('T')[0] : '',
+          establishedDate: customer.establishedDate ? new Date(customer.establishedDate).toISOString().split('T')[0] : ''
+        };
+        setFormData(editFormData);
+        setCustomerType(customer.customerType || "individual");
+        setError("");
+      } else {
+        // Creating new customer - reset form
+        setFormData(initialFormData);
+        setCustomerType("individual");
+        setError("");
+      }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, customer]);
 
   const handleSubmit = async (e) => {
@@ -98,22 +115,19 @@ const CustomerModal = ({ isOpen, onClose, customer = null, onSave }) => {
         techContactEmail: formData.techContactEmail || null,
       };
 
-      if (customer) {
-        // Edit existing customer
-        onSave(apiData);
-        alert("Cập nhật khách hàng thành công!");
-      } else {
-        // Create new customer using API
-        const response = await createCustomer(apiData);
-        onSave(response.data);
-        alert("Tạo khách hàng thành công!");
-        // Reset form after successful creation
+      // Call parent's save handler which will handle API calls
+      onSave(apiData);
+      
+      // Reset form after successful creation (only for new customers)
+      if (!customer) {
         setFormData(initialFormData);
         setCustomerType("individual");
       }
+      
       onClose();
     } catch (err) {
       setError("Có lỗi xảy ra khi lưu thông tin khách hàng");
+      showError("Lỗi!", "Có lỗi xảy ra khi lưu thông tin khách hàng");
       console.error("Error saving customer:", err);
     } finally {
       setLoading(false);
@@ -166,22 +180,24 @@ const CustomerModal = ({ isOpen, onClose, customer = null, onSave }) => {
             <button
               type="button"
               onClick={() => setCustomerType("individual")}
-              className={`px-4 py-2 cursor-pointer rounded-lg font-medium ${
+              disabled={!!customer}
+              className={`px-4 py-2 rounded-lg font-medium ${
                 customerType === "individual"
                   ? "bg-indigo-100 text-indigo-700 border-2 border-indigo-300"
                   : "bg-gray-100 text-gray-700 border-2 border-gray-300"
-              }`}
+              } ${!!customer ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
             >
               Cá nhân
             </button>
             <button
               type="button"
               onClick={() => setCustomerType("company")}
-              className={`px-4 py-2 cursor-pointer rounded-lg font-medium ${
+              disabled={!!customer}
+              className={`px-4 py-2 rounded-lg font-medium ${
                 customerType === "company"
                   ? "bg-indigo-100 text-indigo-700 border-2 border-indigo-300"
                   : "bg-gray-100 text-gray-700 border-2 border-gray-300"
-              }`}
+              } ${!!customer ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
             >
               Công ty
             </button>
@@ -383,7 +399,7 @@ const CustomerModal = ({ isOpen, onClose, customer = null, onSave }) => {
                     </label>
                     <input
                       type="text"
-                      maxLength={50}
+                      maxLength={14}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                       value={formData.taxCode}
                       onChange={(e) =>
@@ -482,7 +498,7 @@ const CustomerModal = ({ isOpen, onClose, customer = null, onSave }) => {
                       </label>
                       <input
                         type="text"
-                        maxLength={50}
+                        maxLength={12}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                         value={formData.representativeIdNumber}
                         onChange={(e) =>
