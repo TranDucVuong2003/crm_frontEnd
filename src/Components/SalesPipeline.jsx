@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { default as ReactSelect } from "react-select";
+import { components } from "react-select";
 import { 
   PlusIcon, 
   EllipsisVerticalIcon as DotsVerticalIcon, 
@@ -7,6 +9,26 @@ import {
   UserIcon
 } from '@heroicons/react/24/outline';
 
+const Option = (props) => {
+  return (
+    <div>
+      <components.Option {...props}>
+        <input
+          type="checkbox"
+          checked={props.isSelected}
+          onChange={() => null}
+        />{" "}
+        <label>{props.label}</label>
+      </components.Option>
+    </div>
+  );
+};
+const serviceOptions = [
+    { value: "website_design", label: "Thiết kế website" },
+    { value: "webcare", label: "Webcare" },
+    { value: "domain_purchase", label: "Mua tên miền" },
+    { value: "digital_marketing", label: "Digital Marketing" }
+  ];
 const SalesPipeline = () => {
   const [stages] = useState([
     { id: 'lead', name: 'Lead mới' },
@@ -53,6 +75,7 @@ const SalesPipeline = () => {
     }
   ]);
 
+  
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingDeal, setEditingDeal] = useState(null);
   const [selectedStage, setSelectedStage] = useState(null);
@@ -94,7 +117,7 @@ const SalesPipeline = () => {
       maximumFractionDigits: 0
     }).format(amount);
   };
-
+  
   return (
     <div>
       {/* Header */}
@@ -293,6 +316,7 @@ const DealModal = ({ isOpen, onClose, deal = null, onSave, stageId = null }) => 
     expectedCloseDate: '',
     actualCloseDate: '',
     priority: 'medium',
+    serviceTypes: [],
     probability: 50,
     stage: stageId || 'lead',
     notes: '',
@@ -440,21 +464,24 @@ const DealModal = ({ isOpen, onClose, deal = null, onSave, stageId = null }) => 
                   <option value="high">Cao</option>
                 </select>
               </div>
-              <div>
+              <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Loại dịch vụ
+                  Service Types
                 </label>
-                <select
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                  value={formData.serviceType}
-                  onChange={(e) => setFormData({...formData, serviceType: e.target.value})}
-                >
-                  <option value="">Chọn dịch vụ</option>
-                  <option value="website_design">Thiết kế website</option>
-                  <option value="webcare">Webcare</option>
-                  <option value="domain_purchase">Mua tên miền</option>
-                  <option value="digital_marketing">Digital marketing</option>
-                </select>
+                  <ReactSelect
+                    options={serviceOptions}
+                    isMulti
+                    closeMenuOnSelect={false}
+                    hideSelectedOptions={false}
+                    components={{ Option }}
+                    onChange={selectedOptions =>
+                      setFormData({
+                        ...formData,
+                        serviceTypes: selectedOptions || []
+                      })
+                    }
+                    value={formData.serviceTypes}
+                  />
               </div>
             </div>
           </div>
