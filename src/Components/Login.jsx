@@ -245,23 +245,11 @@ function Login() {
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-gray-300" />
               </div>
-              <div className="relative flex justify-center text-sm">
+              {/* <div className="relative flex justify-center text-sm">
                 <span className="px-2 bg-white text-gray-500">Tài khoản demo</span>
-              </div>
+              </div> */}
             </div>
 
-            <div className="mt-4 space-y-2">
-              <div className="text-xs text-gray-600 space-y-1">
-                <div className="flex justify-between">
-                  <span className="font-medium">Email:</span>
-                  <span className="font-mono">test@example.com</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="font-medium">Password:</span>
-                  <span className="font-mono">123456</span>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
 

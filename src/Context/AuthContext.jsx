@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { AuthCookies } from '../utils/cookieUtils';
+import { migrateAuthDataToCookies, isMigrationNeeded } from '../utils/authMigration';
 
 const AuthContext = createContext();
 
@@ -17,6 +19,12 @@ export const AuthProvider = ({ children }) => {
 
   // Check authentication status on app load
   useEffect(() => {
+    // Migrate data from localStorage to cookies if needed
+    if (isMigrationNeeded()) {
+      console.log('Migration needed, starting migration process...');
+      migrateAuthDataToCookies();
+    }
+    
     checkAuthStatus();
     
     // Listen for logout events from ApiService
@@ -34,26 +42,31 @@ export const AuthProvider = ({ children }) => {
 
   const checkAuthStatus = () => {
     try {
-      const token = localStorage.getItem('authToken');
-      const userData = localStorage.getItem('user');
+      const token = AuthCookies.getToken();
+      const userData = AuthCookies.getUser();
+      const isAuth = AuthCookies.getAuthStatus();
       
       console.log('Checking auth status:');
-      console.log('Token from localStorage:', token);
-      console.log('User data from localStorage:', userData);
+      console.log('Token from cookies:', token ? '***' : 'null');
+      console.log('User data from cookies:', userData);
+      console.log('Auth status from cookies:', isAuth);
       
-      if (token && userData) {
+      if (token && userData && isAuth) {
         setIsAuthenticated(true);
-        setUser(JSON.parse(userData));
+        setUser(userData);
         console.log('User authenticated successfully');
       } else {
         setIsAuthenticated(false);
         setUser(null);
         console.log('User not authenticated');
+        // Clear any partial auth data
+        AuthCookies.clearAuth();
       }
     } catch (error) {
       console.error('Error checking auth status:', error);
       setIsAuthenticated(false);
       setUser(null);
+      AuthCookies.clearAuth();
     } finally {
       setLoading(false);
     }
@@ -62,31 +75,39 @@ export const AuthProvider = ({ children }) => {
   const login = (token, userData) => {
     try {
       console.log('AuthContext login called with:');
-      console.log('Token:', token);
+      console.log('Token:', token ? '***' : 'null');
       console.log('User data:', userData);
       
-      localStorage.setItem('authToken', token);
-      localStorage.setItem('user', JSON.stringify(userData));
-      localStorage.setItem('auth', 'true');
+      // Store auth data in cookies
+      AuthCookies.setAuthData(token, userData);
+      
+      // Update state
       setIsAuthenticated(true);
       setUser(userData);
       
-      console.log('Login successful, auth state updated');
+      console.log('Login successful, auth data stored in cookies');
       
       // Clear browser history to prevent going back to login
       window.history.pushState(null, null, window.location.href);
     } catch (error) {
       console.error('Error during login:', error);
+      // Clear any partial data on error
+      AuthCookies.clearAuth();
+      setIsAuthenticated(false);
+      setUser(null);
     }
   };
 
   const logout = () => {
     try {
-      localStorage.removeItem('authToken');
-      localStorage.removeItem('user');
-      localStorage.removeItem('auth');
+      // Clear auth cookies
+      AuthCookies.clearAuth();
+      
+      // Update state
       setIsAuthenticated(false);
       setUser(null);
+      
+      console.log('Logout successful, auth cookies cleared');
     } catch (error) {
       console.error('Error during logout:', error);
     }

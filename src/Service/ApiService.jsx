@@ -1,22 +1,20 @@
 import axios from 'axios';
 import API_ENDPOINT from '../Constant/apiEndpoint.constant';
+import { AuthCookies } from '../utils/cookieUtils';
 
-// Token management utilities (you may need to create these)
+// Token management utilities using cookies
 const getToken = () => {
-  return localStorage.getItem('authToken');
+  return AuthCookies.getToken();
 };
 
 const removeToken = () => {
-  localStorage.removeItem('authToken');
-  localStorage.removeItem('user');
-  localStorage.removeItem('auth');
+  AuthCookies.clearAuth();
   // Trigger custom event for logout
   window.dispatchEvent(new CustomEvent('auth-logout'));
 };
 
-
 const setToken = (token) => {
-  localStorage.setItem('authToken', token);
+  AuthCookies.setToken(token);
 };
 
 // =============================

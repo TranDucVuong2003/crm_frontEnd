@@ -12,6 +12,7 @@ import {
   XMarkIcon as XIcon,
   ArrowRightOnRectangleIcon
 } from '@heroicons/react/24/outline';
+import { useAuth } from '../Context/AuthContext';
 
 const menuItems = [
   { name: 'Dashboard', path: '/', icon: 'HomeIcon' },
@@ -36,12 +37,13 @@ const iconMap = {
 
 function SideBar() {
   const [isOpen, setIsOpen] = useState(false);
+    const { user, logout } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    // Implement logout logic here
+    logout();
     navigate('/login');
-  }
+  };
 
   return (
     <>
