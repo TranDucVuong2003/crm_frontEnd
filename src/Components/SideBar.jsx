@@ -17,12 +17,14 @@ import { useAuth } from '../Context/AuthContext';
 const menuItems = [
   { name: 'Dashboard', path: '/', icon: 'HomeIcon' },
   { name: 'Customer', path: '/customers', icon: 'UsersIcon' },
-  { name: 'Sales opportunity', path: '/sales', icon: 'ChartBarIcon' },
+  { name: 'Sales order', path: '/sales', icon: 'ChartBarIcon' },
   { name: 'Task', path: '/tasks', icon: 'CalendarIcon' },
+  { name: 'Service', path: '/service', icon: 'CogIcon' },
+  { name: 'Addons', path: '/addons', icon: 'CogIcon' },
   { name: 'Suppoet', path: '/support', icon: 'LifebuoyIcon' },
   { name: 'Report', path: '/reports', icon: 'DocumentChartBarIcon' },
   { name: 'User management', path: '/usermanagement', icon: 'CogIcon' },
-  { name: "HelpDesk", path: "/helpdesk", icon: "LifebuoyIcon" }
+  { name: "HelpDesk", path: "/helpdesk", icon: "LifebuoyIcon" },
 ];
 
 const iconMap = {

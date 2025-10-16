@@ -2,10 +2,24 @@ console.log('Environment BASE_URL:', import.meta.env.VITE_BASE_URL);
 
 const API_ENDPOINT = {
     BASE_URL: import.meta.env.VITE_BASE_URL,
+    
+    // Auth endpoints
     AUTH: {
         LOGIN: '/api/Auth/login',
-        REGISTER: '/api/Auth/register',
     },
+    
+    // Addons endpoints
+    ADDONS: {
+        GET_ALL: '/api/Addons',
+        CREATE: '/api/Addons',
+        GET_ACTIVE: '/api/Addons/active',
+        GET_BY_TYPE: (type) => `/api/Addons/by-type/${type}`,
+        GET_BY_ID: (id) => `/api/Addons/${id}`,
+        UPDATE: (id) => `/api/Addons/${id}`,
+        DELETE: (id) => `/api/Addons/${id}`,
+    },
+    
+    // Customers endpoints
     CUSTOMERS: {
         GET_ALL: '/api/Customers',
         CREATE: '/api/Customers',
@@ -20,19 +34,31 @@ const API_ENDPOINT = {
         GET_INDIVIDUALS: '/api/Customers/individuals',
         GET_COMPANIES: '/api/Customers/companies',
     },
-    DEALS: {
-        GET_ALL: '/api/Deals',
-        CREATE: '/api/Deals',
-        GET_BY_STAGE: (stage) => `/api/Deals/by-stage/${stage}`,
-        GET_BY_CUSTOMER: (customerId) => `/api/Deals/by-customer/${customerId}`,
-        GET_ASSIGNED_TO: (userId) => `/api/Deals/assigned-to/${userId}`,
-        GET_PIPELINE: '/api/Deals/pipeline',
-        GET_BY_ID: (id) => `/api/Deals/${id}`,
-        UPDATE: (id) => `/api/Deals/${id}`,
-        DELETE: (id) => `/api/Deals/${id}`,
-        UPDATE_STAGE: (id) => `/api/Deals/${id}/stage`,
-        UPDATE_PROBABILITY: (id) => `/api/Deals/${id}/probability`,
+    
+    // SaleOrders endpoints
+    SALE_ORDERS: {
+        GET_ALL: '/api/SaleOrders',
+        CREATE: '/api/SaleOrders',
+        GET_BY_CUSTOMER: (customerId) => `/api/SaleOrders/by-customer/${customerId}`,
+        GET_STATISTICS: '/api/SaleOrders/statistics',
+        GET_BY_ID: (id) => `/api/SaleOrders/${id}`,
+        UPDATE: (id) => `/api/SaleOrders/${id}`,
+        DELETE: (id) => `/api/SaleOrders/${id}`,
+        UPDATE_PROBABILITY: (id) => `/api/SaleOrders/${id}/probability`,
     },
+    
+    // Services endpoints
+    SERVICES: {
+        GET_ALL: '/api/Services',
+        CREATE: '/api/Services',
+        GET_ACTIVE: '/api/Services/active',
+        GET_BY_CATEGORY: (category) => `/api/Services/by-category/${category}`,
+        GET_BY_ID: (id) => `/api/Services/${id}`,
+        UPDATE: (id) => `/api/Services/${id}`,
+        DELETE: (id) => `/api/Services/${id}`,
+    },
+    
+    // Users endpoints
     USERS: {
         GET_ALL: '/api/Users',
         CREATE: '/api/Users',

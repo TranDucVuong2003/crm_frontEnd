@@ -66,10 +66,6 @@ export const login = (loginData) => {
   return apiClient.post(API_ENDPOINT.AUTH.LOGIN, loginData);
 };
 
-export const register = (registerData) => {
-  return apiClient.post(API_ENDPOINT.AUTH.REGISTER, registerData);
-};
-
 // =============================
 // CUSTOMERS APIs
 // =============================
@@ -122,50 +118,100 @@ export const getCompanyCustomers = () => {
 };
 
 // =============================
-// DEALS APIs
+// ADDONS APIs
 // =============================
-export const getAllDeals = () => {
-  return apiClient.get(API_ENDPOINT.DEALS.GET_ALL);
+export const getAllAddons = () => {
+  return apiClient.get(API_ENDPOINT.ADDONS.GET_ALL);
 };
 
-export const createDeal = (dealData) => {
-  return apiClient.post(API_ENDPOINT.DEALS.CREATE, dealData);
+export const createAddon = (addonData) => {
+  return apiClient.post(API_ENDPOINT.ADDONS.CREATE, addonData);
 };
 
-export const getDealsByStage = (stage) => {
-  return apiClient.get(API_ENDPOINT.DEALS.GET_BY_STAGE(stage));
+export const getActiveAddons = () => {
+  return apiClient.get(API_ENDPOINT.ADDONS.GET_ACTIVE);
 };
 
-export const getDealsByCustomer = (customerId) => {
-  return apiClient.get(API_ENDPOINT.DEALS.GET_BY_CUSTOMER(customerId));
+export const getAddonsByType = (type) => {
+  return apiClient.get(API_ENDPOINT.ADDONS.GET_BY_TYPE(type));
 };
 
-export const getDealsAssignedTo = (userId) => {
-  return apiClient.get(API_ENDPOINT.DEALS.GET_ASSIGNED_TO(userId));
+export const getAddonById = (id) => {
+  return apiClient.get(API_ENDPOINT.ADDONS.GET_BY_ID(id));
 };
 
-export const getDealsPipeline = () => {
-  return apiClient.get(API_ENDPOINT.DEALS.GET_PIPELINE);
+export const updateAddon = (id, addonData) => {
+  return apiClient.put(API_ENDPOINT.ADDONS.UPDATE(id), addonData);
 };
 
-export const getDealById = (id) => {
-  return apiClient.get(API_ENDPOINT.DEALS.GET_BY_ID(id));
+export const deleteAddon = (id) => {
+  return apiClient.delete(API_ENDPOINT.ADDONS.DELETE(id));
 };
 
-export const updateDeal = (id, dealData) => {
-  return apiClient.put(API_ENDPOINT.DEALS.UPDATE(id), dealData);
+// =============================
+// SERVICES APIs
+// =============================
+export const getAllServices = () => {
+  return apiClient.get(API_ENDPOINT.SERVICES.GET_ALL);
 };
 
-export const deleteDeal = (id) => {
-  return apiClient.delete(API_ENDPOINT.DEALS.DELETE(id));
+export const createService = (serviceData) => {
+  return apiClient.post(API_ENDPOINT.SERVICES.CREATE, serviceData);
 };
 
-export const updateDealStage = (id, stageData) => {
-  return apiClient.patch(API_ENDPOINT.DEALS.UPDATE_STAGE(id), stageData);
+export const getActiveServices = () => {
+  return apiClient.get(API_ENDPOINT.SERVICES.GET_ACTIVE);
 };
 
-export const updateDealProbability = (id, probabilityData) => {
-  return apiClient.patch(API_ENDPOINT.DEALS.UPDATE_PROBABILITY(id), probabilityData);
+export const getServicesByCategory = (category) => {
+  return apiClient.get(API_ENDPOINT.SERVICES.GET_BY_CATEGORY(category));
+};
+
+export const getServiceById = (id) => {
+  return apiClient.get(API_ENDPOINT.SERVICES.GET_BY_ID(id));
+};
+
+export const updateService = (id, serviceData) => {
+  return apiClient.put(API_ENDPOINT.SERVICES.UPDATE(id), serviceData);
+};
+
+export const deleteService = (id) => {
+  return apiClient.delete(API_ENDPOINT.SERVICES.DELETE(id));
+};
+
+// =============================
+// SALE ORDERS APIs
+// =============================
+export const getAllSaleOrders = () => {
+  return apiClient.get(API_ENDPOINT.SALE_ORDERS.GET_ALL);
+};
+
+export const createSaleOrder = (saleOrderData) => {
+  return apiClient.post(API_ENDPOINT.SALE_ORDERS.CREATE, saleOrderData);
+};
+
+export const getSaleOrdersByCustomer = (customerId) => {
+  return apiClient.get(API_ENDPOINT.SALE_ORDERS.GET_BY_CUSTOMER(customerId));
+};
+
+export const getSaleOrdersStatistics = () => {
+  return apiClient.get(API_ENDPOINT.SALE_ORDERS.GET_STATISTICS);
+};
+
+export const getSaleOrderById = (id) => {
+  return apiClient.get(API_ENDPOINT.SALE_ORDERS.GET_BY_ID(id));
+};
+
+export const updateSaleOrder = (id, saleOrderData) => {
+  return apiClient.put(API_ENDPOINT.SALE_ORDERS.UPDATE(id), saleOrderData);
+};
+
+export const deleteSaleOrder = (id) => {
+  return apiClient.delete(API_ENDPOINT.SALE_ORDERS.DELETE(id));
+};
+
+export const updateSaleOrderProbability = (id, probabilityData) => {
+  return apiClient.patch(API_ENDPOINT.SALE_ORDERS.UPDATE_PROBABILITY(id), probabilityData);
 };
 
 // =============================

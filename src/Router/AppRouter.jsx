@@ -6,8 +6,10 @@ import { createBrowserRouter, Outlet } from 'react-router-dom';
 import AuthLayout from '../Layout/AuthLayout';
 import { RouterProvider } from 'react-router';
 import Login from '../Components/Login';
-import SalesPipeline from '../Components/SalesPipeline';
+import SalesPipeline from '../Components/Sale order/SalesPipeline';
 import Tasks from '../Components/Tasks';
+import Service from '../Components/Service';
+import Addons from '../Components/Addons';
 import Report from '../Components/Report';
 import Usermanagement from '../Components/Usermanagement';
 import Support from '../Components/Support';
@@ -46,6 +48,14 @@ function AppRouter() {
         {
           path: "tasks",
           element: <Tasks />,
+        },
+        {
+          path: "service",
+          element: <Service />,
+        },
+        {
+          path: "addons",
+          element: <Addons />,
         },
         {
           path: "support",
