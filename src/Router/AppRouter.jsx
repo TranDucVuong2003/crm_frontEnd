@@ -17,7 +17,6 @@ import TicketEditPage from '../Components/Helpdesk/TicketEditPage';
 import TicketCreatePage from '../Components/Helpdesk/TicketCreatePage';
 import ProtectedRoute from './ProtectedRoute';
 import PublicRoute from './PublicRoute';
-import { AuthProvider } from '../Context/AuthContext';
 
 function AppRouter() {
 
@@ -94,11 +93,7 @@ function AppRouter() {
     },
   ]);
 
-  return (
-    <AuthProvider>
-      <RouterProvider router={router} />
-    </AuthProvider>
-  );
+  return <RouterProvider router={router} />;
 }
 
 export default AppRouter
