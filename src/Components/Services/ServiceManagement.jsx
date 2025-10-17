@@ -12,6 +12,7 @@ import ServiceRow from './ServiceRow';
 import ServiceModal from './ServiceModal';
 import ServiceDetailModal from './ServiceDetailModal';
 import { showDeleteConfirm, showSuccess, showError } from '../../utils/sweetAlert';
+import { getAllServices, deleteService } from '../../Service/ApiService';
 
 const ServiceManagement = () => {
   const [services, setServices] = useState([]);
@@ -37,43 +38,14 @@ const ServiceManagement = () => {
   const fetchServices = async () => {
     try {
       setLoading(true);
-      // Mock data - replace with actual API call
-      const mockData = [
-        {
-          id: 1,
-          name: 'Web Development',
-          description: 'Custom web development services',
-          price: 5000000,
-          quantity: 10,
-          category: 'Development',
-          isActive: true,
-          notes: 'Full-stack web development',
-          createdAt: '2024-01-15T10:30:00Z',
-          updatedAt: null
-        },
-        {
-          id: 2,
-          name: 'Mobile App Development',
-          description: 'iOS and Android app development',
-          price: 8000000,
-          quantity: 5,
-          category: 'Development',
-          isActive: true,
-          notes: 'Native and cross-platform mobile apps',
-          createdAt: '2024-01-20T14:15:00Z',
-          updatedAt: null
-        }
-      ];
-      
-      setTimeout(() => {
-        setServices(mockData);
-        setLoading(false);
-      }, 500);
-      
+      setError(null);
+      const response = await getAllServices();
+      setServices(response.data);
     } catch (err) {
       setError('Không thể tải danh sách dịch vụ');
       showError('Lỗi tải dữ liệu', 'Không thể tải danh sách dịch vụ. Vui lòng thử lại.');
       console.error('Error fetching services:', err);
+    } finally {
       setLoading(false);
     }
   };
@@ -120,11 +92,16 @@ const ServiceManagement = () => {
 
     if (result.isConfirmed) {
       try {
-        // Replace with actual API call
+        await deleteService(serviceId);
         setServices(prev => prev.filter(service => service.id !== serviceId));
         showSuccess('Đã xóa!', 'Dịch vụ đã được xóa thành công.');
       } catch (error) {
-        showError('Lỗi!', 'Không thể xóa dịch vụ. Vui lòng thử lại.');
+        console.error('Error deleting service:', error);
+        if (error.response?.data?.message) {
+          showError('Lỗi!', error.response.data.message);
+        } else {
+          showError('Lỗi!', 'Không thể xóa dịch vụ. Vui lòng thử lại.');
+        }
       }
     }
   };
@@ -135,29 +112,8 @@ const ServiceManagement = () => {
   };
 
   const handleSave = async (serviceData) => {
-    try {
-      if (editingService) {
-        // Update service - replace with actual API call
-        const updatedService = { ...serviceData, id: editingService.id, updatedAt: new Date().toISOString() };
-        setServices(prev => prev.map(service => 
-          service.id === editingService.id ? updatedService : service
-        ));
-        showSuccess('Cập nhật thành công!', 'Dịch vụ đã được cập nhật.');
-      } else {
-        // Create service - replace with actual API call
-        const newService = { 
-          ...serviceData, 
-          id: Date.now(), 
-          createdAt: new Date().toISOString(),
-          updatedAt: null
-        };
-        setServices(prev => [...prev, newService]);
-        showSuccess('Tạo thành công!', 'Dịch vụ mới đã được tạo.');
-      }
-      setIsModalOpen(false);
-    } catch (error) {
-      showError('Lỗi!', 'Không thể lưu dịch vụ. Vui lòng thử lại.');
-    }
+    // Refresh the services list after successful create/update
+    await fetchServices();
   };
 
   const formatPrice = (price) => {

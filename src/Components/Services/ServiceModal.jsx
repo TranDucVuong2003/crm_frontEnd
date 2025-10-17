@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
+import { createService, updateService } from '../../Service/ApiService';
+import { showSuccess, showError } from '../../utils/sweetAlert';
 
 const ServiceModal = ({ isOpen, onClose, onSave, service, categories = [] }) => {
   const [formData, setFormData] = useState({
@@ -13,6 +15,7 @@ const ServiceModal = ({ isOpen, onClose, onSave, service, categories = [] }) => 
   });
   
   const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (service) {
@@ -72,7 +75,7 @@ const ServiceModal = ({ isOpen, onClose, onSave, service, categories = [] }) => 
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     if (validateForm()) {
@@ -81,7 +84,40 @@ const ServiceModal = ({ isOpen, onClose, onSave, service, categories = [] }) => 
         price: parseFloat(formData.price),
         quantity: parseInt(formData.quantity)
       };
-      onSave(serviceData);
+
+      setLoading(true);
+      
+      try {
+        if (service) {
+          // Update existing service
+          await updateService(service.id, serviceData);
+          showSuccess('Cập nhật thành công!', 'Dịch vụ đã được cập nhật.');
+        } else {
+          // Create new service
+          await createService(serviceData);
+          showSuccess('Tạo thành công!', 'Dịch vụ mới đã được tạo.');
+        }
+        
+        onSave(serviceData); // Refresh the list
+        onClose();
+      } catch (error) {
+        console.error('Error saving service:', error);
+        
+        // Handle specific error messages from API
+        if (error.response?.data?.message) {
+          showError('Lỗi!', error.response.data.message);
+        } else if (error.response?.status === 400) {
+          showError('Lỗi!', 'Dữ liệu không hợp lệ. Vui lòng kiểm tra lại thông tin.');
+        } else if (error.response?.status === 401) {
+          showError('Lỗi!', 'Bạn không có quyền thực hiện thao tác này.');
+        } else if (error.response?.status === 500) {
+          showError('Lỗi!', 'Lỗi máy chủ. Vui lòng thử lại sau.');
+        } else {
+          showError('Lỗi!', 'Không thể lưu dịch vụ. Vui lòng thử lại.');
+        }
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -104,7 +140,7 @@ const ServiceModal = ({ isOpen, onClose, onSave, service, categories = [] }) => 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div className="fixed inset-0 bg-opacity-50 overflow-y-auto h-full w-full z-50" style={{backgroundColor: 'rgba(0,0,0,0.5)'}}>
       <div className="relative top-20 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-medium text-gray-900">
@@ -272,15 +308,35 @@ const ServiceModal = ({ isOpen, onClose, onSave, service, categories = [] }) => 
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              disabled={loading}
+              className={`px-4 py-2 border border-gray-300 rounded-md text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${
+                loading 
+                  ? 'text-gray-400 cursor-not-allowed' 
+                  : 'text-gray-700 hover:bg-gray-50'
+              }`}
             >
               Hủy
             </button>
             <button
               type="submit"
-              className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              disabled={loading}
+              className={`px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${
+                loading 
+                  ? 'bg-indigo-400 cursor-not-allowed' 
+                  : 'bg-indigo-600 hover:bg-indigo-700'
+              }`}
             >
-              {service ? 'Cập nhật' : 'Tạo mới'}
+              {loading ? (
+                <div className="flex items-center">
+                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  {service ? 'Đang cập nhật...' : 'Đang tạo...'}
+                </div>
+              ) : (
+                service ? 'Cập nhật' : 'Tạo mới'
+              )}
             </button>
           </div>
         </form>
