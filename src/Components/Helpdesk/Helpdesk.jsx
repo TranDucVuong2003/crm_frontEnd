@@ -12,7 +12,8 @@ import {
   ArrowTrendingUpIcon,
   ArrowTrendingDownIcon,
   MinusIcon,
-  StarIcon
+  StarIcon,
+  UserIcon
 } from '@heroicons/react/24/outline';
 import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
 import TicketForm from './TicketForm';
@@ -336,19 +337,93 @@ const Helpdesk = () => {
   //   setIsTicketModalOpen(true);
   // };
 
-  const handleStatusChange = (ticketId, newStatus) => {
-    setTickets(tickets.map(ticket =>
-      ticket.id === ticketId
-        ? { 
-            ...ticket, 
-            status: newStatus, 
-            updatedAt: new Date().toISOString(),
-            ...(newStatus === 'resolved' && { resolvedAt: new Date().toISOString() }),
-            ...(newStatus === 'closed' && { closedAt: new Date().toISOString() })
-          }
-        : ticket
-    ));
+// Modern Ticket Card Component
+const ModernTicketCard = ({ ticket, onView, onStatusChange }) => {
+  const getPriorityConfig = (priority) => {
+    const configs = {
+      low: { color: 'bg-green-500', textColor: 'text-green-700', bgColor: 'bg-green-50', label: 'Thấp' },
+      medium: { color: 'bg-yellow-500', textColor: 'text-yellow-700', bgColor: 'bg-yellow-50', label: 'Trung bình' },
+      high: { color: 'bg-orange-500', textColor: 'text-orange-700', bgColor: 'bg-orange-50', label: 'Cao' },
+      critical: { color: 'bg-red-500', textColor: 'text-red-700', bgColor: 'bg-red-50', label: 'Khẩn cấp' }
+    };
+    return configs[priority] || configs.low;
   };
+
+  const getStatusConfig = (status) => {
+    const configs = {
+      new: { color: 'bg-blue-100 text-blue-800', label: 'Mới' },
+      open: { color: 'bg-green-100 text-green-800', label: 'Mở' },
+      'in-progress': { color: 'bg-yellow-100 text-yellow-800', label: 'Đang xử lý' },
+      resolved: { color: 'bg-purple-100 text-purple-800', label: 'Đã giải quyết' },
+      closed: { color: 'bg-gray-100 text-gray-800', label: 'Đã đóng' },
+      escalated: { color: 'bg-red-100 text-red-800', label: 'Đã leo thang' }
+    };
+    return configs[status] || configs.new;
+  };
+
+  const priorityConfig = getPriorityConfig(ticket.priority);
+  const statusConfig = getStatusConfig(ticket.status);
+
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString('vi-VN', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  return (
+    <div 
+      className="bg-gradient-to-r from-white to-slate-50 p-4 rounded-xl border border-slate-200 hover:shadow-md transition-all duration-200 cursor-pointer hover:border-blue-300"
+      onClick={() => onView(ticket)}
+    >
+      <div className="flex items-start justify-between mb-3">
+        <div className="flex-1 min-w-0">
+          <h3 className="font-semibold text-slate-900 text-sm truncate mb-1">
+            {ticket.title}
+          </h3>
+          <p className="text-xs text-slate-600 line-clamp-2">
+            {ticket.description}
+          </p>
+        </div>
+        <div className="flex items-center space-x-2 ml-3">
+          <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${priorityConfig.bgColor} ${priorityConfig.textColor}`}>
+            {priorityConfig.label}
+          </span>
+        </div>
+      </div>
+      
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-3 text-xs text-slate-500">
+          <span className="flex items-center">
+            <UserIcon className="h-3 w-3 mr-1" />
+            {ticket.customer?.name}
+          </span>
+          <span className="flex items-center">
+            <ClockIcon className="h-3 w-3 mr-1" />
+            {formatDate(ticket.createdAt)}
+          </span>
+        </div>
+        
+        <div className="flex items-center space-x-2">
+          {ticket.stars > 0 && (
+            <div className="flex items-center">
+              <StarIconSolid className="h-3 w-3 text-yellow-400" />
+              <span className="text-xs text-slate-600 ml-1">{ticket.stars}</span>
+            </div>
+          )}
+          <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${statusConfig.color}`}>
+            {statusConfig.label}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Status change function now handled inside component
 
   const handleAssignTicket = (ticketId, agentId) => {
     const agent = AGENTS.find(a => a.id === parseInt(agentId));
@@ -380,51 +455,285 @@ const Helpdesk = () => {
     setIsViewAllModalOpen(true);
   };
 
+  // Helper functions for statistics
+  const getTicketsByStatus = (status) => {
+    return tickets.filter(ticket => ticket.status === status);
+  };
+
+  const getTicketsByPriority = (priority) => {
+    return tickets.filter(ticket => ticket.priority === priority);
+  };
+
+  const getTicketsResolvedToday = () => {
+    const today = new Date().toDateString();
+    return tickets.filter(ticket => 
+      ticket.status === 'closed' && 
+      new Date(ticket.updatedAt).toDateString() === today
+    ).length;
+  };
+
+  const getTicketsResolvedLastWeek = () => {
+    const lastWeek = new Date();
+    lastWeek.setDate(lastWeek.getDate() - 7);
+    return tickets.filter(ticket => 
+      ticket.status === 'closed' && 
+      new Date(ticket.updatedAt) >= lastWeek
+    ).length;
+  };
+
+  const getAverageRating = () => {
+    const ratedTickets = tickets.filter(ticket => ticket.stars && ticket.stars > 0);
+    if (ratedTickets.length === 0) return 0;
+    const totalStars = ratedTickets.reduce((sum, ticket) => sum + ticket.stars, 0);
+    return totalStars / ratedTickets.length;
+  };
+
+  const getTicketsWithRating = () => {
+    return tickets.filter(ticket => ticket.stars && ticket.stars > 0);
+  };
+
+  const handleStatusChange = (ticketId, newStatus) => {
+    setTickets(tickets.map(ticket =>
+      ticket.id === ticketId
+        ? { 
+            ...ticket, 
+            status: newStatus, 
+            updatedAt: new Date().toISOString(),
+            ...(newStatus === 'resolved' && { resolvedAt: new Date().toISOString() }),
+            ...(newStatus === 'closed' && { closedAt: new Date().toISOString() })
+          }
+        : ticket
+    ));
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      {/* Header */}
-      <div className="mb-8 flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Helpdesk</h1>
-          <p className="mt-2 text-gray-600">Ticket Priority Management</p>
-        </div>
-        <button 
-          onClick={() => { navigate('/helpdesk/create') }}
-          className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors flex items-center space-x-2"
-        >
-          <PlusIcon className="h-5 w-5" />
-          <span>Create Ticket</span>
-        </button>
-      </div>
-
-      {/* Priority Overview Statistics */}
+    <div className="p-4 lg:p-6 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 min-h-screen">
+      {/* Modern Header */}
       <div className="mb-8">
-        <HelpdeskOverview tickets={tickets} />
+        <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4">
+          <div>
+            <h1 className="text-2xl lg:text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+              📞 Helpdesk Dashboard
+            </h1>
+            <p className="text-slate-600 mt-2 text-sm lg:text-base">Quản lý và theo dõi phiếu hỗ trợ khách hàng</p>
+          </div>
+          <button
+            onClick={() => navigate('/helpdesk/create')}
+            className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl hover:from-blue-600 hover:to-indigo-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+          >
+            <PlusIcon className="h-5 w-5 mr-2" />
+            Tạo phiếu hỗ trợ mới
+          </button>
+        </div>
       </div>
 
-      {/* Priority Ticket Cards */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 p-8 bg-gray-200 rounded-lg">
-        <PriorityTicketCard 
-          priority="low" 
-          tickets={tickets} 
-          onViewAll={handleViewAllTickets}
-          onStatusChange={handleStatusChange}
-          onViewTicket={handleViewTicket}
-        />
-        <PriorityTicketCard 
-          priority="medium" 
-          tickets={tickets} 
-          onViewAll={handleViewAllTickets}
-          onStatusChange={handleStatusChange}
-          onViewTicket={handleViewTicket}
-        />
-        <PriorityTicketCard 
-          priority="high" 
-          tickets={tickets} 
-          onViewAll={handleViewAllTickets}
-          onStatusChange={handleStatusChange}
-          onViewTicket={handleViewTicket}
-        />
+      {/* Main Layout: 2 Columns */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Left Column: Phiếu Hỗ Trợ Của Tôi */}
+        <div className="lg:col-span-8">
+          <div className="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
+            <div className="bg-gradient-to-r from-blue-500 to-indigo-600 p-6 text-white">
+              <h2 className="text-xl font-bold flex items-center">
+                <TagIcon className="h-6 w-6 mr-3" />
+                Phiếu Hỗ Trợ Của Tôi
+              </h2>
+              <p className="mt-2 text-blue-100">Danh sách các phiếu hỗ trợ đang xử lý</p>
+            </div>
+            
+            {/* Ticket Stats Row */}
+            <div className="p-6 border-b border-slate-100">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-4 rounded-xl border border-green-200">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-green-600 text-sm font-medium">Mở</p>
+                      <p className="text-2xl font-bold text-green-700">{getTicketsByStatus('open').length}</p>
+                    </div>
+                    <div className="bg-green-100 p-2 rounded-lg">
+                      <ClockIcon className="h-5 w-5 text-green-600" />
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="bg-gradient-to-br from-blue-50 to-sky-50 p-4 rounded-xl border border-blue-200">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-blue-600 text-sm font-medium">Đang xử lý</p>
+                      <p className="text-2xl font-bold text-blue-700">{getTicketsByStatus('in-progress').length}</p>
+                    </div>
+                    <div className="bg-blue-100 p-2 rounded-lg">
+                      <ArrowTrendingUpIcon className="h-5 w-5 text-blue-600" />
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="bg-gradient-to-br from-orange-50 to-amber-50 p-4 rounded-xl border border-orange-200">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-orange-600 text-sm font-medium">Khẩn cấp</p>
+                      <p className="text-2xl font-bold text-orange-700">{getTicketsByPriority('critical').length}</p>
+                    </div>
+                    <div className="bg-orange-100 p-2 rounded-lg">
+                      <ExclamationTriangleIcon className="h-5 w-5 text-orange-600" />
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="bg-gradient-to-br from-purple-50 to-violet-50 p-4 rounded-xl border border-purple-200">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-purple-600 text-sm font-medium">Đã đóng</p>
+                      <p className="text-2xl font-bold text-purple-700">{getTicketsByStatus('closed').length}</p>
+                    </div>
+                    <div className="bg-purple-100 p-2 rounded-lg">
+                      <CheckCircleIcon className="h-5 w-5 text-purple-600" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Tickets List */}
+            <div className="p-6">
+              {tickets.length > 0 ? (
+                <div className="space-y-4">
+                  {tickets.slice(0, 5).map((ticket) => (
+                    <ModernTicketCard 
+                      key={ticket.id} 
+                      ticket={ticket} 
+                      onView={handleViewTicket}
+                      onStatusChange={handleStatusChange}
+                    />
+                  ))}
+                  
+                  {tickets.length > 5 && (
+                    <div className="text-center pt-4">
+                      <button
+                        onClick={handleViewAllTickets}
+                        className="px-6 py-2 text-blue-600 hover:text-blue-800 font-medium text-sm transition-colors"
+                      >
+                        Xem tất cả ({tickets.length} phiếu)
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <TagIcon className="h-12 w-12 text-slate-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-slate-600 mb-2">Chưa có phiếu hỗ trợ nào</h3>
+                  <p className="text-slate-500 mb-4">Bắt đầu bằng cách tạo phiếu hỗ trợ đầu tiên</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Right Column: Hiệu Suất */}
+        <div className="lg:col-span-4">
+          <div className="space-y-6">
+            {/* Performance Overview */}
+            <div className="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
+              <div className="bg-gradient-to-r from-emerald-500 to-teal-600 p-6 text-white">
+                <h2 className="text-xl font-bold flex items-center">
+                  <ArrowTrendingUpIcon className="h-6 w-6 mr-3" />
+                  Hiệu Suất Của Tôi
+                </h2>
+                <p className="mt-2 text-emerald-100">Thống kê và đánh giá</p>
+              </div>
+              
+              <div className="p-6 space-y-6">
+                {/* Today Performance */}
+                <div className="text-center">
+                  <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-100">
+                    <h3 className="text-lg font-semibold text-slate-700 mb-4">Hôm nay</h3>
+                    <div className="text-3xl font-bold text-blue-600 mb-2">
+                      {getTicketsResolvedToday()}
+                    </div>
+                    <p className="text-sm text-slate-600">Phiếu hỗ trợ đã đóng</p>
+                  </div>
+                </div>
+
+                {/* Weekly Stats */}
+                <div>
+                  <h4 className="text-sm font-semibold text-slate-700 mb-3">Trung bình trong 7 ngày qua</h4>
+                  <div className="bg-slate-50 rounded-xl p-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-slate-600">Giải quyết/ngày</span>
+                      <span className="font-semibold text-slate-800">{Math.round(getTicketsResolvedLastWeek() / 7 * 10) / 10}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Daily Target */}
+                <div>
+                  <h4 className="text-sm font-semibold text-slate-700 mb-3">Mục tiêu hàng ngày</h4>
+                  <div className="bg-gradient-to-r from-orange-50 to-amber-50 rounded-xl p-4 border border-orange-100">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm text-orange-700">Tiến độ</span>
+                      <span className="font-semibold text-orange-800">{Math.min(Math.round((getTicketsResolvedToday() / 5) * 100), 100)}%</span>
+                    </div>
+                    <div className="w-full bg-orange-200 rounded-full h-2">
+                      <div 
+                        className="bg-gradient-to-r from-orange-400 to-amber-500 h-2 rounded-full transition-all duration-300"
+                        style={{ width: `${Math.min((getTicketsResolvedToday() / 5) * 100, 100)}%` }}
+                      ></div>
+                    </div>
+                    <p className="text-xs text-orange-600 mt-2">Mục tiêu: 5 phiếu/ngày</p>
+                  </div>
+                </div>
+
+                {/* Customer Satisfaction */}
+                <div>
+                  <h4 className="text-sm font-semibold text-slate-700 mb-3">Đánh giá khách hàng</h4>
+                  <div className="bg-gradient-to-br from-yellow-50 to-amber-50 rounded-xl p-4 border border-yellow-200">
+                    <div className="flex items-center justify-center mb-2">
+                      <div className="flex items-center space-x-1">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <StarIconSolid
+                            key={star}
+                            className={`h-5 w-5 ${
+                              star <= getAverageRating() ? 'text-yellow-400' : 'text-gray-300'
+                            }`}
+                          />
+                        ))}
+                      </div>
+                      <span className="ml-2 text-lg font-bold text-slate-700">
+                        {getAverageRating().toFixed(1)}
+                      </span>
+                    </div>
+                    <p className="text-xs text-center text-amber-700">
+                      Dựa trên {getTicketsWithRating().length} đánh giá
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Actions */}
+            <div className="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
+              <div className="bg-gradient-to-r from-violet-500 to-purple-600 p-4 text-white">
+                <h3 className="font-bold">⚡ Thao tác nhanh</h3>
+              </div>
+              <div className="p-4 space-y-3">
+                <button
+                  onClick={handleViewAllTickets}
+                  className="w-full flex items-center justify-between p-3 bg-slate-50 hover:bg-slate-100 rounded-lg transition-colors text-left"
+                >
+                  <span className="text-sm font-medium text-slate-700">Xem tất cả phiếu</span>
+                  <EyeIcon className="h-4 w-4 text-slate-500" />
+                </button>
+                
+                <button
+                  onClick={() => navigate('/helpdesk/create')}
+                  className="w-full flex items-center justify-between p-3 bg-slate-50 hover:bg-slate-100 rounded-lg transition-colors text-left"
+                >
+                  <span className="text-sm font-medium text-slate-700">Tạo phiếu mới</span>
+                  <PlusIcon className="h-4 w-4 text-slate-500" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Modals */}
@@ -615,205 +924,5 @@ const HelpdeskOverview = ({ tickets }) => {
   );
 };
 
-// // Priority Ticket Card Component
-// const PriorityTicketCard = ({ priority, tickets, onViewAll, onStatusChange, onViewTicket }) => {
-//   const priorityConfig = {
-//     low: {
-//       title: 'Low',
-//       color: 'bg-green-500',
-//       textColor: 'text-green-600',
-//       bgColor: 'bg-green-50',
-//       borderColor: 'border-green-200',
-//       hoverColor: 'hover:bg-green-100'
-//     },
-//     medium: {
-//       title: 'Medium',
-//       color: 'bg-yellow-500',
-//       textColor: 'text-yellow-600',
-//       bgColor: 'bg-yellow-50',
-//       borderColor: 'border-yellow-200',
-//       hoverColor: 'hover:bg-yellow-100'
-//     },
-//     high: {
-//       title: 'High',
-//       color: 'bg-red-500',
-//       textColor: 'text-red-600',
-//       bgColor: 'bg-red-50',
-//       borderColor: 'border-red-200',
-//       hoverColor: 'hover:bg-red-100'
-//     }
-//   };
-
-//   const config = priorityConfig[priority];
-//   const priorityTickets = tickets.filter(ticket => ticket.priority === priority);
-//   const displayTickets = priorityTickets.slice(0, 5);
-
-//   const getStatusInfo = (status) => {
-//     const statuses = {
-//       new: { name: 'Mới', color: 'bg-blue-100 text-blue-800' },
-//       open: { name: 'Đang mở', color: 'bg-yellow-100 text-yellow-800' },
-//       in_progress: { name: 'Đang xử lý', color: 'bg-orange-100 text-orange-800' },
-//       pending: { name: 'Chờ phản hồi', color: 'bg-purple-100 text-purple-800' },
-//       escalated: { name: 'Leo thang', color: 'bg-red-100 text-red-800' },
-//       resolved: { name: 'Đã giải quyết', color: 'bg-green-100 text-green-800' },
-//       closed: { name: 'Đã đóng', color: 'bg-gray-100 text-gray-800' }
-//     };
-//     return statuses[status] || statuses.new;
-//   };
-
-//   const getCategoryInfo = (category) => {
-//     const categories = {
-//       technical: { name: 'Kỹ thuật', icon: '🔧' },
-//       bug: { name: 'Lỗi hệ thống', icon: '🐛' },
-//       feature_request: { name: 'Yêu cầu tính năng', icon: '💡' },
-//       account: { name: 'Tài khoản', icon: '👤' },
-//       billing: { name: 'Thanh toán', icon: '💳' },
-//       general: { name: 'Tổng quát', icon: '📋' }
-//     };
-//     return categories[category] || categories.general;
-//   };
-
-//   const formatDate = (dateString) => {
-//     return new Date(dateString).toLocaleDateString('vi-VN', {
-//       month: 'short',
-//       day: 'numeric'
-//     });
-//   };
-
-//   return (
-//     <div className={`bg-white rounded-lg shadow-lg border-t-4 ${config.borderColor} h-[600px] flex flex-col  `}>
-//       {/* Card Header */}
-//       <div className={`${config.bgColor} px-6 py-4 border-b border-gray-200 flex-shrink-0`}>
-//         <div className="flex items-center justify-between">
-//           <div className="flex items-center">
-//             <div className={`w-4 h-4 ${config.color} rounded-full mr-3`}></div>
-//             <h3 className={`text-lg font-semibold ${config.textColor}`}>
-//               {config.title}
-//             </h3>
-//           </div>
-//           <div className="flex items-center space-x-2">
-//             <span className={`px-2 py-1 text-xs font-medium ${config.color} text-white rounded-full`}>
-//               {priorityTickets.length}
-//             </span>
-//             <button
-//               onClick={() => onViewAll(priority)}
-//               className={`text-xs ${config.textColor} hover:opacity-75 cursor-pointer transition-opacity flex items-center`}
-//             >
-//               <ChevronDownIcon className="h-4 w-4 rotate-[-90deg]" />
-//             </button>
-//           </div>
-//         </div>
-//       </div>
-
-//       {/* Tickets List */}
-//       <div className="flex-1 overflow-y-auto p-4">
-//         {displayTickets.length > 0 ? (
-//           <div className="space-y-3">
-//             {displayTickets.map((ticket) => {
-//               const statusInfo = getStatusInfo(ticket.status);
-//               const categoryInfo = getCategoryInfo(ticket.category);
-
-//               return (
-//                 <div 
-//                   key={ticket.id} 
-//                   className={`p-4 border border-gray-200 rounded-lg ${config.hoverColor} transition-colors cursor-pointer`}
-//                   onClick={() => onViewTicket(ticket)}
-//                 >
-//                   {/* Ticket Header */}
-//                   <div className="flex items-start justify-between mb-2">
-//                     <div className="flex items-center space-x-2">
-//                       <span className="text-xs font-mono text-gray-500">{ticket.id}</span>
-//                       <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${statusInfo.color}`}>
-//                         {statusInfo.name}
-//                       </span>
-//                     </div>
-//                     <div className="flex items-center space-x-1">
-//                       <button
-//                         onClick={(e) => {
-//                           e.stopPropagation();
-//                           onViewTicket(ticket);
-//                         }}
-//                         className="text-gray-400 hover:text-indigo-600 transition-colors cursor-pointer"
-//                         title="View Details"
-//                       >
-//                         <EyeIcon className="h-4 w-4" />
-//                       </button>
-//                     </div>
-//                   </div>
-
-//                   {/* Ticket Content */}
-//                   <div className="mb-3">
-//                     <h4 className="text-sm font-medium text-gray-900 line-clamp-2 mb-1">
-//                       {ticket.title}
-//                     </h4>
-//                     <p className="text-xs text-gray-600 line-clamp-2">
-//                       {ticket.description}
-//                     </p>
-//                   </div>
-
-//                   {/* Ticket Meta */}
-//                   <div className="flex items-center justify-between text-xs text-gray-500">
-//                     <div className="flex items-center space-x-2">
-//                       <span className="flex items-center">
-//                         <span className="mr-1">{categoryInfo.icon}</span>
-//                         {categoryInfo.name}
-//                       </span>
-//                       <span className="flex items-center">
-//                         <span className="flex items-center space-x-0.5">
-//                           {Array.from({ length: 5 }, (_, i) => (
-//                             <span key={i} className={`${i < (ticket.stars || 1) ? 'text-yellow-500' : 'text-gray-300'}`}>
-//                               {i < (ticket.stars || 1) ? (
-//                                 <StarIconSolid className="h-3 w-3" />
-//                               ) : (
-//                                 <StarIcon className="h-3 w-3" />
-//                               )}
-//                             </span>
-//                           ))}
-//                         </span>
-//                         <span className="ml-1 text-xs text-gray-600">{ticket.stars || 1}</span>
-//                       </span>
-//                     </div>
-//                     <div className="flex flex-col items-end">
-//                       <span className="font-medium">{ticket.customer.name}</span>
-//                       <span>{formatDate(ticket.createdAt)}</span>
-//                     </div>
-//                   </div>
-
-//                   {/* Assigned To */}
-//                   <div className="mt-2 pt-2 border-t border-gray-100">
-//                     <div className="flex items-center justify-between text-xs">
-//                       <span className="text-gray-500">Assigned:</span>
-//                       <span className="font-medium text-gray-700">
-//                         {ticket.assignedTo?.name || 'Unassigned'}
-//                       </span>
-//                     </div>
-//                   </div>
-//                 </div>
-//               );
-//             })}
-//           </div>
-//         ) : (
-//           <div className="flex flex-col items-center justify-center h-full text-center">
-//             <div className={`mx-auto h-12 w-12 ${config.color} rounded-full flex items-center justify-center mb-4 opacity-20`}>
-//               <TagIcon className="h-6 w-6 text-white" />
-//             </div>
-//             <h3 className="text-sm font-medium text-gray-900 mb-1">No {priority} priority tickets</h3>
-//             <p className="text-xs text-gray-500">All tickets have been resolved</p>
-//           </div>
-//         )}
-//       </div>
-
-//       {/* Card Footer */}
-//       <div className={`${config.bgColor} px-4 py-3 border-t border-gray-200 flex-shrink-0`}>
-//         <button
-//           onClick={() => onViewAll(priority)}
-//           className={`w-full text-center text-sm font-medium ${config.textColor} hover:opacity-75 cursor-pointer transition-opacity`}
-//         >
-//           View All ({priorityTickets.length}) →
-//         </button>
-//       </div>
-//     </div>
-//   );
-// };
 
 export default Helpdesk;

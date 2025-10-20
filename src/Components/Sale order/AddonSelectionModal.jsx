@@ -259,38 +259,6 @@ const AddonSelectionModal = ({ isOpen, onClose, onSave, initialAddons = [] }) =>
               </div>
             </div>
 
-            {/* Selected Addons Display */}
-            {/* {selectedAddons.some(addon => addon.addonId) && (
-              <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                <h4 className="text-sm font-medium text-blue-900 mb-3">Addons đã chọn:</h4>
-                <div className="space-y-2">
-                  {selectedAddons
-                    .filter(addon => addon.addonId)
-                    .map((addon, index) => (
-                      <div key={index} className="flex justify-between items-center text-sm">
-                        <div className="flex-1">
-                          <span className="font-medium text-blue-800">{addon.addonName}</span>
-                          {addon.maMau && (
-                            <span className="text-blue-600 ml-2">(Mã: {addon.maMau})</span>
-                          )}
-                          {addon.thoiHan && (
-                            <span className="text-blue-600 ml-2">- {addon.thoiHan} tháng</span>
-                          )}
-                        </div>
-                        <span className="font-medium text-green-600">
-                          {formatPrice(addon.thanhTien)}
-                        </span>
-                      </div>
-                    ))}
-                </div>
-                <div className="mt-3 pt-2 border-t border-blue-200 flex justify-between items-center">
-                  <span className="text-sm font-medium text-blue-900">Tổng cộng:</span>
-                  <span className="text-base font-bold text-green-600">
-                    {formatPrice(calculateTotal())}
-                  </span>
-                </div>
-              </div>
-            )} */}
 
             {/* Buttons */}
             <div className="flex justify-end space-x-3 mt-6 pt-4 border-t border-gray-200">

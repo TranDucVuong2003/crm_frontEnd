@@ -1,90 +1,219 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   PlusIcon, 
   EllipsisVerticalIcon as DotsVerticalIcon, 
   CurrencyDollarIcon,
   CalendarIcon,
-  UserIcon
+  UserIcon,
+  MagnifyingGlassIcon,
+  XMarkIcon
 } from '@heroicons/react/24/outline';
 import DealModal from './DealModal';
+import DealDetailsModal from './DealDetailsModal';
+import { getAllSaleOrders, deleteSaleOrder, getAllCustomers, getAllServices, getAllAddons } from '../../Service/ApiService';
+import { showSuccess, showError, showConfirm } from '../../utils/sweetAlert';
 
 const SalesPipeline = () => {
   const [stages] = useState([
-    { id: 'lead', name: 'Lead mới' },
-    { id: 'qualified', name: 'Đã xác thực' },
-    { id: 'proposal', name: 'Đề xuất' },
-    { id: 'negotiation', name: 'Đàm phán' },
-    { id: 'closed-won', name: 'Thành công' },
-    { id: 'closed-lost', name: 'Thất bại' }
+    { id: 'low', name: 'Tỉ lệ thấp (1-35%)', probabilityRange: [1, 35] },
+    { id: 'medium', name: 'Tỉ lệ trung bình (36-70%)', probabilityRange: [36, 70] },
+    { id: 'high', name: 'Tỉ lệ cao (71-99%)', probabilityRange: [71, 99] },
+    { id: 'closed-won', name: 'Thành công (100%)', probabilityRange: [100, 100] },
+    { id: 'closed-lost', name: 'Thất bại (0%)', probabilityRange: [0, 0] }
   ]);
+  
+  const [customers, setCustomers] = useState([]);
+  const [services, setServices] = useState([]);
+  const [addons, setAddons] = useState([]);
 
-  const [deals, setDeals] = useState([
-    {
-      id: 1,
-      title: 'Dự án website công ty ABC',
-      customer: 'Công ty ABC',
-      value: 50000000,
-      expectedCloseDate: '2025-11-15',
-      priority: 'high',
-      probability: 80,
-      stage: 'proposal',
-      notes: 'Khách hàng quan tâm cao'
-    },
-    {
-      id: 2,
-      title: 'Hệ thống CRM cho XYZ',
-      customer: 'Công ty XYZ',
-      value: 120000000,
-      expectedCloseDate: '2025-12-01',
-      priority: 'medium',
-      probability: 60,
-      stage: 'negotiation',
-      notes: 'Đang thảo luận giá'
-    },
-    {
-      id: 3,
-      title: 'App mobile cho DEF',
-      customer: 'Startup DEF',
-      value: 80000000,
-      expectedCloseDate: '2025-10-30',
-      priority: 'high',
-      probability: 90,
-      stage: 'qualified',
-      notes: 'Gần như chốt deal'
-    }
-  ]);
-
+  const [deals, setDeals] = useState([]);
+  const [filteredDeals, setFilteredDeals] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [loading, setLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingDeal, setEditingDeal] = useState(null);
   const [selectedStage, setSelectedStage] = useState(null);
+  const [viewingDeal, setViewingDeal] = useState(null);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
 
-  const getDealsByStage = (stageId) => {
-    return deals.filter(deal => deal.stage === stageId);
+  // Load deals when component mounts
+  useEffect(() => {
+    fetchDeals();
+  }, []);
+
+  // Filter deals based on search term
+  useEffect(() => {
+    if (!searchTerm.trim()) {
+      setFilteredDeals(deals);
+    } else {
+      const filtered = deals.filter(deal => {
+        const searchLower = searchTerm.toLowerCase();
+        return (
+          deal.title.toLowerCase().includes(searchLower) ||
+          deal.customer.toLowerCase().includes(searchLower) ||
+          deal.notes?.toLowerCase().includes(searchLower) ||
+          deal.value.toString().includes(searchLower) ||
+          deal.probability.toString().includes(searchLower)
+        );
+      });
+      setFilteredDeals(filtered);
+    }
+  }, [deals, searchTerm]);
+
+  const fetchDeals = async () => {
+    try {
+      setLoading(true);
+      
+      // Load all data in parallel
+      const [saleOrdersResponse, customersResponse, servicesResponse, addonsResponse] = await Promise.all([
+        getAllSaleOrders(),
+        getAllCustomers(),
+        getAllServices(),
+        getAllAddons()
+      ]);
+      
+      const saleOrders = saleOrdersResponse.data || [];
+      const customersData = customersResponse.data || [];
+      const servicesData = servicesResponse.data || [];
+      const addonsData = addonsResponse.data || [];
+      
+      // Store reference data
+      setCustomers(customersData);
+      setServices(servicesData);
+      setAddons(addonsData);
+      
+      // Transform API data to match UI requirements
+      const transformedDeals = saleOrders.map(order => ({
+        id: order.id,
+        title: order.title,
+        customerId: order.customerId,
+        customer: getCustomerName(order.customerId, customersData),
+        value: order.value,
+        probability: order.probability,
+        notes: order.notes,
+        serviceId: order.serviceId,
+        addonId: order.addonId,
+        createdAt: order.createdAt,
+        updatedAt: order.updatedAt,
+        // Auto assign stage based on probability
+        stage: getStageByProbability(order.probability),
+        expectedCloseDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 days from now
+        priority: order.value > 100000000 ? 'high' : order.value > 50000000 ? 'medium' : 'low'
+      }));
+      
+      setDeals(transformedDeals);
+      setFilteredDeals(transformedDeals);
+    } catch (error) {
+      console.error('Error fetching sale orders:', error);
+      showError('Lỗi!', 'Không thể tải danh sách sale orders.');
+      // Fallback to empty array
+      setDeals([]);
+      setFilteredDeals([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleAddDeal = (stageId) => {
+  // Helper function to get customer name by ID
+  const getCustomerName = (customerId, customersData) => {
+    const customer = customersData.find(c => c.id === customerId);
+    if (!customer) return 'Unknown Customer';
+    
+    if (customer.customerType === 'individual') {
+      return customer.name || 'Individual Customer';
+    } else {
+      return customer.companyName || customer.name || 'Company Customer';
+    }
+  };
+
+  // Helper function to determine stage based on probability
+  const getStageByProbability = (probability) => {
+    if (probability === 100) return 'closed-won';
+    if (probability === 0) return 'closed-lost';
+    if (probability >= 71) return 'high';
+    if (probability >= 36) return 'medium';
+    return 'low';
+  };
+
+  const getDealsByStage = (stageId) => {
+    return filteredDeals.filter(deal => deal.stage === stageId);
+  };
+
+  const handleSearchChange = (e) => {
+    setSearchTerm(e.target.value);
+  };
+
+  const clearSearch = () => {
+    setSearchTerm('');
+  };
+
+  const getSearchStats = () => {
+    return {
+      total: deals.length,
+      filtered: filteredDeals.length,
+      hidden: deals.length - filteredDeals.length
+    };
+  };
+
+  const handleAddDeal = (stageId = 'low') => {
     setSelectedStage(stageId);
     setEditingDeal(null);
     setIsModalOpen(true);
   };
 
-  const handleSaveDeal = (dealData) => {
-    if (editingDeal) {
-      setDeals(deals.map(d => 
-        d.id === editingDeal.id ? { ...dealData, id: editingDeal.id } : d
-      ));
-    } else {
-      const newDeal = {
-        ...dealData,
-        id: Math.max(...deals.map(d => d.id), 0) + 1,
-        stage: selectedStage
-      };
-      setDeals([...deals, newDeal]);
+  const handleSaveDeal = async (dealData) => {
+    try {
+      setLoading(true);
+      
+      if (editingDeal) {
+        // Update existing deal - this will be handled by DealModal internally
+        // Just refresh the deals list
+        await fetchDeals();
+        showSuccess('Thành công!', 'Đã cập nhật sale order.');
+      } else {
+        // Add new deal - this will be handled by DealModal internally
+        // Just refresh the deals list
+        await fetchDeals();
+        showSuccess('Thành công!', 'Đã thêm sale order mới.');
+      }
+    } catch (error) {
+      console.error('Error saving deal:', error);
+      showError('Lỗi!', 'Không thể lưu sale order.');
+    } finally {
+      setLoading(false);
     }
   };
 
+  const handleDeleteDeal = async (dealId) => {
+    try {
+      const confirmed = await showConfirm(
+        'Xác nhận xóa',
+        'Bạn có chắc chắn muốn xóa sale order này?',
+        'Xóa',
+        'Hủy'
+      );
+      
+      if (confirmed) {
+        setLoading(true);
+        await deleteSaleOrder(dealId);
+        await fetchDeals(); // Refresh list
+        showSuccess('Thành công!', 'Đã xóa sale order.');
+      }
+    } catch (error) {
+      console.error('Error deleting deal:', error);
+      showError('Lỗi!', 'Không thể xóa sale order.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleViewDeal = (deal) => {
+    setViewingDeal(deal);
+    setIsDetailsModalOpen(true);
+  };
+
   const getTotalValue = () => {
-    return deals.reduce((sum, deal) => sum + deal.value, 0);
+    return filteredDeals.reduce((sum, deal) => sum + deal.value, 0);
   };
 
   const formatCurrency = (amount) => {
@@ -107,7 +236,7 @@ const SalesPipeline = () => {
           </div>
           <div className="mt-4 sm:mt-0">
             <button
-              onClick={() => handleAddDeal('lead')}
+              onClick={() => handleAddDeal('low')}
               className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700"
             >
               <PlusIcon className="h-4 w-4 mr-2" />
@@ -116,15 +245,62 @@ const SalesPipeline = () => {
           </div>
         </div>
         
+        {/* Search Bar */}
+        <div className="mt-4 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+          <div className="relative flex-1 max-w-md">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
+            </div>
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={handleSearchChange}
+              className="block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
+              placeholder="Tìm kiếm theo tên deal, khách hàng, ghi chú, giá trị..."
+            />
+            {searchTerm && (
+              <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+                <button
+                  onClick={clearSearch}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <XMarkIcon className="h-5 w-5" />
+                </button>
+              </div>
+            )}
+          </div>
+          
+          {/* Search Stats */}
+          {searchTerm && (
+            <div className="text-sm text-gray-600">
+              Hiển thị <span className="font-medium text-indigo-600">{getSearchStats().filtered}</span> / {getSearchStats().total} deals
+              {getSearchStats().hidden > 0 && (
+                <span className="ml-2 text-gray-500">
+                  ({getSearchStats().hidden} deal đã ẩn)
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+        
         {/* Summary Stats */}
-        <div className="mt-6 grid grid-cols-1 sm:grid-cols-4 gap-4">
+        <div className="mt-6 grid grid-cols-1 sm:grid-cols-5 gap-4">
           <div className="bg-white p-4 rounded-lg shadow">
-            <div className="text-2xl font-bold text-gray-900">{deals.length}</div>
-            <div className="text-sm text-gray-600">Tổng số deals</div>
+            <div className="text-2xl font-bold text-gray-900">{filteredDeals.length}</div>
+            <div className="text-sm text-gray-600">
+              {searchTerm ? 'Deals hiển thị' : 'Tổng số deals'}
+            </div>
+            {searchTerm && deals.length !== filteredDeals.length && (
+              <div className="text-xs text-gray-500 mt-1">
+                Tổng: {deals.length} deals
+              </div>
+            )}
           </div>
           <div className="bg-white p-4 rounded-lg shadow">
-            <div className="text-2xl font-bold text-green-600">{formatCurrency(getTotalValue())}</div>
-            <div className="text-sm text-gray-600">Tổng giá trị</div>
+            <div className="text-xl font-bold text-green-600">{formatCurrency(getTotalValue())}</div>
+            <div className="text-sm text-gray-600">
+              {searchTerm ? 'Giá trị hiển thị' : 'Tổng giá trị'}
+            </div>
           </div>
           <div className="bg-white p-4 rounded-lg shadow">
             <div className="text-2xl font-bold text-blue-600">{getDealsByStage('closed-won').length}</div>
@@ -132,9 +308,15 @@ const SalesPipeline = () => {
           </div>
           <div className="bg-white p-4 rounded-lg shadow">
             <div className="text-2xl font-bold text-orange-600">
-              {deals.length > 0 ? Math.round((getDealsByStage('closed-won').length / deals.length) * 100) : 0}%
+              {filteredDeals.length > 0 ? Math.round((getDealsByStage('closed-won').length / filteredDeals.length) * 100) : 0}%
             </div>
             <div className="text-sm text-gray-600">Tỷ lệ chốt deal</div>
+          </div>
+          <div className="bg-white p-4 rounded-lg shadow">
+            <div className="text-2xl font-bold text-purple-600">
+              {filteredDeals.filter(d => d.serviceId || d.addonId).length}
+            </div>
+            <div className="text-sm text-gray-600">Có dịch vụ/addon</div>
           </div>
         </div>
       </div>
@@ -142,18 +324,48 @@ const SalesPipeline = () => {
       {/* Pipeline Board */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <div className="p-4 lg:p-6">
-          <div className="overflow-x-auto">
-            <div className="flex space-x-4" style={{ minWidth: '100%' }}>
-              {stages.map((stage) => (
-                <PipelineColumn
-                  key={stage.id}
-                  stage={stage}
-                  deals={getDealsByStage(stage.id)}
-                  onAddDeal={handleAddDeal}
-                />
-              ))}
+          {loading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+              <span className="ml-2 text-gray-600">Đang tải dữ liệu...</span>
             </div>
-          </div>
+          ) : filteredDeals.length === 0 && searchTerm ? (
+            <div className="text-center py-12">
+              <MagnifyingGlassIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                Không tìm thấy kết quả
+              </h3>
+              <p className="text-gray-500 mb-4">
+                Không có deal nào khớp với từ khóa "{searchTerm}"
+              </p>
+              <button
+                onClick={clearSearch}
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-indigo-600 bg-indigo-50 hover:bg-indigo-100"
+              >
+                Xóa bộ lọc
+              </button>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <div className="flex space-x-4" style={{ minWidth: '100%' }}>
+                {stages.map((stage) => (
+                  <PipelineColumn
+                    key={stage.id}
+                    stage={stage}
+                    deals={getDealsByStage(stage.id)}
+                    onAddDeal={handleAddDeal}
+                    onDeleteDeal={handleDeleteDeal}
+                    onEditDeal={(deal) => {
+                      setEditingDeal(deal);
+                      setIsModalOpen(true);
+                    }}
+                    onViewDeal={handleViewDeal}
+                    searchTerm={searchTerm}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -165,17 +377,27 @@ const SalesPipeline = () => {
         stageId={selectedStage}
         onSave={handleSaveDeal}
       />
+
+      {/* Deal Details Modal */}
+      <DealDetailsModal
+        isOpen={isDetailsModalOpen}
+        onClose={() => setIsDetailsModalOpen(false)}
+        deal={viewingDeal}
+        customers={customers}
+        services={services}
+        addons={addons}
+        onUpdate={fetchDeals}
+      />
     </div>
   );
 };
 
-const PipelineColumn = ({ stage, deals, onAddDeal }) => {
+const PipelineColumn = ({ stage, deals, onAddDeal, onDeleteDeal, onEditDeal, onViewDeal, searchTerm }) => {
   const getColumnColor = (stageId) => {
     switch (stageId) {
-      case 'lead': return 'border-blue-200 bg-blue-50';
-      case 'qualified': return 'border-yellow-200 bg-yellow-50';
-      case 'proposal': return 'border-orange-200 bg-orange-50';
-      case 'negotiation': return 'border-purple-200 bg-purple-50';
+      case 'low': return 'border-blue-200 bg-blue-50';
+      case 'medium': return 'border-yellow-200 bg-yellow-50';
+      case 'high': return 'border-purple-200 bg-purple-50';
       case 'closed-won': return 'border-green-200 bg-green-50';
       case 'closed-lost': return 'border-red-200 bg-red-50';
       default: return 'border-gray-200 bg-gray-50';
@@ -194,9 +416,9 @@ const PipelineColumn = ({ stage, deals, onAddDeal }) => {
   };
 
   return (
-    <div className={`flex-none w-1/4 min-w-0 border rounded-lg ${getColumnColor(stage.id)}`} style={{ minWidth: 'calc(25% - 12px)' }} >
+    <div className={`flex-none w-1/5 min-w-0 border rounded-lg ${getColumnColor(stage.id)} flex flex-col`} style={{ minWidth: 'calc(20% - 16px)', height: 'fit-content', minHeight: '400px' }} >
       {/* Column Header */}
-      <div className="p-3 border-b border-gray-200">
+      <div className="p-3 border-b border-gray-200 flex-shrink-0">
         <div className="flex justify-between items-center mb-2">
           <h3 className="font-medium text-gray-900 text-sm truncate flex-1">{stage.name}</h3>
           <span className="bg-white px-2 py-1 rounded-full text-xs font-medium text-gray-600 ml-2 flex-shrink-0">
@@ -204,24 +426,36 @@ const PipelineColumn = ({ stage, deals, onAddDeal }) => {
           </span>
         </div>
         <div className="text-xs text-gray-600 truncate">
-          Tổng: {formatCurrency(totalValue)}
+          {formatCurrency(totalValue)}
+          {deals.length > 0 && (
+            <div className="text-xs text-gray-500 mt-1">
+              TB: {formatCurrency(totalValue / deals.length)}
+            </div>
+          )}
         </div>
-        <button 
+        {/* <button 
           onClick={() => onAddDeal(stage.id)}
           className="mt-2 w-full flex items-center justify-center px-2 py-2 border border-dashed border-gray-300 rounded-md text-xs text-gray-600 hover:border-gray-400 hover:text-gray-800"
         >
           <PlusIcon className="h-3 w-3 mr-1" />
           Thêm deal
-        </button>
+        </button> */}
       </div>
 
       {/* Deals List */}
-      <div className="p-3 space-y-2 max-h-80 overflow-y-auto">
+      <div className="p-2 space-y-2 flex-grow">
         {deals.map((deal) => (
-          <DealCard key={deal.id} deal={deal} />
+          <DealCard 
+            key={deal.id} 
+            deal={deal} 
+            onEdit={() => onEditDeal(deal)}
+            onDelete={() => onDeleteDeal(deal.id)}
+            onView={() => onViewDeal(deal)}
+            searchTerm={searchTerm}
+          />
         ))}
         {deals.length === 0 && (
-          <div className="text-center text-xs text-gray-500 py-6">
+          <div className="text-center text-xs text-gray-500 py-4">
             Chưa có deal nào
           </div>
         )}
@@ -230,12 +464,45 @@ const PipelineColumn = ({ stage, deals, onAddDeal }) => {
   );
 };
 
-const DealCard = ({ deal }) => {
+const DealCard = ({ deal, onEdit, onDelete, onView, searchTerm }) => {
+  const [showDropdown, setShowDropdown] = useState(false);
+
+  const highlightText = (text, searchTerm) => {
+    if (!searchTerm || !text) return text;
+    
+    const regex = new RegExp(`(${searchTerm})`, 'gi');
+    const parts = text.toString().split(regex);
+    
+    return parts.map((part, index) =>
+      regex.test(part) ? (
+        <span key={index} className="bg-yellow-200 font-semibold">
+          {part}
+        </span>
+      ) : (
+        part
+      )
+    );
+  };
+
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('vi-VN', {
       style: 'currency',
       currency: 'VND'
     }).format(amount);
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return '';
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('vi-VN', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      });
+    } catch (error) {
+      return dateString;
+    }
   };
 
   const getPriorityColor = (priority) => {
@@ -248,31 +515,77 @@ const DealCard = ({ deal }) => {
   };
 
   return (
-    <div className="bg-white p-3 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow cursor-pointer">
-      <div className="flex justify-between items-start mb-2">
-        <h4 className="text-xs font-medium text-gray-900 line-clamp-2 flex-1 mr-1">{deal.title}</h4>
-        <button className="text-gray-400 hover:text-gray-600 flex-shrink-0">
-          <DotsVerticalIcon className="h-3 w-3" />
-        </button>
+    <div 
+      className="bg-white p-2.5 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow cursor-pointer"
+      onClick={onView}
+    >
+      <div className="flex justify-between items-start mb-1.5">
+        <h4 className="text-xs font-medium text-gray-900 line-clamp-2 flex-1 mr-1">
+          {highlightText(deal.title, searchTerm)}
+        </h4>
+        <div className="relative flex-shrink-0">
+          <button 
+            onClick={() => setShowDropdown(!showDropdown)}
+            className="text-gray-400 hover:text-gray-600"
+          >
+            <DotsVerticalIcon className="h-3 w-3" />
+          </button>
+          
+          {showDropdown && (
+            <div className="absolute right-0 top-4 w-32 bg-white rounded-md shadow-lg border border-gray-200 z-10">
+              <div className="py-1">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEdit();
+                    setShowDropdown(false);
+                  }}
+                  className="block w-full text-left px-3 py-2 text-xs text-gray-700 hover:bg-gray-100"
+                >
+                  Chỉnh sửa
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete();
+                    setShowDropdown(false);
+                  }}
+                  className="block w-full text-left px-3 py-2 text-xs text-red-600 hover:bg-gray-100"
+                >
+                  Xóa
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
       
       <div className="space-y-1">
         <div className="flex items-center text-xs text-gray-600">
           <CurrencyDollarIcon className="h-3 w-3 mr-1 flex-shrink-0" />
-          <span className="font-medium truncate text-xs">{formatCurrency(deal.value)}</span>
+          <span className="font-medium truncate text-xs">
+            {highlightText(formatCurrency(deal.value), searchTerm)}
+          </span>
         </div>
         
         <div className="flex items-center text-xs text-gray-600">
           <UserIcon className="h-3 w-3 mr-1 flex-shrink-0" />
-          <span className="truncate">{deal.customer}</span>
+          <span className="truncate">{highlightText(deal.customer, searchTerm)}</span>
         </div>
         
         <div className="flex items-center text-xs text-gray-600">
           <CalendarIcon className="h-3 w-3 mr-1 flex-shrink-0" />
-          <span className="truncate">{deal.expectedCloseDate}</span>
+          <span className="truncate">{formatDate(deal.expectedCloseDate)}</span>
         </div>
         
-        <div className="flex justify-between items-center mt-2">
+        {/* Show service/addon info if available */}
+        {(deal.serviceId || deal.addonId) && (
+          <div className="text-xs text-blue-600 truncate">
+            {deal.serviceId && '📋 Có dịch vụ'} {deal.addonId && '🔧 Có addon'}
+          </div>
+        )}
+        
+        <div className="flex justify-between items-center mt-1.5">
           <span className={`inline-flex px-1.5 py-0.5 text-xs font-medium rounded-full ${getPriorityColor(deal.priority)}`}>
             {deal.priority === 'high' ? 'Cao' : deal.priority === 'medium' ? 'TB' : 'Thấp'}
           </span>
@@ -284,309 +597,5 @@ const DealCard = ({ deal }) => {
     </div>
   );
 };
-
-// const DealModal = ({ isOpen, onClose, deal = null, onSave, stageId = null }) => {
-//   const [formData, setFormData] = useState(deal || {
-//     title: '',
-//     customer: '',
-//     customerId: '',
-//     value: '',
-//     expectedCloseDate: '',
-//     actualCloseDate: '',
-//     priority: 'medium',
-//     probability: 50,
-//     stage: stageId || 'lead',
-//     notes: '',
-//     assignedTo: '',
-//     createdBy: ''
-//   });
-
-//   // Mock data for dropdowns - replace with actual data from your API
-//   const users = [
-//     { id: 1, name: 'Nguyễn Văn A' },
-//     { id: 2, name: 'Trần Thị B' },
-//     { id: 3, name: 'Lê Văn C' }
-//   ];
-
-//   const customers = [
-//     { id: 1, name: 'Công ty ABC' },
-//     { id: 2, name: 'Công ty XYZ' },
-//     { id: 3, name: 'Startup DEF' }
-//   ];
-
-//   const stages = [
-//     { id: 'lead', name: 'Lead mới' },
-//     { id: 'qualified', name: 'Đã xác thực' },
-//     { id: 'proposal', name: 'Đề xuất' },
-//     { id: 'negotiation', name: 'Đàm phán' },
-//     { id: 'closed-won', name: 'Thành công' },
-//     { id: 'closed-lost', name: 'Thất bại' }
-//   ];
-
-//   const handleSubmit = (e) => {
-//     e.preventDefault();
-//     onSave({
-//       ...formData,
-//       value: parseFloat(formData.value) || 0,
-//       customerId: parseInt(formData.customerId) || null,
-//       assignedTo: parseInt(formData.assignedTo) || null,
-//       createdBy: parseInt(formData.createdBy) || null
-//     });
-//     onClose();
-//   };
-
-//   if (!isOpen) return null;
-
-//   return (
-//     <div className="fixed inset-0 flex items-center justify-center p-4 z-50" style={{backgroundColor: 'rgba(0,0,0,0.5)'}}>
-//       <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-screen overflow-y-auto">
-//         <div className="px-6 py-4 border-b border-gray-200">
-//           <h2 className="text-lg font-medium text-gray-900">
-//             {deal ? 'Chỉnh sửa deal' : 'Thêm deal mới'}
-//           </h2>
-//         </div>
-        
-//         <form onSubmit={handleSubmit} className="p-6">
-//           {/* Basic Information Section */}
-//           <div className="mb-6">
-//             <h3 className="text-md font-medium text-gray-900 mb-4 border-b border-gray-200 pb-2">
-//               Thông tin cơ bản
-//             </h3>
-//             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-//               <div className="md:col-span-2">
-//                 <label className="block text-sm font-medium text-gray-700 mb-1">
-//                   Tên deal *
-//                 </label>
-//                 <input
-//                   type="text"
-//                   required
-//                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-//                   value={formData.title}
-//                   onChange={(e) => setFormData({...formData, title: e.target.value})}
-//                   placeholder="Nhập tên deal"
-//                 />
-//               </div>
-              
-//               <div>
-//                 <label className="block text-sm font-medium text-gray-700 mb-1">
-//                   Khách hàng *
-//                 </label>
-//                 <select
-//                   required
-//                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-//                   value={formData.customerId}
-//                   onChange={(e) => {
-//                     const customerId = e.target.value;
-//                     const customer = customers.find(c => c.id === parseInt(customerId));
-//                     setFormData({
-//                       ...formData, 
-//                       customerId: customerId,
-//                       customer: customer ? customer.name : ''
-//                     });
-//                   }}
-//                 >
-//                   <option value="">Chọn khách hàng</option>
-//                   {customers.map(customer => (
-//                     <option key={customer.id} value={customer.id}>
-//                       {customer.name}
-//                     </option>
-//                   ))}
-//                 </select>
-//               </div>
-
-//               <div>
-//                 <label className="block text-sm font-medium text-gray-700 mb-1">
-//                   Giá trị (VNĐ) *
-//                 </label>
-//                 <input
-//                   type="number"
-//                   required
-//                   min="0"
-//                   step="1000"
-//                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-//                   value={formData.value}
-//                   onChange={(e) => setFormData({...formData, value: e.target.value})}
-//                   placeholder="0"
-//                 />
-//               </div>
-
-//               <div>
-//                 <label className="block text-sm font-medium text-gray-700 mb-1">
-//                   Giai đoạn
-//                 </label>
-//                 <select
-//                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-//                   value={formData.stage}
-//                   onChange={(e) => setFormData({...formData, stage: e.target.value})}
-//                 >
-//                   {stages.map(stage => (
-//                     <option key={stage.id} value={stage.id}>
-//                       {stage.name}
-//                     </option>
-//                   ))}
-//                 </select>
-//               </div>
-
-//               <div>
-//                 <label className="block text-sm font-medium text-gray-700 mb-1">
-//                   Độ ưu tiên
-//                 </label>
-//                 <select
-//                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-//                   value={formData.priority}
-//                   onChange={(e) => setFormData({...formData, priority: e.target.value})}
-//                 >
-//                   <option value="low">Thấp</option>
-//                   <option value="medium">Trung bình</option>
-//                   <option value="high">Cao</option>
-//                 </select>
-//               </div>
-//             </div>
-//           </div>
-
-//           {/* Dates Section */}
-//           <div className="mb-6">
-//             <h3 className="text-md font-medium text-gray-900 mb-4 border-b border-gray-200 pb-2">
-//               Thời gian
-//             </h3>
-//             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-//               <div>
-//                 <label className="block text-sm font-medium text-gray-700 mb-1">
-//                   Ngày dự kiến chốt
-//                 </label>
-//                 <input
-//                   type="date"
-//                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-//                   value={formData.expectedCloseDate}
-//                   onChange={(e) => setFormData({...formData, expectedCloseDate: e.target.value})}
-//                 />
-//               </div>
-
-//               <div>
-//                 <label className="block text-sm font-medium text-gray-700 mb-1">
-//                   Ngày chốt thực tế
-//                 </label>
-//                 <input
-//                   type="date"
-//                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-//                   value={formData.actualCloseDate}
-//                   onChange={(e) => setFormData({...formData, actualCloseDate: e.target.value})}
-//                 />
-//               </div>
-//             </div>
-//           </div>
-
-//           {/* Assignment Section */}
-//           <div className="mb-6">
-//             <h3 className="text-md font-medium text-gray-900 mb-4 border-b border-gray-200 pb-2">
-//               Phân công
-//             </h3>
-//             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-//               <div>
-//                 <label className="block text-sm font-medium text-gray-700 mb-1">
-//                   Người phụ trách
-//                 </label>
-//                 <select
-//                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-//                   value={formData.assignedTo}
-//                   onChange={(e) => setFormData({...formData, assignedTo: e.target.value})}
-//                 >
-//                   <option value="">Chọn người phụ trách</option>
-//                   {users.map(user => (
-//                     <option key={user.id} value={user.id}>
-//                       {user.name}
-//                     </option>
-//                   ))}
-//                 </select>
-//               </div>
-
-//               <div>
-//                 <label className="block text-sm font-medium text-gray-700 mb-1">
-//                   Người tạo
-//                 </label>
-//                 <select
-//                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-//                   value={formData.createdBy}
-//                   onChange={(e) => setFormData({...formData, createdBy: e.target.value})}
-//                 >
-//                   <option value="">Chọn người tạo</option>
-//                   {users.map(user => (
-//                     <option key={user.id} value={user.id}>
-//                       {user.name}
-//                     </option>
-//                   ))}
-//                 </select>
-//               </div>
-//             </div>
-//           </div>
-
-//           {/* Probability and Notes Section */}
-//           <div className="mb-6">
-//             <h3 className="text-md font-medium text-gray-900 mb-4 border-b border-gray-200 pb-2">
-//               Chi tiết khác
-//             </h3>
-//             <div className="space-y-4">
-//               <div>
-//                 <label className="block text-sm font-medium text-gray-700 mb-1">
-//                   Tỷ lệ thành công: {formData.probability}%
-//                 </label>
-//                 <input
-//                   type="range"
-//                   min="0"
-//                   max="100"
-//                   step="5"
-//                   className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-//                   value={formData.probability}
-//                   onChange={(e) => setFormData({...formData, probability: parseInt(e.target.value)})}
-//                 />
-//                 <div className="flex justify-between text-xs text-gray-500 mt-1">
-//                   <span>0%</span>
-//                   <span>25%</span>
-//                   <span>50%</span>
-//                   <span>75%</span>
-//                   <span>100%</span>
-//                 </div>
-//               </div>
-
-//               <div>
-//                 <label className="block text-sm font-medium text-gray-700 mb-1">
-//                   Ghi chú
-//                 </label>
-//                 <textarea
-//                   rows={4}
-//                   maxLength={2000}
-//                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-//                   value={formData.notes}
-//                   onChange={(e) => setFormData({...formData, notes: e.target.value})}
-//                   placeholder="Nhập ghi chú về deal này..."
-//                 />
-//                 <div className="text-xs text-gray-500 mt-1">
-//                   {formData.notes?.length || 0}/2000 ký tự
-//                 </div>
-//               </div>
-//             </div>
-//           </div>
-
-//           {/* Action Buttons */}
-//           <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
-//             <button
-//               type="button"
-//               onClick={onClose}
-//               className="px-6 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-//             >
-//               Hủy
-//             </button>
-//             <button
-//               type="submit"
-//               className="px-6 py-2 bg-indigo-600 text-white rounded-md text-sm font-medium hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-//             >
-//               {deal ? 'Cập nhật' : 'Thêm mới'}
-//             </button>
-//           </div>
-//         </form>
-//       </div>
-//     </div>
-//   );
-// };
 
 export default SalesPipeline;

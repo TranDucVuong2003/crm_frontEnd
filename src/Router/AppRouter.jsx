@@ -9,7 +9,7 @@ import Login from '../Components/Login';
 import SalesPipeline from '../Components/Sale order/SalesPipeline';
 import Tasks from '../Components/Tasks';
 import Service from '../Components/Service';
-import Addons from '../Components/Addons';
+import Addons from '../Components/Addons/Addons';
 import Report from '../Components/Report';
 import Usermanagement from '../Components/Usermanagement';
 import Support from '../Components/Support';

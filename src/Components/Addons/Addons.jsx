@@ -1,5 +1,5 @@
 import React from 'react'
-import AddonsManagement from './Addons/AddonsManagement'
+import AddonsManagement from './AddonsManagement'
 
 function Addons() {
   return <AddonsManagement />
