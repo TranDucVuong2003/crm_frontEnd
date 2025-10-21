@@ -38,6 +38,23 @@ const ViewAllTicketsModal = ({
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [assignedToFilter, setAssignedToFilter] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
+
+  // Helper function để sanitize và render HTML content
+  const renderHTMLContent = (htmlString) => {
+    if (!htmlString) return 'Không có mô tả';
+    
+    // Basic HTML sanitization - loại bỏ các tag nguy hiểm
+    let sanitized = htmlString
+      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+      .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '')
+      .replace(/<object\b[^<]*(?:(?!<\/object>)<[^<]*)*<\/object>/gi, '')
+      .replace(/<embed\b[^<]*(?:(?!<\/embed>)<[^<]*)*<\/embed>/gi, '')
+      .replace(/on\w+="[^"]*"/gi, '') // Loại bỏ event handlers
+      .replace(/javascript:/gi, ''); // Loại bỏ javascript: URLs
+    
+    // Loại bỏ HTML tags để hiển thị text thuần cho preview
+    return sanitized.replace(/<[^>]*>/g, '').trim();
+  };
   const [itemsPerPage] = useState(10);
 
   // Reset filters when modal opens with new default priority
@@ -201,7 +218,7 @@ const ViewAllTicketsModal = ({
                             </div>
                             
                             <h3 className="text-sm font-semibold text-gray-900 mb-1">{ticket.title}</h3>
-                            <p className="text-sm text-gray-600 line-clamp-2 mb-2">{ticket.description}</p>
+                            <p className="text-sm text-gray-600 line-clamp-2 mb-2">{renderHTMLContent(ticket.description)}</p>
                             
                             <div className="flex items-center space-x-4 text-xs text-gray-500">
                               <span>Customer: {ticket.customer.name}</span>

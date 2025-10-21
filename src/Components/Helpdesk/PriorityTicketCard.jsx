@@ -16,6 +16,24 @@ import {
 import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
 
 const PriorityTicketCard = ({ priority, tickets, onViewAll, onStatusChange, onViewTicket }) => {
+  
+  // Helper function để sanitize và render HTML content
+  const renderHTMLContent = (htmlString) => {
+    if (!htmlString) return 'Không có mô tả';
+    
+    // Basic HTML sanitization - loại bỏ các tag nguy hiểm
+    let sanitized = htmlString
+      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+      .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '')
+      .replace(/<object\b[^<]*(?:(?!<\/object>)<[^<]*)*<\/object>/gi, '')
+      .replace(/<embed\b[^<]*(?:(?!<\/embed>)<[^<]*)*<\/embed>/gi, '')
+      .replace(/on\w+="[^"]*"/gi, '') // Loại bỏ event handlers
+      .replace(/javascript:/gi, ''); // Loại bỏ javascript: URLs
+    
+    // Loại bỏ HTML tags để hiển thị text thuần cho preview
+    return sanitized.replace(/<[^>]*>/g, '').trim();
+  };
+
   const priorityConfig = {
     low: {
       title: 'Low',
@@ -142,11 +160,24 @@ const PriorityTicketCard = ({ priority, tickets, onViewAll, onStatusChange, onVi
 
                   {/* Ticket Content */}
                   <div className="mb-3">
-                    <h4 className="text-sm font-medium text-gray-900 line-clamp-2 mb-1">
-                      {ticket.title}
-                    </h4>
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="text-sm font-medium text-gray-900 line-clamp-1 flex-1">
+                        {ticket.title}
+                      </h4>
+                      <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ml-2 ${getStatusInfo(ticket.status).color}`}>
+                        <div className={`w-1.5 h-1.5 rounded-full mr-1 ${
+                          getStatusInfo(ticket.status).color.includes('blue') ? 'bg-blue-500' :
+                          getStatusInfo(ticket.status).color.includes('yellow') ? 'bg-yellow-500' :
+                          getStatusInfo(ticket.status).color.includes('orange') ? 'bg-orange-500' :
+                          getStatusInfo(ticket.status).color.includes('purple') ? 'bg-purple-500' :
+                          getStatusInfo(ticket.status).color.includes('red') ? 'bg-red-500' :
+                          getStatusInfo(ticket.status).color.includes('green') ? 'bg-green-500' : 'bg-gray-500'
+                        }`}></div>
+                        {getStatusInfo(ticket.status).name}
+                      </span>
+                    </div>
                     <p className="text-xs text-gray-600 line-clamp-2">
-                      {ticket.description}
+                      {renderHTMLContent(ticket.description)}
                     </p>
                   </div>
 
