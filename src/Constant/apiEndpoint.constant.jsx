@@ -58,6 +58,38 @@ const API_ENDPOINT = {
         DELETE: (id) => `/api/Services/${id}`,
     },
     
+    // Tickets endpoints
+    TICKETS: {
+        GET_ALL: '/api/Tickets',
+        CREATE: '/api/Tickets',
+        GET_BY_ID: (id) => `/api/Tickets/${id}`,
+        UPDATE: (id) => `/api/Tickets/${id}`,
+        DELETE: (id) => `/api/Tickets/${id}`,
+        GET_LOGS: (id) => `/api/Tickets/${id}/logs`,
+        ASSIGN: (id) => `/api/Tickets/${id}/assign`,
+        UPDATE_STATUS: (id) => `/api/Tickets/${id}/status`,
+    },
+    
+    // TicketCategories endpoints
+    TICKET_CATEGORIES: {
+        GET_ALL: '/api/TicketCategories',
+        CREATE: '/api/TicketCategories',
+        GET_BY_ID: (id) => `/api/TicketCategories/${id}`,
+        UPDATE: (id) => `/api/TicketCategories/${id}`,
+        PATCH: (id) => `/api/TicketCategories/${id}`,
+        DELETE: (id) => `/api/TicketCategories/${id}`,
+    },
+    
+    // TicketLogs endpoints
+    TICKET_LOGS: {
+        GET_ALL: '/api/TicketLogs',
+        CREATE: '/api/TicketLogs',
+        GET_BY_ID: (id) => `/api/TicketLogs/${id}`,
+        UPDATE: (id) => `/api/TicketLogs/${id}`,
+        DELETE: (id) => `/api/TicketLogs/${id}`,
+        GET_BY_TICKET: (ticketId) => `/api/TicketLogs/by-ticket/${ticketId}`,
+    },
+    
     // Users endpoints
     USERS: {
         GET_ALL: '/api/Users',

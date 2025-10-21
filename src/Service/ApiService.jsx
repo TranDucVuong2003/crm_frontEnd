@@ -215,6 +215,95 @@ export const updateSaleOrderProbability = (id, probabilityData) => {
 };
 
 // =============================
+// TICKETS APIs
+// =============================
+export const getAllTickets = () => {
+  return apiClient.get(API_ENDPOINT.TICKETS.GET_ALL);
+};
+
+export const createTicket = (ticketData) => {
+  return apiClient.post(API_ENDPOINT.TICKETS.CREATE, ticketData);
+};
+
+export const getTicketById = (id) => {
+  return apiClient.get(API_ENDPOINT.TICKETS.GET_BY_ID(id));
+};
+
+export const updateTicket = (id, ticketData) => {
+  return apiClient.put(API_ENDPOINT.TICKETS.UPDATE(id), ticketData);
+};
+
+export const deleteTicket = (id) => {
+  return apiClient.delete(API_ENDPOINT.TICKETS.DELETE(id));
+};
+
+export const getTicketLogs = (id) => {
+  return apiClient.get(API_ENDPOINT.TICKETS.GET_LOGS(id));
+};
+
+export const assignTicket = (id, assignData) => {
+  return apiClient.put(API_ENDPOINT.TICKETS.ASSIGN(id), assignData);
+};
+
+export const updateTicketStatus = (id, statusData) => {
+  return apiClient.put(API_ENDPOINT.TICKETS.UPDATE_STATUS(id), statusData);
+};
+
+// =============================
+// TICKET CATEGORIES APIs
+// =============================
+export const getAllTicketCategories = () => {
+  return apiClient.get(API_ENDPOINT.TICKET_CATEGORIES.GET_ALL);
+};
+
+export const createTicketCategory = (categoryData) => {
+  return apiClient.post(API_ENDPOINT.TICKET_CATEGORIES.CREATE, categoryData);
+};
+
+export const getTicketCategoryById = (id) => {
+  return apiClient.get(API_ENDPOINT.TICKET_CATEGORIES.GET_BY_ID(id));
+};
+
+export const updateTicketCategory = (id, categoryData) => {
+  return apiClient.put(API_ENDPOINT.TICKET_CATEGORIES.UPDATE(id), categoryData);
+};
+
+export const patchTicketCategory = (id, categoryData) => {
+  return apiClient.patch(API_ENDPOINT.TICKET_CATEGORIES.PATCH(id), categoryData);
+};
+
+export const deleteTicketCategory = (id) => {
+  return apiClient.delete(API_ENDPOINT.TICKET_CATEGORIES.DELETE(id));
+};
+
+// =============================
+// TICKET LOGS APIs
+// =============================
+export const getAllTicketLogs = () => {
+  return apiClient.get(API_ENDPOINT.TICKET_LOGS.GET_ALL);
+};
+
+export const createTicketLog = (logData) => {
+  return apiClient.post(API_ENDPOINT.TICKET_LOGS.CREATE, logData);
+};
+
+export const getTicketLogById = (id) => {
+  return apiClient.get(API_ENDPOINT.TICKET_LOGS.GET_BY_ID(id));
+};
+
+export const updateTicketLog = (id, logData) => {
+  return apiClient.put(API_ENDPOINT.TICKET_LOGS.UPDATE(id), logData);
+};
+
+export const deleteTicketLog = (id) => {
+  return apiClient.delete(API_ENDPOINT.TICKET_LOGS.DELETE(id));
+};
+
+export const getTicketLogsByTicket = (ticketId) => {
+  return apiClient.get(API_ENDPOINT.TICKET_LOGS.GET_BY_TICKET(ticketId));
+};
+
+// =============================
 // USERS APIs
 // =============================
 export const getAllUsers = () => {

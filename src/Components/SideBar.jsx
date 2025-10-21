@@ -76,7 +76,7 @@ function SideBar() {
         <div className="flex flex-col h-full w-full">
           {/* Logo */}
           <div className="flex items-center justify-center h-16 flex-shrink-0 bg-slate-700">
-            <h1 className="text-lg lg:text-xl font-bold text-white">CRM System</h1>
+            <h1 className="text-lg lg:text-xl font-bold text-white">ERP System</h1>
           </div>
 
           {/* Navigation */}

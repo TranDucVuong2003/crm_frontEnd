@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { CKEditor } from '@ckeditor/ckeditor5-react';
 import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
+import { getAllUsers, getAllCustomers, getAllTicketCategories, createTicket } from '../../Service/ApiService';
 import {
   PlusIcon,
   MagnifyingGlassIcon as SearchIcon,
@@ -20,6 +21,7 @@ import {
   StarIcon
 } from '@heroicons/react/24/outline';
 import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
+import { showSuccess, showError } from '../../utils/sweetAlert';
 
 const TicketForm = ({ ticket, onSubmit }) => {
   const [formData, setFormData] = useState({
@@ -42,46 +44,105 @@ const TicketForm = ({ ticket, onSubmit }) => {
   const customerDropdownRef = useRef(null);
   const customerInputRef = useRef(null);
 
-  const customers = [
-    { id: 1, name: 'Nguyen Van A', email: 'nguyenvana@email.com', phone: '0901234567', company: 'ABC Corp' },
-    { id: 2, name: 'Tran Thi B', email: 'tranthib@email.com', phone: '0987654321', company: 'XYZ Ltd' },
-    { id: 3, name: 'Le Van C', email: 'levanc@email.com', phone: '0912345678', company: 'DEF Inc' },
-    { id: 4, name: 'Pham Thi D', email: 'phamthid@email.com', phone: '0923456789', company: 'GHI Co' },
-    { id: 5, name: 'Hoang Van E', email: 'hoangvane@email.com', phone: '0934567890', company: 'JKL Ltd' },
-    { id: 6, name: 'Nguyen Thi F', email: 'nguyenthif@email.com', phone: '0945678901', company: 'MNO Corp' },
-    { id: 7, name: 'Tran Van G', email: 'tranvang@email.com', phone: '0956789012', company: 'PQR Inc' },
-    { id: 8, name: 'Le Thi H', email: 'lethih@email.com', phone: '0967890123', company: 'STU Co' },
-    { id: 9, name: 'Pham Van I', email: 'phamvani@email.com', phone: '0978901234', company: 'VWX Ltd' },
-    { id: 10, name: 'Hoang Thi J', email: 'hoangthij@email.com', phone: '0989012345', company: 'YZ Corp' }
-  ];
+  // Data states
+  const [customers, setCustomers] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [ticketCategories, setTicketCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const consultants = [
-    { id: 1, name: 'John Smith', role: 'Senior Consultant' },
-    { id: 2, name: 'Jane Doe', role: 'Technical Consultant' },
-    { id: 3, name: 'Mike Johnson', role: 'Support Consultant' }
-  ];
-
-  const helpdeskAgents = [
-    { id: 1, name: 'Trần Thị B', email: 'tranthib@company.com' },
-    { id: 2, name: 'Phạm Văn D', email: 'phamvand@company.com' },
-    { id: 3, name: 'Vũ Văn F', email: 'vuvanf@company.com' }
-  ];
-
-  const categories = [
-    { value: 'technical', label: 'Technical Issue' },
-    { value: 'bug', label: 'Bug Report' },
-    { value: 'feature_request', label: 'Feature Request' },
-    { value: 'account', label: 'Account Issue' },
-    { value: 'billing', label: 'Billing Issue' },
-    { value: 'general', label: 'General Inquiry' }
-  ];
+  // User/Assignee search states  
+  const [userSearchTerm, setUserSearchTerm] = useState('');
+  const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(ticket?.assignedTo || null);
+  const userDropdownRef = useRef(null);
+  const userInputRef = useRef(null);
 
   const priorities = [
-    { value: 'low', label: 'Low', color: 'text-green-600' },
-    { value: 'medium', label: 'Medium', color: 'text-yellow-600' },
-    { value: 'high', label: 'High', color: 'text-orange-600' },
-    { value: 'critical', label: 'Critical', color: 'text-red-600' }
+    { value: 'low', label: 'Thấp', color: 'text-green-600' },
+    { value: 'medium', label: 'Trung bình', color: 'text-yellow-600' },
+    { value: 'high', label: 'Cao', color: 'text-orange-600' },
+    { value: 'critical', label: 'Nghiêm trọng', color: 'text-red-600' }
   ];
+
+  // Helper function to generate avatar from name
+  const generateAvatar = (name) => {
+    if (!name) return 'U';
+    const nameParts = name.trim().split(' ');
+    if (nameParts.length >= 2) {
+      return (nameParts[0][0] + nameParts[nameParts.length - 1][0]).toUpperCase();
+    }
+    return name.substring(0, 2).toUpperCase();
+  };
+
+  // Fetch data from APIs
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        
+        // Fetch all data in parallel
+        const [usersResponse, customersResponse, categoriesResponse] = await Promise.all([
+          getAllUsers(),
+          getAllCustomers(),
+          getAllTicketCategories()
+        ]);
+
+        // Process users data and add avatar
+        const usersData = Array.isArray(usersResponse.data?.data) ? usersResponse.data.data.map(user => ({
+          ...user,
+          avatar: generateAvatar(user.name || user.username || user.fullName)
+        })) : Array.isArray(usersResponse.data) ? usersResponse.data.map(user => ({
+          ...user,
+          avatar: generateAvatar(user.name || user.username || user.fullName)
+        })) : [];
+
+        // Handle different API response structures
+        const customersData = Array.isArray(customersResponse.data?.data) 
+          ? customersResponse.data.data 
+          : Array.isArray(customersResponse.data) 
+          ? customersResponse.data 
+          : [];
+
+        const categoriesData = Array.isArray(categoriesResponse.data?.data) 
+          ? categoriesResponse.data.data 
+          : Array.isArray(categoriesResponse.data) 
+          ? categoriesResponse.data 
+          : [];
+
+        setUsers(usersData);
+        setCustomers(customersData);
+        setTicketCategories(categoriesData);
+        
+        console.log('Fetched data:', {
+          users: usersData,
+          customers: customersData,
+          categories: categoriesData
+        });
+        
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        // Fallback to static data if API fails
+        setUsers([
+          { id: 1, name: 'Trần Thị B', email: 'tranthib@company.com', role: 'Support Agent', avatar: 'TB' },
+          { id: 2, name: 'Phạm Văn D', email: 'phamvand@company.com', role: 'Senior Agent', avatar: 'PD' },
+          { id: 3, name: 'Vũ Văn F', email: 'vuvanf@company.com', role: 'Technical Lead', avatar: 'VF' }
+        ]);
+        setCustomers([
+          { id: 1, name: 'Nguyen Van A', email: 'nguyenvana@email.com', phone: '0901234567', company: 'ABC Corp' }
+        ]);
+        setTicketCategories([
+          { id: 1, name: 'Thanh toán' },
+          { id: 2, name: 'Tài khoản' },
+          { id: 4, name: 'Nâng cấp hệ thống' },
+          { id: 5, name: 'Báo cáo lỗi' }
+        ]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -107,17 +168,81 @@ const TicketForm = ({ ticket, onSubmit }) => {
     }));
   };
 
-  const handleAssignedToChange = (e) => {
-    const selectedAgent = helpdeskAgents.find(a => a.id === parseInt(e.target.value));
-    setFormData(prev => ({
-      ...prev,
-      assignedTo: selectedAgent || { id: '', name: '', email: '' }
-    }));
-  };
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    onSubmit(formData);
+    
+    // Validate required fields
+    if (!formData.title.trim()) {
+      showError('Vui lòng nhập tiêu đề ticket');
+      return;
+    }
+    
+    if (!formData.customer.id) {
+      showError('Vui lòng chọn khách hàng');
+      return;
+    }
+    
+    if (!formData.description.trim()) {
+      showError('Vui lòng nhập mô tả');
+      return;
+    }
+
+    if (!formData.category) {
+      showError('Vui lòng chọn danh mục');
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      // Prepare data for backend according to the API format
+      const ticketData = {
+        title: formData.title.trim(),
+        description: formData.description.trim(),
+        customerId: parseInt(formData.customer.id),
+        priority: formData.priority || "medium",
+        status: "Open", // String status as required
+        categoryId: parseInt(formData.category),
+        urgencyLevel: formData.stars,
+        userId: selectedUser?.id ? parseInt(selectedUser.id) : null,
+        createdById: selectedUser?.id ? parseInt(selectedUser.id) : 1, // Fallback to user 1 if no assignee
+        deadline: formData.dueDate ? new Date(formData.dueDate).toISOString() : null
+      };
+
+      console.log('Submitting ticket data:', ticketData);
+
+      // Call the actual API
+      const response = await createTicket(ticketData);
+      
+      console.log('Ticket created successfully:', response.data);
+      
+      // Success notification
+      showSuccess('Tạo phiếu hỗ trợ thành công!', 'Phiếu hỗ trợ đã được tạo và gửi đến hệ thống.');
+      
+      // Call the onSubmit callback if provided (for parent component handling)
+      if (onSubmit) {
+        onSubmit(response.data);
+      }
+
+      // Reset form or redirect as needed
+      // You might want to redirect to ticket list or reset the form here
+      
+    } catch (error) {
+      console.error('Error creating ticket:', error);
+      
+      // More detailed error handling
+      if (error.response?.data?.message) {
+        showError('Lỗi tạo phiếu hỗ trợ', error.response.data.message);
+      } else if (error.response?.status === 400) {
+        showError('Dữ liệu không hợp lệ', 'Vui lòng kiểm tra lại thông tin đã nhập.');
+      } else if (error.response?.status === 401) {
+        showError('Không có quyền', 'Bạn không có quyền thực hiện thao tác này.');
+      } else {
+        showError('Có lỗi xảy ra', 'Vui lòng thử lại sau hoặc liên hệ quản trị viên.');
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleStarClick = (starNumber) => {
@@ -153,18 +278,28 @@ const TicketForm = ({ ticket, onSubmit }) => {
   };
 
   // Filter customers based on search term
-  const filteredCustomers = customers.filter(customer =>
-    customer.name.toLowerCase().includes(customerSearchTerm.toLowerCase()) ||
-    customer.email.toLowerCase().includes(customerSearchTerm.toLowerCase()) ||
-    customer.phone.includes(customerSearchTerm) ||
-    customer.company.toLowerCase().includes(customerSearchTerm.toLowerCase())
-  );
+  const filteredCustomers = Array.isArray(customers) ? customers.filter(customer =>
+    customer.name?.toLowerCase().includes(customerSearchTerm.toLowerCase()) ||
+    customer.email?.toLowerCase().includes(customerSearchTerm.toLowerCase()) ||
+    customer.phone?.includes(customerSearchTerm) ||
+    customer.company?.toLowerCase().includes(customerSearchTerm.toLowerCase())
+  ) : [];
+
+  // Filter users based on search term
+  const filteredUsers = Array.isArray(users) ? users.filter(user =>
+    user.name?.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
+    user.email?.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
+    user.role?.toLowerCase().includes(userSearchTerm.toLowerCase())
+  ) : [];
 
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (customerDropdownRef.current && !customerDropdownRef.current.contains(event.target)) {
         setIsCustomerDropdownOpen(false);
+      }
+      if (userDropdownRef.current && !userDropdownRef.current.contains(event.target)) {
+        setIsUserDropdownOpen(false);
       }
     };
 
@@ -196,12 +331,38 @@ const TicketForm = ({ ticket, onSubmit }) => {
     setIsCustomerDropdownOpen(true);
   };
 
-  // Initialize customer search term when form opens
+  // User selection handlers
+  const handleUserSelect = (user) => {
+    setSelectedUser(user);
+    setFormData(prev => ({
+      ...prev,
+      assignedTo: user
+    }));
+    setUserSearchTerm(user.name);
+    setIsUserDropdownOpen(false);
+  };
+
+  const handleUserInputFocus = () => {
+    setIsUserDropdownOpen(true);
+    if (!userSearchTerm && selectedUser?.name) {
+      setUserSearchTerm('');
+    }
+  };
+
+  const handleUserSearchChange = (e) => {
+    setUserSearchTerm(e.target.value);
+    setIsUserDropdownOpen(true);
+  };
+
+  // Initialize search terms when form opens
   useEffect(() => {
     if (formData.customer.name) {
       setCustomerSearchTerm(formData.customer.name);
     }
-  }, [formData.customer.name]);
+    if (selectedUser?.name) {
+      setUserSearchTerm(selectedUser.name);
+    }
+  }, [formData.customer.name, selectedUser?.name]);
 
   return (
     <>
@@ -217,8 +378,19 @@ const TicketForm = ({ ticket, onSubmit }) => {
             </p>
           </div>
 
+          {/* Loading State */}
+          {loading && (
+            <div className="p-8 text-center">
+              <div className="inline-flex items-center space-x-2">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600"></div>
+                <span className="text-gray-600">Loading form data...</span>
+              </div>
+            </div>
+          )}
+
           {/* Form Content */}
-          <div className="p-6">
+          {!loading && (
+            <div className="p-6">
 
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Ticket Title */}
@@ -250,7 +422,8 @@ const TicketForm = ({ ticket, onSubmit }) => {
                   onChange={handleCustomerSearchChange}
                   onFocus={handleCustomerInputFocus}
                   className="w-full px-4 py-3 pr-20 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
-                  placeholder="Search customers by name, email, or company..."
+                  placeholder={loading ? "Loading customers..." : "Search customers by name, email, or company..."}
+                  disabled={loading}
                   required
                 />
                 <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center space-x-1">
@@ -297,10 +470,9 @@ const TicketForm = ({ ticket, onSubmit }) => {
               </div>
             </div>
 
-            {/* Consultant Selection */}
             {/* Priority Selection */}
-            {/* <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
                 Priority *
               </label>
               <div className="relative">
@@ -308,9 +480,11 @@ const TicketForm = ({ ticket, onSubmit }) => {
                   name="priority"
                   value={formData.priority}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 appearance-none bg-white"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 appearance-none bg-white transition-colors"
                   required
+                  disabled={loading}
                 >
+                  <option value="">Select priority</option>
                   {priorities.map(priority => (
                     <option key={priority.value} value={priority.value}>
                       {priority.label}
@@ -319,7 +493,7 @@ const TicketForm = ({ ticket, onSubmit }) => {
                 </select>
                 <ChevronDownIcon className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
               </div>
-            </div> */}
+            </div>
 
             {/* Stars Rating */}
             <div className="bg-gray-50 p-4 rounded-lg border">
@@ -351,10 +525,12 @@ const TicketForm = ({ ticket, onSubmit }) => {
                   onChange={handleInputChange}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 appearance-none bg-white transition-colors"
                   required
+                  disabled={loading}
                 >
-                  {categories.map(category => (
-                    <option key={category.value} value={category.value}>
-                      {category.label}
+                  <option value="">Select a category</option>
+                  {Array.isArray(ticketCategories) && ticketCategories.map(category => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
                     </option>
                   ))}
                 </select>
@@ -367,22 +543,107 @@ const TicketForm = ({ ticket, onSubmit }) => {
               <label className="block text-sm font-semibold text-gray-700 mb-2">
                 Assigned To
               </label>
-              <div className="relative">
-                <select
-                  value={formData.assignedTo.id}
-                  onChange={handleAssignedToChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 appearance-none bg-white transition-colors"
-                >
-                  <option value="">Select an agent to assign</option>
-                  {helpdeskAgents.map(agent => (
-                    <option key={agent.id} value={agent.id}>
-                      {agent.name} - {agent.email}
-                </option>
-              ))}
-            </select>
-            <ChevronDownIcon className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
-          </div>
-        </div>
+              <div className="relative" ref={userDropdownRef}>
+                <div className="relative">
+                  <UserIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                  <input
+                    ref={userInputRef}
+                    type="text"
+                    value={userSearchTerm}
+                    onChange={handleUserSearchChange}
+                    onFocus={handleUserInputFocus}
+                    className="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                    placeholder={loading ? "Loading users..." : "Search and select user to assign..."}
+                    disabled={loading}
+                  />
+                  <ChevronDownIcon 
+                    className={`absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 transition-transform ${
+                      isUserDropdownOpen ? 'rotate-180' : ''
+                    }`} 
+                  />
+                </div>
+
+                {/* User Dropdown */}
+                {isUserDropdownOpen && (
+                  <div className="absolute z-20 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                    {filteredUsers.length > 0 ? (
+                      <div className="py-1">
+                        {filteredUsers.map((user) => (
+                          <div
+                            key={user.id}
+                            onClick={() => handleUserSelect(user)}
+                            className={`px-4 py-3 cursor-pointer hover:bg-indigo-50 border-b border-gray-100 last:border-b-0 transition-colors ${
+                              selectedUser?.id === user.id ? 'bg-indigo-50 border-l-4 border-l-indigo-500' : ''
+                            }`}
+                          >
+                            <div className="flex items-center space-x-3">
+                              <div className="flex-shrink-0">
+                                <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center">
+                                  <span className="text-sm font-medium text-indigo-600">{user.avatar}</span>
+                                </div>
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center space-x-2">
+                                  <h4 className="text-sm font-medium text-gray-900 truncate">
+                                    {user.name}
+                                  </h4>
+                                  {selectedUser?.id === user.id && (
+                                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                                      Selected
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="flex items-center space-x-4 mt-1">
+                                  <span className="text-sm text-gray-600 truncate">{user.email}</span>
+                                  <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">{user.role}</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="px-4 py-8 text-center">
+                        <UserIcon className="mx-auto h-12 w-12 text-gray-400" />
+                        <h3 className="mt-2 text-sm font-medium text-gray-900">No users found</h3>
+                        <p className="mt-1 text-sm text-gray-500">Try adjusting your search criteria</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Selected User Display */}
+                {selectedUser && !isUserDropdownOpen && (
+                  <div className="mt-2 p-3 bg-indigo-50 border border-indigo-200 rounded-lg">
+                    <div className="flex items-center space-x-3">
+                      <div className="flex-shrink-0">
+                        <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center">
+                          <span className="text-xs font-medium text-indigo-600">{selectedUser.avatar}</span>
+                        </div>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900">{selectedUser.name}</p>
+                        <p className="text-xs text-gray-600">{selectedUser.role} • {selectedUser.email}</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedUser(null);
+                          setUserSearchTerm('');
+                          setFormData(prev => ({
+                            ...prev,
+                            assignedTo: { id: '', name: '', email: '' }
+                          }));
+                        }}
+                        className="text-gray-400 hover:text-gray-600"
+                      >
+                        <XMarkIcon className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
 
             {/* Description with CKEditor */}
             <div>
@@ -461,13 +722,26 @@ const TicketForm = ({ ticket, onSubmit }) => {
             <div className="flex space-x-3 pt-6 border-t border-gray-200 mt-6">
               <button
                 type="submit"
-                className="w-full bg-indigo-600 text-white py-3 px-6 rounded-md hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition duration-200 font-medium shadow-lg"
+                disabled={loading}
+                className={`w-full py-3 px-6 rounded-md focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition duration-200 font-medium shadow-lg ${
+                  loading 
+                    ? 'bg-gray-400 cursor-not-allowed' 
+                    : 'bg-indigo-600 text-white hover:bg-indigo-700'
+                }`}
               >
-                {ticket ? 'Update Ticket' : 'Create Ticket'}
+                {loading ? (
+                  <div className="flex items-center justify-center space-x-2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    <span>Creating...</span>
+                  </div>
+                ) : (
+                  ticket ? 'Update Ticket' : 'Create Ticket'
+                )}
               </button>
             </div>
           </form>
           </div>
+          )}
         </div>
       </div>
 
@@ -510,7 +784,7 @@ const CustomerSearchPopup = ({ isOpen, onClose, customers, onSelectCustomer, sel
     return matchesSearch && matchesCompany && matchesPhone && matchesEmail;
   });
 
-  const companies = [...new Set(customers.map(c => c.company))].sort();
+  const companies = Array.isArray(customers) ? [...new Set(customers.map(c => c.company).filter(Boolean))].sort() : [];
 
   if (!isOpen) return null;
 
@@ -556,7 +830,7 @@ const CustomerSearchPopup = ({ isOpen, onClose, customers, onSelectCustomer, sel
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                 >
                   <option value="">All Companies</option>
-                  {companies.map(company => (
+                  {Array.isArray(companies) && companies.map(company => (
                     <option key={company} value={company}>{company}</option>
                   ))}
                 </select>
