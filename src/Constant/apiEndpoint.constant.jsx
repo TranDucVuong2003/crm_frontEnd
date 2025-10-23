@@ -6,6 +6,11 @@ const API_ENDPOINT = {
     // Auth endpoints
     AUTH: {
         LOGIN: '/api/Auth/login',
+        REFRESH_TOKEN: '/api/Auth/refresh-token',
+        LOGOUT: '/api/Auth/logout',
+        GET_SESSIONS: '/api/Auth/sessions',
+        REVOKE_SESSION: (id) => `/api/Auth/revoke-session/${id}`,
+        REVOKE_ALL_SESSIONS: '/api/Auth/revoke-all-sessions',
     },
     
     // Addons endpoints

@@ -4,6 +4,65 @@ import { EyeIcon, EyeSlashIcon, LockClosedIcon, UserIcon } from '@heroicons/reac
 import { login as apiLogin } from '../Service/ApiService';
 import { useAuth } from '../Context/AuthContext';
 
+// Utility function to get device information
+const getDeviceInfo = () => {
+  const ua = navigator.userAgent;
+  let browserName = 'Unknown Browser';
+  let browserVersion = 'Unknown';
+  let osName = 'Unknown OS';
+
+  // Detect Browser
+  if (ua.includes('Chrome') && !ua.includes('Edg')) {
+    browserName = 'Chrome';
+    const match = ua.match(/Chrome\/(\d+)/);
+    browserVersion = match ? match[1] : 'Unknown';
+  } else if (ua.includes('Firefox')) {
+    browserName = 'Firefox';
+    const match = ua.match(/Firefox\/(\d+)/);
+    browserVersion = match ? match[1] : 'Unknown';
+  } else if (ua.includes('Safari') && !ua.includes('Chrome')) {
+    browserName = 'Safari';
+    const match = ua.match(/Version\/(\d+)/);
+    browserVersion = match ? match[1] : 'Unknown';
+  } else if (ua.includes('Edg')) {
+    browserName = 'Edge';
+    const match = ua.match(/Edg\/(\d+)/);
+    browserVersion = match ? match[1] : 'Unknown';
+  } else if (ua.includes('MSIE') || ua.includes('Trident')) {
+    browserName = 'Internet Explorer';
+  }
+
+  // Detect OS
+  if (ua.includes('Windows NT 10.0')) {
+    // Windows 11 và Windows 10 đều có NT 10.0
+    // Phát hiện Windows 11 qua User Agent Client Hints API hoặc platform version
+    const isWindows11 = navigator.userAgentData?.platform === 'Windows' && 
+                        navigator.userAgentData?.platformVersion?.startsWith('13');
+    osName = isWindows11 ? 'Windows 11' : 'Windows 10/11';
+  } else if (ua.includes('Windows NT 11.0')) {
+    osName = 'Windows 11';
+  } else if (ua.includes('Windows NT 6.3')) {
+    osName = 'Windows 8.1';
+  } else if (ua.includes('Windows NT 6.2')) {
+    osName = 'Windows 8';
+  } else if (ua.includes('Windows NT 6.1')) {
+    osName = 'Windows 7';
+  } else if (ua.includes('Mac OS X')) {
+    const match = ua.match(/Mac OS X (\d+[._]\d+)/);
+    osName = match ? `macOS ${match[1].replace('_', '.')}` : 'macOS';
+  } else if (ua.includes('Linux')) {
+    osName = 'Linux';
+  } else if (ua.includes('Android')) {
+    const match = ua.match(/Android (\d+)/);
+    osName = match ? `Android ${match[1]}` : 'Android';
+  } else if (ua.includes('iOS') || ua.includes('iPhone') || ua.includes('iPad')) {
+    const match = ua.match(/OS (\d+)/);
+    osName = match ? `iOS ${match[1]}` : 'iOS';
+  }
+
+  return `${browserName} ${browserVersion} on ${osName}`;
+};
+
 function Login() {
   const [formData, setFormData] = useState({
     email: '',
@@ -63,26 +122,27 @@ function Login() {
     }
 
     try {
-      // Call real login API
+      // Get device information
+      const deviceInfo = getDeviceInfo();
+      
+      // Call real login API with device info
       const response = await apiLogin({
         email: formData.email,
-        password: formData.password
+        password: formData.password,
+        deviceInfo: deviceInfo
       });
 
       console.log('Login API response:', response);
+      console.log('Device Info sent:', deviceInfo);
 
       // Check if login successful
       if (response.data) {
-        // Handle different response structures
-        const token = response.data.token;
-        const user = response.data.user;
-        
-        console.log('Token:', token);
-        console.log('User:', user);
-        
-        if (token) {
-          // Use AuthContext login method
-          login(token, user || { email: formData.email });
+        // Handle new response structure from backend
+        const { accessToken, user, expiresAt, message } = response.data;
+
+        if (accessToken && user) {
+          // Use AuthContext login method with new token structure
+          login(accessToken, user);
           
           // Redirect to intended page or dashboard
           const from = location.state?.from?.pathname || '/';

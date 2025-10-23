@@ -13,6 +13,7 @@ import {
   ArrowRightOnRectangleIcon
 } from '@heroicons/react/24/outline';
 import { useAuth } from '../Context/AuthContext';
+import { showLoading, closeLoading, showSuccessAlert, showErrorAlert } from '../utils/sweetAlert';
 
 const menuItems = [
   { name: 'Dashboard', path: '/', icon: 'HomeIcon' },
@@ -21,7 +22,7 @@ const menuItems = [
   { name: 'Task', path: '/tasks', icon: 'CalendarIcon' },
   { name: 'Service', path: '/service', icon: 'CogIcon' },
   { name: 'Addons', path: '/addons', icon: 'CogIcon' },
-  { name: 'Suppoet', path: '/support', icon: 'LifebuoyIcon' },
+  { name: 'Support', path: '/sessions', icon: 'LifebuoyIcon' },
   { name: 'Report', path: '/reports', icon: 'DocumentChartBarIcon' },
   { name: 'User management', path: '/usermanagement', icon: 'CogIcon' },
   { name: "HelpDesk", path: "/helpdesk", icon: "LifebuoyIcon" },
@@ -39,12 +40,32 @@ const iconMap = {
 
 function SideBar() {
   const [isOpen, setIsOpen] = useState(false);
-    const { user, logout } = useAuth();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const { logout } = useAuth();
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
+  const handleLogout = async () => {
+    if (isLoggingOut) return; // Prevent multiple clicks
+    
+    try {
+      setIsLoggingOut(true);
+      showLoading('Đang đăng xuất...', 'Vui lòng đợi');
+      
+      await logout();
+      
+      closeLoading();
+      showSuccessAlert('Đăng xuất thành công!', 'Hẹn gặp lại');
+      
+      // Navigate after a short delay to show success message
+      setTimeout(() => {
+        navigate('/login', { replace: true });
+      }, 500);
+    } catch (error) {
+      console.error('Logout error:', error);
+      closeLoading();
+      showErrorAlert('Lỗi đăng xuất', 'Có lỗi xảy ra khi đăng xuất. Vui lòng thử lại.');
+      setIsLoggingOut(false);
+    }
   };
 
   return (
@@ -109,10 +130,27 @@ function SideBar() {
             <div className="px-4 pb-4">
               <button
                 onClick={handleLogout}
-                className="w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors duration-150 text-gray-300 hover:bg-red-600 hover:text-white"
+                disabled={isLoggingOut}
+                className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors duration-150 ${
+                  isLoggingOut
+                    ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                    : 'text-gray-300 hover:bg-red-600 hover:text-white'
+                }`}
               >
-                <ArrowRightOnRectangleIcon className="mr-3 h-5 w-5 flex-shrink-0" />
-                <span className="truncate">Log-out</span>
+                {isLoggingOut ? (
+                  <>
+                    <svg className="animate-spin mr-3 h-5 w-5 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span className="truncate">Đang xuất...</span>
+                  </>
+                ) : (
+                  <>
+                    <ArrowRightOnRectangleIcon className="mr-3 h-5 w-5 flex-shrink-0" />
+                    <span className="truncate">Đăng xuất</span>
+                  </>
+                )}
               </button>
             </div>
 

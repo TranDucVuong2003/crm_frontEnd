@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { updateTicketStatus, getTicketLogsByTicket, createTicketLog } from '../../Service/ApiService';
+import { useAuth } from '../../Context/AuthContext';
 import Swal from 'sweetalert2';
 import {
   XMarkIcon,
@@ -19,17 +19,16 @@ import {
 } from '@heroicons/react/24/outline';
 import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
 
-const TicketDetailModal = ({ isOpen, onClose, ticket, onStatusChange, onEdit, onRefresh }) => {
-  const navigate = useNavigate();
+const TicketDetailModal = ({ isOpen, onClose, ticket, onStatusChange, onRefresh }) => {
+  // Lấy thông tin user đang đăng nhập từ AuthContext
+  const { user } = useAuth();
+  
   const [newComment, setNewComment] = useState('');
   const [comments, setComments] = useState(ticket?.comments || []);
   const [selectedStatus, setSelectedStatus] = useState(null);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
-  const [ticketLogs, setTicketLogs] = useState([]);
   const [isLoadingLogs, setIsLoadingLogs] = useState(false);
   const [isCreatingComment, setIsCreatingComment] = useState(false);
-
-  if (!isOpen || !ticket) return null;
 
   // Helper function để sanitize và render HTML content
   const renderHTMLContent = (htmlString) => {
@@ -139,17 +138,17 @@ const TicketDetailModal = ({ isOpen, onClose, ticket, onStatusChange, onEdit, on
     return configs[statusLower] || configs.hello;
   };
 
-  const getCategoryLabel = (category) => {
-    const labels = {
-      technical: 'Kỹ thuật',
-      bug: 'Lỗi',
-      feature_request: 'Yêu cầu tính năng',
-      account: 'Tài khoản',
-      billing: 'Thanh toán',
-      general: 'Tổng quát'
-    };
-    return labels[category] || category;
-  };
+  // const getCategoryLabel = (category) => {
+  //   const labels = {
+  //     technical: 'Kỹ thuật',
+  //     bug: 'Lỗi',
+  //     feature_request: 'Yêu cầu tính năng',
+  //     account: 'Tài khoản',
+  //     billing: 'Thanh toán',
+  //     general: 'Tổng quát'
+  //   };
+  //   return labels[category] || category;
+  // };
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleString('vi-VN', {
@@ -166,6 +165,7 @@ const TicketDetailModal = ({ isOpen, onClose, ticket, onStatusChange, onEdit, on
     if (isOpen && ticket?.id) {
       loadTicketLogs();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, ticket?.id]);
 
   const loadTicketLogs = async () => {
@@ -189,10 +189,8 @@ const TicketDetailModal = ({ isOpen, onClose, ticket, onStatusChange, onEdit, on
         .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
       
       setComments(allComments);
-      setTicketLogs(response.data || []);
     } catch (error) {
       console.error('Error loading ticket logs:', error);
-      setTicketLogs([]);
     } finally {
       setIsLoadingLogs(false);
     }
@@ -207,11 +205,12 @@ const TicketDetailModal = ({ isOpen, onClose, ticket, onStatusChange, onEdit, on
       // Tạo comment mới với API createTicketLog
       const logData = {
         ticketId: ticket.id,
-        userId: 6, // TODO: Lấy từ current user context
+        userId: user?.id ? parseInt(user.id) : null, // Lấy ID từ user đang đăng nhập
         content: newComment.trim()
       };
 
       console.log('Creating ticket log:', logData);
+      console.log('Current user info:', { id: user?.id, name: user?.name, position: user?.position });
       const response = await createTicketLog(logData);
       console.log('Ticket log created:', response.data);
 
@@ -322,6 +321,9 @@ const TicketDetailModal = ({ isOpen, onClose, ticket, onStatusChange, onEdit, on
     };
     return labels[stars] || 'Bình thường';
   };
+
+  // Early return nếu modal không mở hoặc không có ticket
+  if (!isOpen || !ticket) return null;
 
   const priorityConfig = getPriorityConfig(ticket.priority);
   const statusConfig = getStatusConfig(ticket.status);

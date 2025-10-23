@@ -25,6 +25,7 @@ const apiClient = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true, // Enable sending cookies with requests (for refresh token in HttpOnly cookie)
 });
 
 // Add token to request headers
@@ -39,22 +40,96 @@ apiClient.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Handle 401 Unauthorized
+// Token refresh state
+let isRefreshing = false;
+let failedQueue = [];
+
+const processQueue = (error, token = null) => {
+  failedQueue.forEach(prom => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  
+  failedQueue = [];
+};
+
+// Handle 401 Unauthorized with token refresh
 apiClient.interceptors.response.use(
   (response) => {
     console.log('API Response:', response);
     return response;
   },
-  (error) => {
+  async (error) => {
     console.error('API Error:', error);
     
+    const originalRequest = error.config;
+    
     if (error.response?.status === 401) {
-      // Only remove token if this is not a login request
-      if (!error.config?.url?.includes('/login')) {
+      // Don't retry for login, logout, or refresh-token endpoints
+      const excludedUrls = ['/login', '/logout', '/refresh-token'];
+      const isExcluded = excludedUrls.some(url => originalRequest?.url?.includes(url));
+      
+      if (isExcluded) {
+        return Promise.reject(error);
+      }
+
+      // If already retried, logout
+      if (originalRequest._retry) {
+        console.log('Token refresh failed, logging out...');
         removeToken();
-        window.location.reload();
+        window.location.href = '/login';
+        return Promise.reject(error);
+      }
+
+      // If already refreshing, queue this request
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        }).then(token => {
+          originalRequest.headers['Authorization'] = 'Bearer ' + token;
+          return apiClient(originalRequest);
+        }).catch(err => {
+          return Promise.reject(err);
+        });
+      }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      try {
+        console.log('Attempting to refresh token...');
+        const response = await apiClient.post(API_ENDPOINT.AUTH.REFRESH_TOKEN);
+        
+        if (response.data && response.data.accessToken) {
+          const newToken = response.data.accessToken;
+          setToken(newToken);
+          console.log('Token refreshed successfully');
+          
+          // Update authorization header
+          apiClient.defaults.headers.common['Authorization'] = 'Bearer ' + newToken;
+          originalRequest.headers['Authorization'] = 'Bearer ' + newToken;
+          
+          processQueue(null, newToken);
+          isRefreshing = false;
+          
+          // Retry the original request
+          return apiClient(originalRequest);
+        } else {
+          throw new Error('Invalid refresh token response');
+        }
+      } catch (refreshError) {
+        console.error('Token refresh failed:', refreshError);
+        processQueue(refreshError, null);
+        isRefreshing = false;
+        removeToken();
+        window.location.href = '/login';
+        return Promise.reject(refreshError);
       }
     }
+    
     return Promise.reject(error);
   }
 );
@@ -64,6 +139,26 @@ apiClient.interceptors.response.use(
 // =============================
 export const login = (loginData) => {
   return apiClient.post(API_ENDPOINT.AUTH.LOGIN, loginData);
+};
+
+export const refreshToken = () => {
+  return apiClient.post(API_ENDPOINT.AUTH.REFRESH_TOKEN);
+};
+
+export const logout = () => {
+  return apiClient.post(API_ENDPOINT.AUTH.LOGOUT);
+};
+
+export const getSessions = () => {
+  return apiClient.get(API_ENDPOINT.AUTH.GET_SESSIONS);
+};
+
+export const revokeSession = (id) => {
+  return apiClient.post(API_ENDPOINT.AUTH.REVOKE_SESSION(id));
+};
+
+export const revokeAllSessions = () => {
+  return apiClient.post(API_ENDPOINT.AUTH.REVOKE_ALL_SESSIONS);
 };
 
 // =============================

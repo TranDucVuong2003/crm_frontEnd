@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react'
 import { CKEditor } from '@ckeditor/ckeditor5-react';
 import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
 import { getAllUsers, getAllCustomers, getAllTicketCategories, createTicket } from '../../Service/ApiService';
+import { useAuth } from '../../Context/AuthContext';
 import {
   PlusIcon,
   MagnifyingGlassIcon as SearchIcon,
@@ -24,6 +25,9 @@ import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
 import { showSuccess, showError } from '../../utils/sweetAlert';
 
 const TicketForm = ({ ticket, onSubmit }) => {
+  // Lấy thông tin user đang đăng nhập từ AuthContext
+  const { user } = useAuth();
+  
   const [formData, setFormData] = useState({
     title: ticket?.title || '',
     description: ticket?.description || '',
@@ -204,8 +208,8 @@ const TicketForm = ({ ticket, onSubmit }) => {
         status: "Open", // String status as required
         categoryId: parseInt(formData.category),
         urgencyLevel: formData.stars,
-        userId: selectedUser?.id ? parseInt(selectedUser.id) : null,
-        createdById: selectedUser?.id ? parseInt(selectedUser.id) : 1, // Fallback to user 1 if no assignee
+        assignedToId: selectedUser?.id ? parseInt(selectedUser.id) : null, // Người được phân công xử lý ticket
+        createdById: user?.id ? parseInt(user.id) : null, // ID người tạo ticket (người đang đăng nhập)
         deadline: formData.dueDate ? new Date(formData.dueDate).toISOString() : null
       };
 

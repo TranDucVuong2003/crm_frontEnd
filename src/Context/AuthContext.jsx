@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { AuthCookies } from '../utils/cookieUtils';
 import { migrateAuthDataToCookies, isMigrationNeeded } from '../utils/authMigration';
+import { logout as apiLogout, refreshToken as apiRefreshToken } from '../Service/ApiService';
 
 const AuthContext = createContext();
 
@@ -98,8 +99,17 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = () => {
+  const logout = async () => {
     try {
+      // Call logout API to invalidate session on server
+      try {
+        await apiLogout();
+        console.log('Server logout successful');
+      } catch (apiError) {
+        console.error('Error calling logout API:', apiError);
+        // Continue with client-side logout even if API call fails
+      }
+      
       // Clear auth cookies
       AuthCookies.clearAuth();
       
@@ -110,6 +120,28 @@ export const AuthProvider = ({ children }) => {
       console.log('Logout successful, auth cookies cleared');
     } catch (error) {
       console.error('Error during logout:', error);
+      // Force clear even on error
+      AuthCookies.clearAuth();
+      setIsAuthenticated(false);
+      setUser(null);
+    }
+  };
+
+  const refreshAccessToken = async () => {
+    try {
+      const response = await apiRefreshToken();
+      if (response.data && response.data.accessToken) {
+        // Update token in cookies
+        AuthCookies.setToken(response.data.accessToken);
+        console.log('Access token refreshed successfully');
+        return response.data.accessToken;
+      }
+      return null;
+    } catch (error) {
+      console.error('Error refreshing token:', error);
+      // If refresh fails, logout user
+      logout();
+      return null;
     }
   };
 
@@ -119,7 +151,9 @@ export const AuthProvider = ({ children }) => {
     loading,
     login,
     logout,
-    checkAuthStatus
+    useAuth,
+    checkAuthStatus,
+    refreshAccessToken
   };
 
   return (

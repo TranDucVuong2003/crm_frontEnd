@@ -149,6 +149,13 @@ export const warningToast = (message, options = {}) => {
   return showToast('warning', message, options);
 };
 
+// ========== Aliases for consistency ==========
+export const showSuccessAlert = showSuccess;
+export const showErrorAlert = showError;
+export const showWarningAlert = showWarning;
+export const showInfoAlert = showInfo;
+export const showConfirmDialog = showConfirm;
+
 export default {
   showSuccess,
   showError,
@@ -162,6 +169,11 @@ export default {
   successToast,
   errorToast,
   infoToast,
-  warningToast
+  warningToast,
+  showSuccessAlert,
+  showErrorAlert,
+  showWarningAlert,
+  showInfoAlert,
+  showConfirmDialog
 };
 
