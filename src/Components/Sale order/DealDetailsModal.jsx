@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { XMarkIcon, CurrencyDollarIcon, CalendarIcon, UserIcon, BuildingOfficeIcon, PencilIcon, CheckIcon, XMarkIcon as CancelIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, CurrencyDollarIcon, CalendarIcon, UserIcon, BuildingOfficeIcon, PencilIcon, CheckIcon, XMarkIcon as CancelIcon, DocumentArrowDownIcon } from '@heroicons/react/24/outline';
 import { updateSaleOrder } from '../../Service/ApiService';
 import { showSuccess, showError } from '../../utils/sweetAlert';
 
@@ -137,6 +137,7 @@ const DealDetailsModal = ({ isOpen, onClose, deal, customers, services, addons, 
     }));
   };
 
+
   const getStageColor = (stage) => {
     switch (stage) {
       case 'low': return 'bg-blue-100 text-blue-800';
@@ -160,13 +161,22 @@ const DealDetailsModal = ({ isOpen, onClose, deal, customers, services, addons, 
           </h3>
           <div className="flex items-center space-x-2">
             {!isEditing ? (
-              <button
-                onClick={handleEditToggle}
-                className="flex items-center px-3 py-1.5 text-sm font-medium text-indigo-600 bg-indigo-50 border border-indigo-200 rounded-md hover:bg-indigo-100"
-              >
-                <PencilIcon className="h-4 w-4 mr-1" />
-                Chỉnh sửa
-              </button>
+              <>
+                <button
+                  onClick={handleEditToggle}
+                  className="flex items-center px-3 py-1.5 text-sm font-medium text-indigo-600 bg-indigo-50 border border-indigo-200 rounded-md hover:bg-indigo-100"
+                >
+                  <PencilIcon className="h-4 w-4 mr-1" />
+                  Chỉnh sửa
+                </button>
+                <button
+                  onClick={() => {/* TODO: Handle export contract */}}
+                  className="flex items-center px-3 py-1.5 text-sm font-medium text-green-600 bg-green-50 border border-green-200 rounded-md hover:bg-green-100"
+                >
+                  <DocumentArrowDownIcon className="h-4 w-4 mr-1" />
+                  Tạo hợp đồng
+                </button>
+              </>
             ) : (
               <div className="flex space-x-2">
                 <button

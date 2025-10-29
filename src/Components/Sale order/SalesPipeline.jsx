@@ -8,7 +8,7 @@ import {
   MagnifyingGlassIcon,
   XMarkIcon
 } from '@heroicons/react/24/outline';
-import DealModal from './DealModal';
+import DealModal from './DealCreateModal';
 import DealDetailsModal from './DealDetailsModal';
 import { getAllSaleOrders, deleteSaleOrder, getAllCustomers, getAllServices, getAllAddons } from '../../Service/ApiService';
 import { showSuccess, showError, showConfirm } from '../../utils/sweetAlert';

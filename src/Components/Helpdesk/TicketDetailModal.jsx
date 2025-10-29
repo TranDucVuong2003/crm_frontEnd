@@ -12,8 +12,6 @@ import {
   CheckCircleIcon,
   XCircleIcon,
   ChatBubbleLeftRightIcon,
-  PaperClipIcon,
-  PencilIcon,
   ArrowPathIcon,
   StarIcon
 } from '@heroicons/react/24/outline';
@@ -138,18 +136,6 @@ const TicketDetailModal = ({ isOpen, onClose, ticket, onStatusChange, onRefresh 
     return configs[statusLower] || configs.hello;
   };
 
-  // const getCategoryLabel = (category) => {
-  //   const labels = {
-  //     technical: 'Kỹ thuật',
-  //     bug: 'Lỗi',
-  //     feature_request: 'Yêu cầu tính năng',
-  //     account: 'Tài khoản',
-  //     billing: 'Thanh toán',
-  //     general: 'Tổng quát'
-  //   };
-  //   return labels[category] || category;
-  // };
-
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleString('vi-VN', {
       year: 'numeric',
@@ -172,7 +158,6 @@ const TicketDetailModal = ({ isOpen, onClose, ticket, onStatusChange, onRefresh 
     try {
       setIsLoadingLogs(true);
       const response = await getTicketLogsByTicket(ticket.id);
-      console.log('Ticket logs response:', response.data);
       
       // Chuyển ticket logs thành comments
       const logsAsComments = (response.data || []).map(log => ({
@@ -209,10 +194,7 @@ const TicketDetailModal = ({ isOpen, onClose, ticket, onStatusChange, onRefresh 
         content: newComment.trim()
       };
 
-      console.log('Creating ticket log:', logData);
-      console.log('Current user info:', { id: user?.id, name: user?.name, position: user?.position });
-      const response = await createTicketLog(logData);
-      console.log('Ticket log created:', response.data);
+      await createTicketLog(logData);
 
       // Reset form
       setNewComment('');
@@ -251,7 +233,6 @@ const TicketDetailModal = ({ isOpen, onClose, ticket, onStatusChange, onRefresh 
       const statusData = {
         status: selectedStatus
       };
-      console.log('kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk', statusData);
       await updateTicketStatus(ticket.id, statusData);
       
       // Show success message
@@ -341,24 +322,12 @@ const TicketDetailModal = ({ isOpen, onClose, ticket, onStatusChange, onRefresh 
               {ticket.title}
             </p>
           </div>
-          <div className="flex items-center space-x-2">
-            {/* <button
-              onClick={() => {
-                onClose();
-                navigate(`/helpdesk/${ticket.id}`);
-              }}
-              className="text-indigo-600 hover:text-indigo-800 p-2 hover:bg-indigo-50 rounded-lg transition-colors"
-              title="Chỉnh sửa"
-            >
-              <PencilIcon className="h-5 w-5" />
-            </button> */}
-            <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <XMarkIcon className="h-6 w-6" />
-            </button>
-          </div>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            <XMarkIcon className="h-6 w-6" />
+          </button>
         </div>
 
         <div className="p-6">

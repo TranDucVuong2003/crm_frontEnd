@@ -1,29 +1,30 @@
-import React from 'react'
-import MainLayout from '../Layout/MainLayout';
-import Dashboard from '../Components/Dashboard';
-import CustomerManagement from '../Components/Customers/CustomerManagement';
-import { createBrowserRouter, Outlet } from 'react-router-dom';
-import AuthLayout from '../Layout/AuthLayout';
-import { RouterProvider } from 'react-router';
-import Login from '../Components/Login';
-import SalesPipeline from '../Components/Sale order/SalesPipeline';
-import Tasks from '../Components/Tasks';
-import Service from '../Components/Service';
-import Addons from '../Components/Addons/Addons';
-import Report from '../Components/Report';
-import Usermanagement from '../Components/Usermanagement';
-import Support from '../Components/Support';
-import Helpdesk from '../Components/Helpdesk/Helpdesk';
-import TicketForm from '../Components/Helpdesk/TicketForm';
-import TicketEditPage from '../Components/Helpdesk/TicketEditPage';
-import TicketCreatePage from '../Components/Helpdesk/TicketCreatePage';
-import SessionManagement from '../Components/SessionManagement';
-import ProtectedRoute from './ProtectedRoute';
-import PublicRoute from './PublicRoute';
+import React from "react";
+import MainLayout from "../Layout/MainLayout";
+import Dashboard from "../Components/Dashboard";
+import CustomerManagement from "../Components/Customers/CustomerManagement";
+import { createBrowserRouter, Outlet } from "react-router-dom";
+import AuthLayout from "../Layout/AuthLayout";
+import { RouterProvider } from "react-router";
+import Login from "../Components/Login";
+import SalesPipeline from "../Components/Sale order/SalesPipeline";
+import Contract from "../Components/Contract/Contract";
+import Tasks from "../Components/Tasks";
+import Service from "../Components/Service";
+import Addons from "../Components/Addons/Addons";
+import Report from "../Components/Report";
+import Usermanagement from "../Components/Usermanagement";
+import Support from "../Components/Support";
+import Helpdesk from "../Components/Helpdesk/Helpdesk";
+import TicketForm from "../Components/Helpdesk/TicketForm";
+import TicketEditPage from "../Components/Helpdesk/TicketEditPage";
+import TicketCreatePage from "../Components/Helpdesk/TicketCreatePage";
+import SessionManagement from "../Components/SessionManagement";
+import ProtectedRoute from "./ProtectedRoute";
+import PublicRoute from "./PublicRoute";
+import Test_contact from "../Components/test_contact";
 
 function AppRouter() {
-
-    const router = createBrowserRouter([
+  const router = createBrowserRouter([
     {
       path: "/",
       element: (
@@ -39,12 +40,20 @@ function AppRouter() {
           element: <Dashboard />,
         },
         {
+          path: "test-contact",
+          element: <Test_contact />,
+        },
+        {
           path: "customers",
           element: <CustomerManagement />,
         },
         {
           path: "sales",
           element: <SalesPipeline />,
+        },
+        {
+          path: "contract",
+          element: <Contract />,
         },
         {
           path: "tasks",
@@ -74,10 +83,10 @@ function AppRouter() {
           path: "helpdesk",
           element: <Outlet />,
           children: [
-            {path: "", element: <Helpdesk />},
-            {path: "create", element: <TicketCreatePage />},
-            {path: ":ticketId", element: <TicketEditPage />}
-          ]
+            { path: "", element: <Helpdesk /> },
+            { path: "create", element: <TicketCreatePage /> },
+            { path: ":ticketId", element: <TicketEditPage /> },
+          ],
         },
         {
           path: "sessions",
@@ -99,8 +108,7 @@ function AppRouter() {
         },
       ],
     },
-    
-   
+
     {
       path: "*",
       element: <p>404 not found</p>,
@@ -110,4 +118,4 @@ function AppRouter() {
   return <RouterProvider router={router} />;
 }
 
-export default AppRouter
+export default AppRouter;
