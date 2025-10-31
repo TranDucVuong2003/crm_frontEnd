@@ -15,6 +15,7 @@ import {
   showErrorAlert,
 } from "../../utils/sweetAlert";
 import ContractCreateModal from "./ContractCreateModal";
+import ContractPreviewModal from "./ContractPreviewModal";
 
 const Contract = () => {
   const [contracts, setContracts] = useState([]);
@@ -22,6 +23,8 @@ const Contract = () => {
   const [filterStatus, setFilterStatus] = useState("all");
   const [isLoading, setIsLoading] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [selectedContractId, setSelectedContractId] = useState(null);
 
   // Fetch contracts from API
   useEffect(() => {
@@ -74,10 +77,25 @@ const Contract = () => {
     }).format(amount);
   };
 
+  const handlePreviewContract = (contractId) => {
+    setSelectedContractId(contractId);
+    setShowPreviewModal(true);
+  };
+
+  const handleClosePreview = () => {
+    setShowPreviewModal(false);
+    setSelectedContractId(null);
+  };
+
   const filteredContracts = contracts.filter((contract) => {
     const matchesSearch =
-      (contract.name?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
-      (contract.customer?.name?.toLowerCase() || "").includes(
+      (contract.saleOrder?.title?.toLowerCase() || "").includes(
+        searchTerm.toLowerCase()
+      ) ||
+      (contract.saleOrder?.customer?.name?.toLowerCase() || "").includes(
+        searchTerm.toLowerCase()
+      ) ||
+      (contract.user?.name?.toLowerCase() || "").includes(
         searchTerm.toLowerCase()
       );
     const matchesFilter =
@@ -217,34 +235,31 @@ const Contract = () => {
                         <DocumentTextIcon className="h-5 w-5 text-gray-400 mr-2 flex-shrink-0" />
                         <div>
                           <div className="text-sm font-medium text-gray-900">
-                            {contract.name}
-                          </div>
-                          <div className="text-xs text-gray-500">
-                            ID: {contract.id}
+                            {contract.saleOrder?.title || "N/A"}
                           </div>
                         </div>
                       </div>
                     </td>
 
                     {/* Customer */}
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-2">
                       <div className="text-sm text-gray-900">
-                        {contract.customer?.name || "N/A"}
+                        {contract.saleOrder?.customer?.name || "N/A"}
                       </div>
                       <div className="text-xs text-gray-500">
-                        {contract.customer?.email || ""}
+                        {contract.saleOrder?.customer?.phoneNumber || ""}
                       </div>
                     </td>
 
                     {/* Service */}
                     <td className="px-6 py-4">
-                      <div className="text-sm text-gray-900">
-                        {contract.service?.name || "N/A"}
-                      </div>
-                      {contract.addon && (
-                        <div className="text-xs text-gray-500">
-                          + {contract.addon.name}
+                      {contract.saleOrder?.services &&
+                      contract.saleOrder.services.length > 0 ? (
+                        <div className="text-sm font-medium text-gray-900">
+                          {contract.saleOrder.services[0].serviceName}
                         </div>
+                      ) : (
+                        <span className="text-sm text-gray-500">N/A</span>
                       )}
                     </td>
 
@@ -252,9 +267,6 @@ const Contract = () => {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">
                         {contract.user?.name || "N/A"}
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        {contract.user?.position || ""}
                       </div>
                     </td>
 
@@ -272,13 +284,8 @@ const Contract = () => {
                     {/* Total Amount */}
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">
-                        {formatCurrency(contract.totalAmount)}
+                        {formatCurrency(contract.totalAmount || 0)}
                       </div>
-                      {contract.tax && (
-                        <div className="text-xs text-gray-500">
-                          Thuế: {contract.tax.rate}%
-                        </div>
-                      )}
                     </td>
 
                     {/* Status */}
@@ -290,8 +297,9 @@ const Contract = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex items-center justify-end gap-2">
                         <button
+                          onClick={() => handlePreviewContract(contract.id)}
                           className="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50 transition-colors"
-                          title="Xem chi tiết"
+                          title="Xem trước hợp đồng"
                         >
                           <EyeIcon className="h-5 w-5" />
                         </button>
@@ -378,6 +386,15 @@ const Contract = () => {
         onClose={() => setShowCreateModal(false)}
         onSuccess={fetchContracts}
       />
+
+      {/* Contract Preview Modal */}
+      {selectedContractId && (
+        <ContractPreviewModal
+          contractId={selectedContractId}
+          isOpen={showPreviewModal}
+          onClose={handleClosePreview}
+        />
+      )}
     </div>
   );
 };

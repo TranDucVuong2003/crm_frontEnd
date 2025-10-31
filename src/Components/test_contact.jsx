@@ -10,7 +10,7 @@ const test_contact = () => {
     setError(null);
     try {
       const response = await fetch(
-        `http://localhost:5056/api/saleorders/${orderId}/preview-contract`,
+        `http://localhost:5056/api/contracts/${orderId}/preview-contract`,
         {
           method: "GET",
           headers: {
@@ -34,7 +34,7 @@ const test_contact = () => {
     setError(null);
     try {
       const response = await fetch(
-        `https://localhost:7210/api/saleorders/${orderId}/export-contract`,
+        `https://localhost:7210/api/contracts/${orderId}/export-contract`,
         {
           method: "GET",
           headers: {

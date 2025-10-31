@@ -1,9 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import { XMarkIcon, PlusIcon, TrashIcon } from '@heroicons/react/24/outline';
-import { getAllAddons } from '../../Service/ApiService';
-import { showError } from '../../utils/sweetAlert';
+import React, { useState, useEffect } from "react";
+import { XMarkIcon, PlusIcon, TrashIcon } from "@heroicons/react/24/outline";
+import { getAllAddons } from "../../Service/ApiService";
+import { showError } from "../../utils/sweetAlert";
 
-const AddonSelectionModal = ({ isOpen, onClose, onSave, initialAddons = [] }) => {
+const AddonSelectionModal = ({
+  isOpen,
+  onClose,
+  onSave,
+  initialAddons = [],
+}) => {
   const [addons, setAddons] = useState([]);
   const [selectedAddons, setSelectedAddons] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -16,15 +21,17 @@ const AddonSelectionModal = ({ isOpen, onClose, onSave, initialAddons = [] }) =>
         setSelectedAddons(initialAddons);
       } else {
         // Start with one empty row
-        setSelectedAddons([{
-          stt: 1,
-          addonId: '',
-          addonName: '',
-          maMau: '',
-          thoiHan: '',
-          price: 0,
-          thanhTien: 0
-        }]);
+        setSelectedAddons([
+          {
+            stt: 1,
+            addonId: "",
+            addonName: "",
+            duration: "",
+            template: "",
+            price: 0,
+            thanhTien: 0,
+          },
+        ]);
       }
     }
   }, [isOpen, initialAddons]);
@@ -33,10 +40,10 @@ const AddonSelectionModal = ({ isOpen, onClose, onSave, initialAddons = [] }) =>
     try {
       setLoading(true);
       const response = await getAllAddons();
-      setAddons(response.data.filter(addon => addon.isActive));
+      setAddons(response.data.filter((addon) => addon.isActive));
     } catch (error) {
-      console.error('Error fetching addons:', error);
-      showError('Lỗi!', 'Không thể tải danh sách addon.');
+      console.error("Error fetching addons:", error);
+      showError("Lỗi!", "Không thể tải danh sách addon.");
     } finally {
       setLoading(false);
     }
@@ -45,12 +52,12 @@ const AddonSelectionModal = ({ isOpen, onClose, onSave, initialAddons = [] }) =>
   const addNewRow = () => {
     const newRow = {
       stt: selectedAddons.length + 1,
-      addonId: '',
-      addonName: '',
-      maMau: '',
-      thoiHan: '',
+      addonId: "",
+      addonName: "",
+      duration: "",
+      template: "",
       price: 0,
-      thanhTien: 0
+      thanhTien: 0,
     };
     setSelectedAddons([...selectedAddons, newRow]);
   };
@@ -61,34 +68,34 @@ const AddonSelectionModal = ({ isOpen, onClose, onSave, initialAddons = [] }) =>
       // Update STT numbers
       const renumberedAddons = updatedAddons.map((addon, i) => ({
         ...addon,
-        stt: i + 1
+        stt: i + 1,
       }));
       setSelectedAddons(renumberedAddons);
     }
   };
 
   const handleAddonChange = (index, addonId) => {
-    const selectedAddon = addons.find(a => a.id === parseInt(addonId));
+    const selectedAddon = addons.find((a) => a.id === parseInt(addonId));
     const updatedAddons = [...selectedAddons];
-    
+
     if (selectedAddon) {
       updatedAddons[index] = {
         ...updatedAddons[index],
         addonId: selectedAddon.id,
         addonName: selectedAddon.name,
         price: selectedAddon.price,
-        thanhTien: selectedAddon.price
+        thanhTien: selectedAddon.price,
       };
     } else {
       updatedAddons[index] = {
         ...updatedAddons[index],
-        addonId: '',
-        addonName: '',
+        addonId: "",
+        addonName: "",
         price: 0,
-        thanhTien: 0
+        thanhTien: 0,
       };
     }
-    
+
     setSelectedAddons(updatedAddons);
   };
 
@@ -96,28 +103,31 @@ const AddonSelectionModal = ({ isOpen, onClose, onSave, initialAddons = [] }) =>
     const updatedAddons = [...selectedAddons];
     updatedAddons[index] = {
       ...updatedAddons[index],
-      [field]: value
+      [field]: value,
     };
     setSelectedAddons(updatedAddons);
   };
 
   const calculateTotal = () => {
-    return selectedAddons.reduce((total, addon) => total + (addon.thanhTien || 0), 0);
+    return selectedAddons.reduce(
+      (total, addon) => total + (addon.thanhTien || 0),
+      0
+    );
   };
 
   const formatPrice = (price) => {
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND'
+    return new Intl.NumberFormat("vi-VN", {
+      style: "currency",
+      currency: "VND",
     }).format(price);
   };
 
   const handleSave = () => {
     // Validate that at least one addon is selected
-    const validAddons = selectedAddons.filter(addon => addon.addonId);
-    
+    const validAddons = selectedAddons.filter((addon) => addon.addonId);
+
     if (validAddons.length === 0) {
-      showError('Lỗi!', 'Vui lòng chọn ít nhất một addon.');
+      showError("Lỗi!", "Vui lòng chọn ít nhất một addon.");
       return;
     }
 
@@ -129,7 +139,10 @@ const AddonSelectionModal = ({ isOpen, onClose, onSave, initialAddons = [] }) =>
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-opacity-50 overflow-y-auto h-full w-full z-50" style={{backgroundColor: 'rgba(0,0,0,0.5)'}}>
+    <div
+      className="fixed inset-0 bg-opacity-50 overflow-y-auto h-full w-full z-50"
+      style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+    >
       <div className="relative top-20 mx-auto p-5 border w-full max-w-6xl shadow-lg rounded-md bg-white">
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-xl font-semibold text-gray-900">Chọn Addon</h3>
@@ -170,10 +183,10 @@ const AddonSelectionModal = ({ isOpen, onClose, onSave, initialAddons = [] }) =>
                       Khoản mục
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-200">
-                      Mã mẫu
+                      Duration (tháng)
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-200">
-                      Thời hạn
+                      Template
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-200">
                       Thành tiền
@@ -192,11 +205,13 @@ const AddonSelectionModal = ({ isOpen, onClose, onSave, initialAddons = [] }) =>
                       <td className="px-4 py-3 whitespace-nowrap border-r border-gray-200">
                         <select
                           value={addon.addonId}
-                          onChange={(e) => handleAddonChange(index, e.target.value)}
+                          onChange={(e) =>
+                            handleAddonChange(index, e.target.value)
+                          }
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
                         >
                           <option value="">Chọn addon</option>
-                          {addons.map(a => (
+                          {addons.map((a) => (
                             <option key={a.id} value={a.id}>
                               {a.name} - {formatPrice(a.price)}
                             </option>
@@ -205,25 +220,30 @@ const AddonSelectionModal = ({ isOpen, onClose, onSave, initialAddons = [] }) =>
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap border-r border-gray-200">
                         <input
-                          type="text"
-                          value={addon.maMau}
-                          onChange={(e) => handleFieldChange(index, 'maMau', e.target.value)}
+                          type="number"
+                          value={addon.duration}
+                          onChange={(e) =>
+                            handleFieldChange(
+                              index,
+                              "duration",
+                              parseInt(e.target.value) || ""
+                            )
+                          }
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
-                          placeholder="Nhập mã mẫu"
+                          placeholder="Nhập số tháng"
+                          min="1"
                         />
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap border-r border-gray-200">
-                        <select
-                          value={addon.thoiHan}
-                          onChange={(e) => handleFieldChange(index, 'thoiHan', e.target.value)}
+                        <input
+                          type="text"
+                          value={addon.template}
+                          onChange={(e) =>
+                            handleFieldChange(index, "template", e.target.value)
+                          }
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
-                        >
-                          <option value="">Chọn thời hạn</option>
-                          <option value="3">3 tháng</option>
-                          <option value="6">6 tháng</option>
-                          <option value="12">12 tháng</option>
-                          <option value="24">24 tháng</option>
-                        </select>
+                          placeholder="Nhập template"
+                        />
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 border-r border-gray-200">
                         <span className="font-medium text-green-600">
@@ -251,14 +271,15 @@ const AddonSelectionModal = ({ isOpen, onClose, onSave, initialAddons = [] }) =>
             <div className="mt-4 flex justify-end">
               <div className="bg-gray-50 px-4 py-3 rounded-lg">
                 <div className="flex items-center space-x-4">
-                  <span className="text-sm font-medium text-gray-700">Tổng tiền:</span>
+                  <span className="text-sm font-medium text-gray-700">
+                    Tổng tiền:
+                  </span>
                   <span className="text-lg font-bold text-green-600">
                     {formatPrice(calculateTotal())}
                   </span>
                 </div>
               </div>
             </div>
-
 
             {/* Buttons */}
             <div className="flex justify-end space-x-3 mt-6 pt-4 border-t border-gray-200">

@@ -1,34 +1,48 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  PlusIcon, 
-  EllipsisVerticalIcon as DotsVerticalIcon, 
+import React, { useState, useEffect } from "react";
+import {
+  PlusIcon,
+  EllipsisVerticalIcon as DotsVerticalIcon,
   CurrencyDollarIcon,
   CalendarIcon,
   UserIcon,
   MagnifyingGlassIcon,
-  XMarkIcon
-} from '@heroicons/react/24/outline';
-import DealModal from './DealCreateModal';
-import DealDetailsModal from './DealDetailsModal';
-import { getAllSaleOrders, deleteSaleOrder, getAllCustomers, getAllServices, getAllAddons } from '../../Service/ApiService';
-import { showSuccess, showError, showConfirm } from '../../utils/sweetAlert';
+  XMarkIcon,
+} from "@heroicons/react/24/outline";
+import DealModal from "./DealCreateModal";
+import DealDetailsModal from "./DealDetailsModal";
+import {
+  getAllSaleOrders,
+  deleteSaleOrder,
+  getAllCustomers,
+  getAllServices,
+  getAllAddons,
+} from "../../Service/ApiService";
+import { showSuccess, showError, showConfirm } from "../../utils/sweetAlert";
 
 const SalesPipeline = () => {
   const [stages] = useState([
-    { id: 'low', name: 'Tỉ lệ thấp (1-35%)', probabilityRange: [1, 35] },
-    { id: 'medium', name: 'Tỉ lệ trung bình (36-70%)', probabilityRange: [36, 70] },
-    { id: 'high', name: 'Tỉ lệ cao (71-99%)', probabilityRange: [71, 99] },
-    { id: 'closed-won', name: 'Thành công (100%)', probabilityRange: [100, 100] },
-    { id: 'closed-lost', name: 'Thất bại (0%)', probabilityRange: [0, 0] }
+    { id: "low", name: "Tỉ lệ thấp (1-35%)", probabilityRange: [1, 35] },
+    {
+      id: "medium",
+      name: "Tỉ lệ trung bình (36-70%)",
+      probabilityRange: [36, 70],
+    },
+    { id: "high", name: "Tỉ lệ cao (71-99%)", probabilityRange: [71, 99] },
+    {
+      id: "closed-won",
+      name: "Thành công (100%)",
+      probabilityRange: [100, 100],
+    },
+    { id: "closed-lost", name: "Thất bại (0%)", probabilityRange: [0, 0] },
   ]);
-  
+
   const [customers, setCustomers] = useState([]);
   const [services, setServices] = useState([]);
   const [addons, setAddons] = useState([]);
 
   const [deals, setDeals] = useState([]);
   const [filteredDeals, setFilteredDeals] = useState([]);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingDeal, setEditingDeal] = useState(null);
@@ -46,7 +60,7 @@ const SalesPipeline = () => {
     if (!searchTerm.trim()) {
       setFilteredDeals(deals);
     } else {
-      const filtered = deals.filter(deal => {
+      const filtered = deals.filter((deal) => {
         const searchLower = searchTerm.toLowerCase();
         return (
           deal.title.toLowerCase().includes(searchLower) ||
@@ -63,49 +77,65 @@ const SalesPipeline = () => {
   const fetchDeals = async () => {
     try {
       setLoading(true);
-      
+
       // Load all data in parallel
-      const [saleOrdersResponse, customersResponse, servicesResponse, addonsResponse] = await Promise.all([
+      const [
+        saleOrdersResponse,
+        customersResponse,
+        servicesResponse,
+        addonsResponse,
+      ] = await Promise.all([
         getAllSaleOrders(),
         getAllCustomers(),
         getAllServices(),
-        getAllAddons()
+        getAllAddons(),
       ]);
-      
+
       const saleOrders = saleOrdersResponse.data || [];
       const customersData = customersResponse.data || [];
       const servicesData = servicesResponse.data || [];
       const addonsData = addonsResponse.data || [];
-      
+
       // Store reference data
       setCustomers(customersData);
       setServices(servicesData);
       setAddons(addonsData);
-      
+
       // Transform API data to match UI requirements
-      const transformedDeals = saleOrders.map(order => ({
+      const transformedDeals = saleOrders.map((order) => ({
         id: order.id,
         title: order.title,
         customerId: order.customerId,
-        customer: getCustomerName(order.customerId, customersData),
+        customer: order.customer
+          ? order.customer.name || "Unknown"
+          : getCustomerName(order.customerId, customersData),
         value: order.value,
         probability: order.probability,
+        taxId: order.taxId,
+        tax: order.tax,
         notes: order.notes,
-        serviceId: order.serviceId,
-        addonId: order.addonId,
+        saleOrderServices: order.saleOrderServices || [],
+        saleOrderAddons: order.saleOrderAddons || [],
         createdAt: order.createdAt,
         updatedAt: order.updatedAt,
         // Auto assign stage based on probability
         stage: getStageByProbability(order.probability),
-        expectedCloseDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 days from now
-        priority: order.value > 100000000 ? 'high' : order.value > 50000000 ? 'medium' : 'low'
+        expectedCloseDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+          .toISOString()
+          .split("T")[0], // 30 days from now
+        priority:
+          order.value > 100000000
+            ? "high"
+            : order.value > 50000000
+            ? "medium"
+            : "low",
       }));
-      
+
       setDeals(transformedDeals);
       setFilteredDeals(transformedDeals);
     } catch (error) {
-      console.error('Error fetching sale orders:', error);
-      showError('Lỗi!', 'Không thể tải danh sách sale orders.');
+      console.error("Error fetching sale orders:", error);
+      showError("Lỗi!", "Không thể tải danh sách sale orders.");
       // Fallback to empty array
       setDeals([]);
       setFilteredDeals([]);
@@ -116,27 +146,27 @@ const SalesPipeline = () => {
 
   // Helper function to get customer name by ID
   const getCustomerName = (customerId, customersData) => {
-    const customer = customersData.find(c => c.id === customerId);
-    if (!customer) return 'Unknown Customer';
-    
-    if (customer.customerType === 'individual') {
-      return customer.name || 'Individual Customer';
+    const customer = customersData.find((c) => c.id === customerId);
+    if (!customer) return "Unknown Customer";
+
+    if (customer.customerType === "individual") {
+      return customer.name || "Individual Customer";
     } else {
-      return customer.companyName || customer.name || 'Company Customer';
+      return customer.companyName || customer.name || "Company Customer";
     }
   };
 
   // Helper function to determine stage based on probability
   const getStageByProbability = (probability) => {
-    if (probability === 100) return 'closed-won';
-    if (probability === 0) return 'closed-lost';
-    if (probability >= 71) return 'high';
-    if (probability >= 36) return 'medium';
-    return 'low';
+    if (probability === 100) return "closed-won";
+    if (probability === 0) return "closed-lost";
+    if (probability >= 71) return "high";
+    if (probability >= 36) return "medium";
+    return "low";
   };
 
   const getDealsByStage = (stageId) => {
-    return filteredDeals.filter(deal => deal.stage === stageId);
+    return filteredDeals.filter((deal) => deal.stage === stageId);
   };
 
   const handleSearchChange = (e) => {
@@ -144,18 +174,18 @@ const SalesPipeline = () => {
   };
 
   const clearSearch = () => {
-    setSearchTerm('');
+    setSearchTerm("");
   };
 
   const getSearchStats = () => {
     return {
       total: deals.length,
       filtered: filteredDeals.length,
-      hidden: deals.length - filteredDeals.length
+      hidden: deals.length - filteredDeals.length,
     };
   };
 
-  const handleAddDeal = (stageId = 'low') => {
+  const handleAddDeal = (stageId = "low") => {
     setSelectedStage(stageId);
     setEditingDeal(null);
     setIsModalOpen(true);
@@ -164,21 +194,21 @@ const SalesPipeline = () => {
   const handleSaveDeal = async (dealData) => {
     try {
       setLoading(true);
-      
+
       if (editingDeal) {
         // Update existing deal - this will be handled by DealModal internally
         // Just refresh the deals list
         await fetchDeals();
-        showSuccess('Thành công!', 'Đã cập nhật sale order.');
+        showSuccess("Thành công!", "Đã cập nhật sale order.");
       } else {
         // Add new deal - this will be handled by DealModal internally
         // Just refresh the deals list
         await fetchDeals();
-        showSuccess('Thành công!', 'Đã thêm sale order mới.');
+        showSuccess("Thành công!", "Đã thêm sale order mới.");
       }
     } catch (error) {
-      console.error('Error saving deal:', error);
-      showError('Lỗi!', 'Không thể lưu sale order.');
+      console.error("Error saving deal:", error);
+      showError("Lỗi!", "Không thể lưu sale order.");
     } finally {
       setLoading(false);
     }
@@ -187,21 +217,21 @@ const SalesPipeline = () => {
   const handleDeleteDeal = async (dealId) => {
     try {
       const confirmed = await showConfirm(
-        'Xác nhận xóa',
-        'Bạn có chắc chắn muốn xóa sale order này?',
-        'Xóa',
-        'Hủy'
+        "Xác nhận xóa",
+        "Bạn có chắc chắn muốn xóa sale order này?",
+        "Xóa",
+        "Hủy"
       );
-      
+
       if (confirmed) {
         setLoading(true);
         await deleteSaleOrder(dealId);
         await fetchDeals(); // Refresh list
-        showSuccess('Thành công!', 'Đã xóa sale order.');
+        showSuccess("Thành công!", "Đã xóa sale order.");
       }
     } catch (error) {
-      console.error('Error deleting deal:', error);
-      showError('Lỗi!', 'Không thể xóa sale order.');
+      console.error("Error deleting deal:", error);
+      showError("Lỗi!", "Không thể xóa sale order.");
     } finally {
       setLoading(false);
     }
@@ -217,11 +247,11 @@ const SalesPipeline = () => {
   };
 
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND',
+    return new Intl.NumberFormat("vi-VN", {
+      style: "currency",
+      currency: "VND",
       minimumFractionDigits: 0,
-      maximumFractionDigits: 0
+      maximumFractionDigits: 0,
     }).format(amount);
   };
 
@@ -232,11 +262,13 @@ const SalesPipeline = () => {
         <div className="sm:flex sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Sales Pipeline</h1>
-            <p className="mt-2 text-sm text-gray-700">Quản lý cơ hội bán hàng và theo dõi tiến trình</p>
+            <p className="mt-2 text-sm text-gray-700">
+              Quản lý cơ hội bán hàng và theo dõi tiến trình
+            </p>
           </div>
           <div className="mt-4 sm:mt-0">
             <button
-              onClick={() => handleAddDeal('low')}
+              onClick={() => handleAddDeal("low")}
               className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700"
             >
               <PlusIcon className="h-4 w-4 mr-2" />
@@ -244,7 +276,7 @@ const SalesPipeline = () => {
             </button>
           </div>
         </div>
-        
+
         {/* Search Bar */}
         <div className="mt-4 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
           <div className="relative flex-1 max-w-md">
@@ -269,11 +301,15 @@ const SalesPipeline = () => {
               </div>
             )}
           </div>
-          
+
           {/* Search Stats */}
           {searchTerm && (
             <div className="text-sm text-gray-600">
-              Hiển thị <span className="font-medium text-indigo-600">{getSearchStats().filtered}</span> / {getSearchStats().total} deals
+              Hiển thị{" "}
+              <span className="font-medium text-indigo-600">
+                {getSearchStats().filtered}
+              </span>{" "}
+              / {getSearchStats().total} deals
               {getSearchStats().hidden > 0 && (
                 <span className="ml-2 text-gray-500">
                   ({getSearchStats().hidden} deal đã ẩn)
@@ -282,13 +318,15 @@ const SalesPipeline = () => {
             </div>
           )}
         </div>
-        
+
         {/* Summary Stats */}
         <div className="mt-6 grid grid-cols-1 sm:grid-cols-5 gap-4">
           <div className="bg-white p-4 rounded-lg shadow">
-            <div className="text-2xl font-bold text-gray-900">{filteredDeals.length}</div>
+            <div className="text-2xl font-bold text-gray-900">
+              {filteredDeals.length}
+            </div>
             <div className="text-sm text-gray-600">
-              {searchTerm ? 'Deals hiển thị' : 'Tổng số deals'}
+              {searchTerm ? "Deals hiển thị" : "Tổng số deals"}
             </div>
             {searchTerm && deals.length !== filteredDeals.length && (
               <div className="text-xs text-gray-500 mt-1">
@@ -297,24 +335,35 @@ const SalesPipeline = () => {
             )}
           </div>
           <div className="bg-white p-4 rounded-lg shadow">
-            <div className="text-xl font-bold text-green-600">{formatCurrency(getTotalValue())}</div>
+            <div className="text-xl font-bold text-green-600">
+              {formatCurrency(getTotalValue())}
+            </div>
             <div className="text-sm text-gray-600">
-              {searchTerm ? 'Giá trị hiển thị' : 'Tổng giá trị'}
+              {searchTerm ? "Giá trị hiển thị" : "Tổng giá trị"}
             </div>
           </div>
           <div className="bg-white p-4 rounded-lg shadow">
-            <div className="text-2xl font-bold text-blue-600">{getDealsByStage('closed-won').length}</div>
+            <div className="text-2xl font-bold text-blue-600">
+              {getDealsByStage("closed-won").length}
+            </div>
             <div className="text-sm text-gray-600">Deals thành công</div>
           </div>
           <div className="bg-white p-4 rounded-lg shadow">
             <div className="text-2xl font-bold text-orange-600">
-              {filteredDeals.length > 0 ? Math.round((getDealsByStage('closed-won').length / filteredDeals.length) * 100) : 0}%
+              {filteredDeals.length > 0
+                ? Math.round(
+                    (getDealsByStage("closed-won").length /
+                      filteredDeals.length) *
+                      100
+                  )
+                : 0}
+              %
             </div>
             <div className="text-sm text-gray-600">Tỷ lệ chốt deal</div>
           </div>
           <div className="bg-white p-4 rounded-lg shadow">
             <div className="text-2xl font-bold text-purple-600">
-              {filteredDeals.filter(d => d.serviceId || d.addonId).length}
+              {filteredDeals.filter((d) => d.serviceId || d.addonId).length}
             </div>
             <div className="text-sm text-gray-600">Có dịch vụ/addon</div>
           </div>
@@ -347,7 +396,7 @@ const SalesPipeline = () => {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <div className="flex space-x-4" style={{ minWidth: '100%' }}>
+              <div className="flex space-x-4" style={{ minWidth: "100%" }}>
                 {stages.map((stage) => (
                   <PipelineColumn
                     key={stage.id}
@@ -392,35 +441,60 @@ const SalesPipeline = () => {
   );
 };
 
-const PipelineColumn = ({ stage, deals, onAddDeal, onDeleteDeal, onEditDeal, onViewDeal, searchTerm }) => {
+const PipelineColumn = ({
+  stage,
+  deals,
+  onAddDeal,
+  onDeleteDeal,
+  onEditDeal,
+  onViewDeal,
+  searchTerm,
+}) => {
   const getColumnColor = (stageId) => {
     switch (stageId) {
-      case 'low': return 'border-blue-200 bg-blue-50';
-      case 'medium': return 'border-yellow-200 bg-yellow-50';
-      case 'high': return 'border-purple-200 bg-purple-50';
-      case 'closed-won': return 'border-green-200 bg-green-50';
-      case 'closed-lost': return 'border-red-200 bg-red-50';
-      default: return 'border-gray-200 bg-gray-50';
+      case "low":
+        return "border-blue-200 bg-blue-50";
+      case "medium":
+        return "border-yellow-200 bg-yellow-50";
+      case "high":
+        return "border-purple-200 bg-purple-50";
+      case "closed-won":
+        return "border-green-200 bg-green-50";
+      case "closed-lost":
+        return "border-red-200 bg-red-50";
+      default:
+        return "border-gray-200 bg-gray-50";
     }
   };
 
   const totalValue = deals.reduce((sum, deal) => sum + deal.value, 0);
-  
+
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND',
+    return new Intl.NumberFormat("vi-VN", {
+      style: "currency",
+      currency: "VND",
       minimumFractionDigits: 0,
-      maximumFractionDigits: 0
+      maximumFractionDigits: 0,
     }).format(amount);
   };
 
   return (
-    <div className={`flex-none w-1/5 min-w-0 border rounded-lg ${getColumnColor(stage.id)} flex flex-col`} style={{ minWidth: 'calc(20% - 16px)', height: 'fit-content', minHeight: '400px' }} >
+    <div
+      className={`flex-none w-1/5 min-w-0 border rounded-lg ${getColumnColor(
+        stage.id
+      )} flex flex-col`}
+      style={{
+        minWidth: "calc(20% - 16px)",
+        height: "fit-content",
+        minHeight: "400px",
+      }}
+    >
       {/* Column Header */}
       <div className="p-3 border-b border-gray-200 flex-shrink-0">
         <div className="flex justify-between items-center mb-2">
-          <h3 className="font-medium text-gray-900 text-sm truncate flex-1">{stage.name}</h3>
+          <h3 className="font-medium text-gray-900 text-sm truncate flex-1">
+            {stage.name}
+          </h3>
           <span className="bg-white px-2 py-1 rounded-full text-xs font-medium text-gray-600 ml-2 flex-shrink-0">
             {deals.length}
           </span>
@@ -445,9 +519,9 @@ const PipelineColumn = ({ stage, deals, onAddDeal, onDeleteDeal, onEditDeal, onV
       {/* Deals List */}
       <div className="p-2 space-y-2 flex-grow">
         {deals.map((deal) => (
-          <DealCard 
-            key={deal.id} 
-            deal={deal} 
+          <DealCard
+            key={deal.id}
+            deal={deal}
             onEdit={() => onEditDeal(deal)}
             onDelete={() => onDeleteDeal(deal.id)}
             onView={() => onViewDeal(deal)}
@@ -469,10 +543,10 @@ const DealCard = ({ deal, onEdit, onDelete, onView, searchTerm }) => {
 
   const highlightText = (text, searchTerm) => {
     if (!searchTerm || !text) return text;
-    
-    const regex = new RegExp(`(${searchTerm})`, 'gi');
+
+    const regex = new RegExp(`(${searchTerm})`, "gi");
     const parts = text.toString().split(regex);
-    
+
     return parts.map((part, index) =>
       regex.test(part) ? (
         <span key={index} className="bg-yellow-200 font-semibold">
@@ -485,20 +559,20 @@ const DealCard = ({ deal, onEdit, onDelete, onView, searchTerm }) => {
   };
 
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND'
+    return new Intl.NumberFormat("vi-VN", {
+      style: "currency",
+      currency: "VND",
     }).format(amount);
   };
 
   const formatDate = (dateString) => {
-    if (!dateString) return '';
+    if (!dateString) return "";
     try {
       const date = new Date(dateString);
-      return date.toLocaleDateString('vi-VN', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric'
+      return date.toLocaleDateString("vi-VN", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
       });
     } catch (error) {
       return dateString;
@@ -507,15 +581,19 @@ const DealCard = ({ deal, onEdit, onDelete, onView, searchTerm }) => {
 
   const getPriorityColor = (priority) => {
     switch (priority) {
-      case 'high': return 'bg-red-100 text-red-800';
-      case 'medium': return 'bg-yellow-100 text-yellow-800';
-      case 'low': return 'bg-green-100 text-green-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case "high":
+        return "bg-red-100 text-red-800";
+      case "medium":
+        return "bg-yellow-100 text-yellow-800";
+      case "low":
+        return "bg-green-100 text-green-800";
+      default:
+        return "bg-gray-100 text-gray-800";
     }
   };
 
   return (
-    <div 
+    <div
       className="bg-white p-2.5 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow cursor-pointer"
       onClick={onView}
     >
@@ -524,13 +602,13 @@ const DealCard = ({ deal, onEdit, onDelete, onView, searchTerm }) => {
           {highlightText(deal.title, searchTerm)}
         </h4>
         <div className="relative flex-shrink-0">
-          <button 
+          <button
             onClick={() => setShowDropdown(!showDropdown)}
             className="text-gray-400 hover:text-gray-600"
           >
             <DotsVerticalIcon className="h-3 w-3" />
           </button>
-          
+
           {showDropdown && (
             <div className="absolute right-0 top-4 w-32 bg-white rounded-md shadow-lg border border-gray-200 z-10">
               <div className="py-1">
@@ -559,7 +637,7 @@ const DealCard = ({ deal, onEdit, onDelete, onView, searchTerm }) => {
           )}
         </div>
       </div>
-      
+
       <div className="space-y-1">
         <div className="flex items-center text-xs text-gray-600">
           <CurrencyDollarIcon className="h-3 w-3 mr-1 flex-shrink-0" />
@@ -567,27 +645,37 @@ const DealCard = ({ deal, onEdit, onDelete, onView, searchTerm }) => {
             {highlightText(formatCurrency(deal.value), searchTerm)}
           </span>
         </div>
-        
+
         <div className="flex items-center text-xs text-gray-600">
           <UserIcon className="h-3 w-3 mr-1 flex-shrink-0" />
-          <span className="truncate">{highlightText(deal.customer, searchTerm)}</span>
+          <span className="truncate">
+            {highlightText(deal.customer, searchTerm)}
+          </span>
         </div>
-        
+
         <div className="flex items-center text-xs text-gray-600">
           <CalendarIcon className="h-3 w-3 mr-1 flex-shrink-0" />
           <span className="truncate">{formatDate(deal.expectedCloseDate)}</span>
         </div>
-        
+
         {/* Show service/addon info if available */}
         {(deal.serviceId || deal.addonId) && (
           <div className="text-xs text-blue-600 truncate">
-            {deal.serviceId && '📋 Có dịch vụ'} {deal.addonId && '🔧 Có addon'}
+            {deal.serviceId && "📋 Có dịch vụ"} {deal.addonId && "🔧 Có addon"}
           </div>
         )}
-        
+
         <div className="flex justify-between items-center mt-1.5">
-          <span className={`inline-flex px-1.5 py-0.5 text-xs font-medium rounded-full ${getPriorityColor(deal.priority)}`}>
-            {deal.priority === 'high' ? 'Cao' : deal.priority === 'medium' ? 'TB' : 'Thấp'}
+          <span
+            className={`inline-flex px-1.5 py-0.5 text-xs font-medium rounded-full ${getPriorityColor(
+              deal.priority
+            )}`}
+          >
+            {deal.priority === "high"
+              ? "Cao"
+              : deal.priority === "medium"
+              ? "TB"
+              : "Thấp"}
           </span>
           <div className="text-xs text-gray-500">
             {deal.probability}% cơ hội

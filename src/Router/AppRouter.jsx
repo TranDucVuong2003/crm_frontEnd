@@ -18,6 +18,7 @@ import Helpdesk from "../Components/Helpdesk/Helpdesk";
 import TicketForm from "../Components/Helpdesk/TicketForm";
 import TicketEditPage from "../Components/Helpdesk/TicketEditPage";
 import TicketCreatePage from "../Components/Helpdesk/TicketCreatePage";
+import TicketCategory from "../Components/TicketCategory/TicketCategory";
 import SessionManagement from "../Components/SessionManagement";
 import ProtectedRoute from "./ProtectedRoute";
 import PublicRoute from "./PublicRoute";
@@ -87,6 +88,10 @@ function AppRouter() {
             { path: "create", element: <TicketCreatePage /> },
             { path: ":ticketId", element: <TicketEditPage /> },
           ],
+        },
+        {
+          path: "ticket-categories",
+          element: <TicketCategory />,
         },
         {
           path: "sessions",

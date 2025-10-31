@@ -38,7 +38,14 @@ const menuItems = [
   { name: "Support", path: "/sessions", icon: "LifebuoyIcon" },
   { name: "Report", path: "/reports", icon: "DocumentChartBarIcon" },
   { name: "User management", path: "/usermanagement", icon: "CogIcon" },
-  { name: "HelpDesk", path: "/helpdesk", icon: "LifebuoyIcon" },
+  {
+    name: "HelpDesk",
+    icon: "LifebuoyIcon",
+    children: [
+      { name: "Tickets", path: "/helpdesk" },
+      { name: "Categories", path: "/ticket-categories" },
+    ],
+  },
 ];
 
 const iconMap = {
