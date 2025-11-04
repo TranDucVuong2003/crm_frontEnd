@@ -13,6 +13,11 @@ const API_ENDPOINT = {
     REVOKE_ALL_SESSIONS: "/api/Auth/revoke-all-sessions",
   },
 
+  // Menu endpoints
+  MENU: {
+    GET_SIDEBAR: "/api/Menu/sidebar",
+  },
+
   // Addons endpoints
   ADDONS: {
     GET_ALL: "/api/Addons",
@@ -78,6 +83,7 @@ const API_ENDPOINT = {
   // Tickets endpoints
   TICKETS: {
     GET_ALL: "/api/Tickets",
+    GET_MY_TICKETS: "/api/Tickets/my-tickets",
     CREATE: "/api/Tickets",
     GET_BY_ID: (id) => `/api/Tickets/${id}`,
     UPDATE: (id) => `/api/Tickets/${id}`,
@@ -104,7 +110,8 @@ const API_ENDPOINT = {
     GET_BY_ID: (id) => `/api/TicketLogs/${id}`,
     UPDATE: (id) => `/api/TicketLogs/${id}`,
     DELETE: (id) => `/api/TicketLogs/${id}`,
-    GET_BY_TICKET: (ticketId) => `/api/TicketLogs/by-ticket/${ticketId}`,
+    GET_BY_TICKET: (ticketId) => `/api/TicketLogs?ticketId=${ticketId}`,
+    DOWNLOAD_ATTACHMENT: (id) => `/api/TicketLogs/attachments/${id}/download`,
   },
 
   // Users endpoints

@@ -167,6 +167,13 @@ export const revokeAllSessions = () => {
 };
 
 // =============================
+// MENU APIs
+// =============================
+export const getSidebarMenu = () => {
+  return apiClient.get(API_ENDPOINT.MENU.GET_SIDEBAR);
+};
+
+// =============================
 // CUSTOMERS APIs
 // =============================
 export const getAllCustomers = () => {
@@ -355,6 +362,10 @@ export const getAllTickets = () => {
   return apiClient.get(API_ENDPOINT.TICKETS.GET_ALL);
 };
 
+export const getMyTickets = () => {
+  return apiClient.get(API_ENDPOINT.TICKETS.GET_MY_TICKETS);
+};
+
 export const createTicket = (ticketData) => {
   return apiClient.post(API_ENDPOINT.TICKETS.CREATE, ticketData);
 };
@@ -421,7 +432,16 @@ export const getAllTicketLogs = () => {
 };
 
 export const createTicketLog = (logData) => {
-  return apiClient.post(API_ENDPOINT.TICKET_LOGS.CREATE, logData);
+  // Check if logData is FormData (has files)
+  const isFormData = logData instanceof FormData;
+
+  return apiClient.post(API_ENDPOINT.TICKET_LOGS.CREATE, logData, {
+    headers: isFormData
+      ? {
+          "Content-Type": "multipart/form-data",
+        }
+      : undefined,
+  });
 };
 
 export const getTicketLogById = (id) => {
@@ -438,6 +458,15 @@ export const deleteTicketLog = (id) => {
 
 export const getTicketLogsByTicket = (ticketId) => {
   return apiClient.get(API_ENDPOINT.TICKET_LOGS.GET_BY_TICKET(ticketId));
+};
+
+export const downloadTicketLogAttachment = (attachmentId) => {
+  return apiClient.get(
+    API_ENDPOINT.TICKET_LOGS.DOWNLOAD_ATTACHMENT(attachmentId),
+    {
+      responseType: "blob",
+    }
+  );
 };
 
 // =============================
