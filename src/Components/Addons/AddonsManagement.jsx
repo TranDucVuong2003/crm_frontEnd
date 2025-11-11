@@ -1,31 +1,40 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  MagnifyingGlassIcon as SearchIcon, 
-  FunnelIcon as FilterIcon, 
-  PlusIcon, 
-  PencilIcon, 
+import React, { useState, useEffect } from "react";
+import {
+  MagnifyingGlassIcon as SearchIcon,
+  FunnelIcon as FilterIcon,
+  PlusIcon,
+  PencilIcon,
   TrashIcon,
   EyeIcon,
-  CubeIcon
-} from '@heroicons/react/24/outline';
-import AddonRow from './AddonRow';
-import AddonModal from './AddonModal';
-import AddonDetailModal from './AddonDetailModal';
-import { showDeleteConfirm, showSuccess, showError } from '../../utils/sweetAlert';
-import { getAllAddons, deleteAddon } from '../../Service/ApiService';
+  CubeIcon,
+} from "@heroicons/react/24/outline";
+import AddonRow from "./AddonRow";
+import AddonModal from "./AddonModal";
+import AddonDetailModal from "./AddonDetailModal";
+import {
+  showDeleteConfirm,
+  showSuccess,
+  showError,
+} from "../../utils/sweetAlert";
+import {
+  getAllAddons,
+  deleteAddon,
+  getAllCategoryServiceAddons,
+} from "../../Service/ApiService";
 
 const AddonsManagement = () => {
   const [addons, setAddons] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [typeFilter, setTypeFilter] = useState('all');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [typeFilter, setTypeFilter] = useState("all");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingAddon, setEditingAddon] = useState(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [viewingAddon, setViewingAddon] = useState(null);
-  
+
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
@@ -33,6 +42,7 @@ const AddonsManagement = () => {
   // Mock data for development (replace with API calls later)
   useEffect(() => {
     fetchAddons();
+    fetchCategories();
   }, []);
 
   const fetchAddons = async () => {
@@ -42,36 +52,58 @@ const AddonsManagement = () => {
       const response = await getAllAddons();
       setAddons(response.data);
     } catch (err) {
-      setError('Không thể tải danh sách addon');
-      showError('Lỗi tải dữ liệu', 'Không thể tải danh sách addon. Vui lòng thử lại.');
-      console.error('Error fetching addons:', err);
+      setError("Không thể tải danh sách addon");
+      showError(
+        "Lỗi tải dữ liệu",
+        "Không thể tải danh sách addon. Vui lòng thử lại."
+      );
+      console.error("Error fetching addons:", err);
     } finally {
       setLoading(false);
     }
   };
 
+  const fetchCategories = async () => {
+    try {
+      const response = await getAllCategoryServiceAddons();
+      const categoryList = Array.isArray(response.data)
+        ? response.data
+        : response.data?.data || [];
+      setCategories(categoryList.map((cat) => cat.name));
+    } catch (err) {
+      console.error("Error fetching categories:", err);
+      // Don't show error to user, just use empty categories
+      setCategories([]);
+    }
+  };
+
   // Filter and search addons
-  const filteredAddons = addons.filter(addon => {
-    const matchesSearch = addon.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         addon.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         addon.type?.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesStatus = statusFilter === 'all' || 
-                         (statusFilter === 'active' && addon.isActive) ||
-                         (statusFilter === 'inactive' && !addon.isActive);
-    
-    const matchesType = typeFilter === 'all' || addon.type === typeFilter;
-    
+  const filteredAddons = addons.filter((addon) => {
+    const matchesSearch =
+      addon.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      addon.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      addon.type?.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesStatus =
+      statusFilter === "all" ||
+      (statusFilter === "active" && addon.isActive) ||
+      (statusFilter === "inactive" && !addon.isActive);
+
+    const matchesType = typeFilter === "all" || addon.type === typeFilter;
+
     return matchesSearch && matchesStatus && matchesType;
   });
 
   // Pagination
   const totalPages = Math.ceil(filteredAddons.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedAddons = filteredAddons.slice(startIndex, startIndex + itemsPerPage);
+  const paginatedAddons = filteredAddons.slice(
+    startIndex,
+    startIndex + itemsPerPage
+  );
 
   // Get unique types
-  const types = [...new Set(addons.map(addon => addon.type).filter(Boolean))];
+  const types = [...new Set(addons.map((addon) => addon.type).filter(Boolean))];
 
   // Handle CRUD operations
   const handleCreate = () => {
@@ -86,21 +118,21 @@ const AddonsManagement = () => {
 
   const handleDelete = async (addonId) => {
     const result = await showDeleteConfirm(
-      'Xóa addon',
-      'Bạn có chắc chắn muốn xóa addon này không?'
+      "Xóa addon",
+      "Bạn có chắc chắn muốn xóa addon này không?"
     );
 
     if (result.isConfirmed) {
       try {
         await deleteAddon(addonId);
-        setAddons(prev => prev.filter(addon => addon.id !== addonId));
-        showSuccess('Đã xóa!', 'Addon đã được xóa thành công.');
+        setAddons((prev) => prev.filter((addon) => addon.id !== addonId));
+        showSuccess("Đã xóa!", "Addon đã được xóa thành công.");
       } catch (error) {
-        console.error('Error deleting addon:', error);
+        console.error("Error deleting addon:", error);
         if (error.response?.data?.message) {
-          showError('Lỗi!', error.response.data.message);
+          showError("Lỗi!", error.response.data.message);
         } else {
-          showError('Lỗi!', 'Không thể xóa addon. Vui lòng thử lại.');
+          showError("Lỗi!", "Không thể xóa addon. Vui lòng thử lại.");
         }
       }
     }
@@ -117,9 +149,9 @@ const AddonsManagement = () => {
   };
 
   const formatPrice = (price) => {
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND'
+    return new Intl.NumberFormat("vi-VN", {
+      style: "currency",
+      currency: "VND",
     }).format(price);
   };
 
@@ -189,8 +221,10 @@ const AddonsManagement = () => {
               onChange={(e) => setTypeFilter(e.target.value)}
             >
               <option value="all">Tất cả loại</option>
-              {types.map(type => (
-                <option key={type} value={type}>{type}</option>
+              {types.map((type) => (
+                <option key={type} value={type}>
+                  {type}
+                </option>
               ))}
             </select>
 
@@ -252,12 +286,16 @@ const AddonsManagement = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="6" className="px-6 py-12 text-center text-sm text-gray-500">
+                  <td
+                    colSpan="6"
+                    className="px-6 py-12 text-center text-sm text-gray-500"
+                  >
                     <CubeIcon className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                    {searchTerm || statusFilter !== 'all' || typeFilter !== 'all'
-                      ? 'Không tìm thấy addon nào phù hợp với bộ lọc.'
-                      : 'Chưa có addon nào. Hãy thêm addon đầu tiên!'
-                    }
+                    {searchTerm ||
+                    statusFilter !== "all" ||
+                    typeFilter !== "all"
+                      ? "Không tìm thấy addon nào phù hợp với bộ lọc."
+                      : "Chưa có addon nào. Hãy thêm addon đầu tiên!"}
                   </td>
                 </tr>
               )}
@@ -277,7 +315,9 @@ const AddonsManagement = () => {
                 Trước
               </button>
               <button
-                onClick={() => setCurrentPage(Math.min(currentPage + 1, totalPages))}
+                onClick={() =>
+                  setCurrentPage(Math.min(currentPage + 1, totalPages))
+                }
                 disabled={currentPage === totalPages}
                 className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
               >
@@ -287,15 +327,14 @@ const AddonsManagement = () => {
             <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
               <div>
                 <p className="text-sm text-gray-700">
-                  Hiển thị{' '}
-                  <span className="font-medium">{startIndex + 1}</span>
-                  {' '}đến{' '}
+                  Hiển thị <span className="font-medium">{startIndex + 1}</span>{" "}
+                  đến{" "}
                   <span className="font-medium">
                     {Math.min(startIndex + itemsPerPage, filteredAddons.length)}
-                  </span>
-                  {' '}trong tổng số{' '}
-                  <span className="font-medium">{filteredAddons.length}</span>
-                  {' '}addon
+                  </span>{" "}
+                  trong tổng số{" "}
+                  <span className="font-medium">{filteredAddons.length}</span>{" "}
+                  addon
                 </p>
               </div>
               <div>
@@ -307,7 +346,7 @@ const AddonsManagement = () => {
                   >
                     Trước
                   </button>
-                  
+
                   {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
                     let pageNumber;
                     if (totalPages <= 7) {
@@ -319,24 +358,26 @@ const AddonsManagement = () => {
                     } else {
                       pageNumber = currentPage - 3 + i;
                     }
-                    
+
                     return (
                       <button
                         key={pageNumber}
                         onClick={() => setCurrentPage(pageNumber)}
                         className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
                           currentPage === pageNumber
-                            ? 'z-10 bg-indigo-50 border-indigo-500 text-indigo-600'
-                            : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                            ? "z-10 bg-indigo-50 border-indigo-500 text-indigo-600"
+                            : "bg-white border-gray-300 text-gray-500 hover:bg-gray-50"
                         }`}
                       >
                         {pageNumber}
                       </button>
                     );
                   })}
-                  
+
                   <button
-                    onClick={() => setCurrentPage(Math.min(currentPage + 1, totalPages))}
+                    onClick={() =>
+                      setCurrentPage(Math.min(currentPage + 1, totalPages))
+                    }
                     disabled={currentPage === totalPages}
                     className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
@@ -355,7 +396,7 @@ const AddonsManagement = () => {
         onClose={() => setIsModalOpen(false)}
         onSave={handleSave}
         addon={editingAddon}
-        types={types}
+        types={[...types, ...categories]}
       />
 
       <AddonDetailModal

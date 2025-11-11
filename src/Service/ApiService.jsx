@@ -516,6 +516,70 @@ export const deleteTax = (id) => {
 };
 
 // =============================
+// CATEGORY SERVICE ADDONS APIs
+// =============================
+export const getAllCategoryServiceAddons = () => {
+  return apiClient.get(API_ENDPOINT.CATEGORY_SERVICE_ADDONS.GET_ALL);
+};
+
+export const createCategoryServiceAddon = (categoryData) => {
+  return apiClient.post(
+    API_ENDPOINT.CATEGORY_SERVICE_ADDONS.CREATE,
+    categoryData
+  );
+};
+
+export const getCategoryServiceAddonById = (id) => {
+  return apiClient.get(API_ENDPOINT.CATEGORY_SERVICE_ADDONS.GET_BY_ID(id));
+};
+
+export const updateCategoryServiceAddon = (id, categoryData) => {
+  return apiClient.put(
+    API_ENDPOINT.CATEGORY_SERVICE_ADDONS.UPDATE(id),
+    categoryData
+  );
+};
+
+export const deleteCategoryServiceAddon = (id) => {
+  return apiClient.delete(API_ENDPOINT.CATEGORY_SERVICE_ADDONS.DELETE(id));
+};
+
+export const getCategoryServices = (id) => {
+  return apiClient.get(API_ENDPOINT.CATEGORY_SERVICE_ADDONS.GET_SERVICES(id));
+};
+
+export const getCategoryAddons = (id) => {
+  return apiClient.get(API_ENDPOINT.CATEGORY_SERVICE_ADDONS.GET_ADDONS(id));
+};
+
+// =============================
+// QUOTES APIs
+// =============================
+export const getAllQuotes = () => {
+  return apiClient.get(API_ENDPOINT.QUOTES.GET_ALL);
+};
+
+export const createQuote = (quoteData) => {
+  return apiClient.post(API_ENDPOINT.QUOTES.CREATE, quoteData);
+};
+
+export const getQuoteById = (id) => {
+  return apiClient.get(API_ENDPOINT.QUOTES.GET_BY_ID(id));
+};
+
+export const updateQuote = (id, quoteData) => {
+  return apiClient.put(API_ENDPOINT.QUOTES.UPDATE(id), quoteData);
+};
+
+export const deleteQuote = (id) => {
+  return apiClient.delete(API_ENDPOINT.QUOTES.DELETE(id));
+};
+
+export const getQuotesByCustomer = (customerId) => {
+  return apiClient.get(API_ENDPOINT.QUOTES.GET_BY_CUSTOMER(customerId));
+};
+
+// =============================
 // TEST APIs
 // =============================
 export const sendTestEmail = (ticketId) => {

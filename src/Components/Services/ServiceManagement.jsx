@@ -1,31 +1,40 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  MagnifyingGlassIcon as SearchIcon, 
-  FunnelIcon as FilterIcon, 
-  PlusIcon, 
-  PencilIcon, 
+import React, { useState, useEffect } from "react";
+import {
+  MagnifyingGlassIcon as SearchIcon,
+  FunnelIcon as FilterIcon,
+  PlusIcon,
+  PencilIcon,
   TrashIcon,
   EyeIcon,
-  CogIcon
-} from '@heroicons/react/24/outline';
-import ServiceRow from './ServiceRow';
-import ServiceModal from './ServiceModal';
-import ServiceDetailModal from './ServiceDetailModal';
-import { showDeleteConfirm, showSuccess, showError } from '../../utils/sweetAlert';
-import { getAllServices, deleteService } from '../../Service/ApiService';
+  CogIcon,
+} from "@heroicons/react/24/outline";
+import ServiceRow from "./ServiceRow";
+import ServiceModal from "./ServiceModal";
+import ServiceDetailModal from "./ServiceDetailModal";
+import {
+  showDeleteConfirm,
+  showSuccess,
+  showError,
+} from "../../utils/sweetAlert";
+import {
+  getAllServices,
+  deleteService,
+  getAllCategoryServiceAddons,
+} from "../../Service/ApiService";
 
 const ServiceManagement = () => {
   const [services, setServices] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [categoryFilter, setCategoryFilter] = useState('all');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [categoryFilter, setCategoryFilter] = useState("all");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingService, setEditingService] = useState(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [viewingService, setViewingService] = useState(null);
-  
+
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
@@ -33,6 +42,7 @@ const ServiceManagement = () => {
   // Mock data for development (replace with API calls later)
   useEffect(() => {
     fetchServices();
+    fetchCategories();
   }, []);
 
   const fetchServices = async () => {
@@ -42,36 +52,56 @@ const ServiceManagement = () => {
       const response = await getAllServices();
       setServices(response.data);
     } catch (err) {
-      setError('Không thể tải danh sách dịch vụ');
-      showError('Lỗi tải dữ liệu', 'Không thể tải danh sách dịch vụ. Vui lòng thử lại.');
-      console.error('Error fetching services:', err);
+      setError("Không thể tải danh sách dịch vụ");
+      showError(
+        "Lỗi tải dữ liệu",
+        "Không thể tải danh sách dịch vụ. Vui lòng thử lại."
+      );
+      console.error("Error fetching services:", err);
     } finally {
       setLoading(false);
     }
   };
 
+  const fetchCategories = async () => {
+    try {
+      const response = await getAllCategoryServiceAddons();
+      const categoryList = Array.isArray(response.data)
+        ? response.data
+        : response.data?.data || [];
+      setCategories(categoryList.map((cat) => cat.name));
+    } catch (err) {
+      console.error("Error fetching categories:", err);
+      // Don't show error to user, just use empty categories
+      setCategories([]);
+    }
+  };
+
   // Filter and search services
-  const filteredServices = services.filter(service => {
-    const matchesSearch = service.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         service.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         service.category?.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesStatus = statusFilter === 'all' || 
-                         (statusFilter === 'active' && service.isActive) ||
-                         (statusFilter === 'inactive' && !service.isActive);
-    
-    const matchesCategory = categoryFilter === 'all' || service.category === categoryFilter;
-    
+  const filteredServices = services.filter((service) => {
+    const matchesSearch =
+      service.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      service.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      service.category?.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesStatus =
+      statusFilter === "all" ||
+      (statusFilter === "active" && service.isActive) ||
+      (statusFilter === "inactive" && !service.isActive);
+
+    const matchesCategory =
+      categoryFilter === "all" || service.category === categoryFilter;
+
     return matchesSearch && matchesStatus && matchesCategory;
   });
 
   // Pagination
   const totalPages = Math.ceil(filteredServices.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedServices = filteredServices.slice(startIndex, startIndex + itemsPerPage);
-
-  // Get unique categories
-  const categories = [...new Set(services.map(service => service.category).filter(Boolean))];
+  const paginatedServices = filteredServices.slice(
+    startIndex,
+    startIndex + itemsPerPage
+  );
 
   // Handle CRUD operations
   const handleCreate = () => {
@@ -86,21 +116,23 @@ const ServiceManagement = () => {
 
   const handleDelete = async (serviceId) => {
     const result = await showDeleteConfirm(
-      'Xóa dịch vụ',
-      'Bạn có chắc chắn muốn xóa dịch vụ này không?'
+      "Xóa dịch vụ",
+      "Bạn có chắc chắn muốn xóa dịch vụ này không?"
     );
 
     if (result.isConfirmed) {
       try {
         await deleteService(serviceId);
-        setServices(prev => prev.filter(service => service.id !== serviceId));
-        showSuccess('Đã xóa!', 'Dịch vụ đã được xóa thành công.');
+        setServices((prev) =>
+          prev.filter((service) => service.id !== serviceId)
+        );
+        showSuccess("Đã xóa!", "Dịch vụ đã được xóa thành công.");
       } catch (error) {
-        console.error('Error deleting service:', error);
+        console.error("Error deleting service:", error);
         if (error.response?.data?.message) {
-          showError('Lỗi!', error.response.data.message);
+          showError("Lỗi!", error.response.data.message);
         } else {
-          showError('Lỗi!', 'Không thể xóa dịch vụ. Vui lòng thử lại.');
+          showError("Lỗi!", "Không thể xóa dịch vụ. Vui lòng thử lại.");
         }
       }
     }
@@ -117,9 +149,9 @@ const ServiceManagement = () => {
   };
 
   const formatPrice = (price) => {
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND'
+    return new Intl.NumberFormat("vi-VN", {
+      style: "currency",
+      currency: "VND",
     }).format(price);
   };
 
@@ -189,8 +221,10 @@ const ServiceManagement = () => {
               onChange={(e) => setCategoryFilter(e.target.value)}
             >
               <option value="all">Tất cả danh mục</option>
-              {categories.map(category => (
-                <option key={category} value={category}>{category}</option>
+              {categories.map((category) => (
+                <option key={category} value={category}>
+                  {category}
+                </option>
               ))}
             </select>
 
@@ -252,12 +286,16 @@ const ServiceManagement = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="6" className="px-6 py-12 text-center text-sm text-gray-500">
+                  <td
+                    colSpan="6"
+                    className="px-6 py-12 text-center text-sm text-gray-500"
+                  >
                     <CogIcon className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                    {searchTerm || statusFilter !== 'all' || categoryFilter !== 'all'
-                      ? 'Không tìm thấy dịch vụ nào phù hợp với bộ lọc.'
-                      : 'Chưa có dịch vụ nào. Hãy thêm dịch vụ đầu tiên!'
-                    }
+                    {searchTerm ||
+                    statusFilter !== "all" ||
+                    categoryFilter !== "all"
+                      ? "Không tìm thấy dịch vụ nào phù hợp với bộ lọc."
+                      : "Chưa có dịch vụ nào. Hãy thêm dịch vụ đầu tiên!"}
                   </td>
                 </tr>
               )}
@@ -277,7 +315,9 @@ const ServiceManagement = () => {
                 Trước
               </button>
               <button
-                onClick={() => setCurrentPage(Math.min(currentPage + 1, totalPages))}
+                onClick={() =>
+                  setCurrentPage(Math.min(currentPage + 1, totalPages))
+                }
                 disabled={currentPage === totalPages}
                 className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
               >
@@ -287,15 +327,17 @@ const ServiceManagement = () => {
             <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
               <div>
                 <p className="text-sm text-gray-700">
-                  Hiển thị{' '}
-                  <span className="font-medium">{startIndex + 1}</span>
-                  {' '}đến{' '}
+                  Hiển thị <span className="font-medium">{startIndex + 1}</span>{" "}
+                  đến{" "}
                   <span className="font-medium">
-                    {Math.min(startIndex + itemsPerPage, filteredServices.length)}
-                  </span>
-                  {' '}trong tổng số{' '}
-                  <span className="font-medium">{filteredServices.length}</span>
-                  {' '}dịch vụ
+                    {Math.min(
+                      startIndex + itemsPerPage,
+                      filteredServices.length
+                    )}
+                  </span>{" "}
+                  trong tổng số{" "}
+                  <span className="font-medium">{filteredServices.length}</span>{" "}
+                  dịch vụ
                 </p>
               </div>
               <div>
@@ -307,7 +349,7 @@ const ServiceManagement = () => {
                   >
                     Trước
                   </button>
-                  
+
                   {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
                     let pageNumber;
                     if (totalPages <= 7) {
@@ -319,24 +361,26 @@ const ServiceManagement = () => {
                     } else {
                       pageNumber = currentPage - 3 + i;
                     }
-                    
+
                     return (
                       <button
                         key={pageNumber}
                         onClick={() => setCurrentPage(pageNumber)}
                         className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
                           currentPage === pageNumber
-                            ? 'z-10 bg-indigo-50 border-indigo-500 text-indigo-600'
-                            : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                            ? "z-10 bg-indigo-50 border-indigo-500 text-indigo-600"
+                            : "bg-white border-gray-300 text-gray-500 hover:bg-gray-50"
                         }`}
                       >
                         {pageNumber}
                       </button>
                     );
                   })}
-                  
+
                   <button
-                    onClick={() => setCurrentPage(Math.min(currentPage + 1, totalPages))}
+                    onClick={() =>
+                      setCurrentPage(Math.min(currentPage + 1, totalPages))
+                    }
                     disabled={currentPage === totalPages}
                     className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                   >

@@ -86,6 +86,37 @@ const CustomerModal = ({ isOpen, onClose, customer = null, onSave }) => {
     setError("");
 
     try {
+      // Validation for individual customer
+      if (customerType === "individual") {
+        if (!formData.name || formData.name.trim() === "") {
+          setError("Vui lòng nhập họ tên");
+          setLoading(false);
+          return;
+        }
+        if (!formData.phoneNumber || formData.phoneNumber.trim() === "") {
+          setError("Vui lòng nhập số điện thoại");
+          setLoading(false);
+          return;
+        }
+      }
+
+      // Validation for company customer
+      if (customerType === "company") {
+        if (!formData.companyName || formData.companyName.trim() === "") {
+          setError("Vui lòng nhập tên công ty");
+          setLoading(false);
+          return;
+        }
+        if (
+          !formData.representativePhone ||
+          formData.representativePhone.trim() === ""
+        ) {
+          setError("Vui lòng nhập số điện thoại người đại diện");
+          setLoading(false);
+          return;
+        }
+      }
+
       // Prepare data for API - format dates and set customerType
       const apiData = {
         customerType: customerType,
@@ -233,11 +264,12 @@ const CustomerModal = ({ isOpen, onClose, customer = null, onSave }) => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Họ tên
+                    Họ tên <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
                     maxLength={100}
+                    required
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                     value={formData.name}
                     onChange={(e) =>
@@ -274,11 +306,12 @@ const CustomerModal = ({ isOpen, onClose, customer = null, onSave }) => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Số điện thoại
+                    Số điện thoại <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="tel"
                     maxLength={20}
+                    required
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                     value={formData.phoneNumber}
                     onChange={(e) =>

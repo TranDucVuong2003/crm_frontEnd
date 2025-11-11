@@ -203,13 +203,16 @@ const DealDetailsModal = ({
           <div className="flex items-center space-x-2">
             {!isEditing ? (
               <>
-                <button
-                  onClick={handleExportContract}
-                  className="flex items-center px-3 py-1.5 text-sm font-medium text-green-600 bg-green-50 border border-green-200 rounded-md hover:bg-green-100"
-                >
-                  <DocumentArrowDownIcon className="h-4 w-4 mr-1" />
-                  Xuất hợp đồng
-                </button>
+                {/* Chỉ hiện nút Xuất hợp đồng khi probability = 100% */}
+                {deal.probability === 100 && (
+                  <button
+                    onClick={handleExportContract}
+                    className="flex items-center px-3 py-1.5 text-sm font-medium text-green-600 bg-green-50 border border-green-200 rounded-md hover:bg-green-100"
+                  >
+                    <DocumentArrowDownIcon className="h-4 w-4 mr-1" />
+                    Xuất hợp đồng
+                  </button>
+                )}
                 <button
                   onClick={handleEditToggle}
                   className="flex items-center px-3 py-1.5 text-sm font-medium text-indigo-600 bg-indigo-50 border border-indigo-200 rounded-md hover:bg-indigo-100"
@@ -357,9 +360,20 @@ const DealDetailsModal = ({
                         </div>
                       </div>
                     ) : (
-                      <span className="ml-2 text-gray-900">
-                        {deal.probability}%
-                      </span>
+                      <div className="flex items-center justify-between mt-1">
+                        <span className="ml-2 text-gray-900">
+                          {deal.probability}%
+                        </span>
+                        {deal.probability === 100 ? (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                            ✓ Đủ điều kiện xuất hợp đồng
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
+                            ! Cần đạt 100% để xuất hợp đồng
+                          </span>
+                        )}
+                      </div>
                     )}
                   </div>
                 </div>

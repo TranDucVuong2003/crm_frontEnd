@@ -127,16 +127,43 @@ const DealModal = ({
   };
 
   const handleServiceSelectionSave = (services) => {
+    // Kiểm tra tổng số items không vượt quá 3
+    const totalItems = services.length + selectedAddons.length;
+
+    if (totalItems > 3) {
+      alert(
+        `Tổng số services và addons không được vượt quá 3!\nHiện tại: ${services.length} services + ${selectedAddons.length} addons = ${totalItems} items`
+      );
+      return;
+    }
+
     setSelectedServices(services);
     updateTotalValue(services, selectedAddons);
   };
 
   // Handle addon selection
   const handleOpenAddonModal = () => {
+    // Kiểm tra số lượng services đã chọn
+    if (selectedServices.length >= 3) {
+      alert("Đã chọn đủ 3 services! Không thể chọn thêm addon.");
+      return;
+    }
+
     setIsAddonModalOpen(true);
   };
 
   const handleAddonSelectionSave = (addons) => {
+    // Kiểm tra tổng số items không vượt quá 3
+    const totalItems = selectedServices.length + addons.length;
+
+    if (totalItems > 3) {
+      const maxAddons = 3 - selectedServices.length;
+      alert(
+        `Chỉ có thể chọn tối đa ${maxAddons} addon!\n(Đã có ${selectedServices.length} services, tổng tối đa 3 items)`
+      );
+      return;
+    }
+
     setSelectedAddons(addons);
     updateTotalValue(selectedServices, addons);
   };
@@ -349,6 +376,10 @@ const DealModal = ({
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Dịch vụ
+                    <span className="ml-2 text-xs text-gray-500">
+                      ({selectedServices.length + selectedAddons.length}/3
+                      items)
+                    </span>
                   </label>
                   <div className="relative">
                     <input
@@ -375,6 +406,22 @@ const DealModal = ({
                       </svg>
                     </div>
                   </div>
+                  {selectedServices.length + selectedAddons.length === 3 && (
+                    <div className="mt-1 text-xs text-amber-600 flex items-center">
+                      <svg
+                        className="w-4 h-4 mr-1"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                      Đã đạt giới hạn 3 items (services + addons)
+                    </div>
+                  )}
                   {selectedServices.length > 0 && (
                     <div className="mt-2 text-sm text-gray-600">
                       <div className="bg-gray-50 rounded-md p-3">
@@ -412,15 +459,31 @@ const DealModal = ({
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Addon
+                    {selectedServices.length >= 3 ? (
+                      <span className="ml-2 text-xs text-red-500">
+                        (Không thể chọn - đã có 3 services)
+                      </span>
+                    ) : (
+                      <span className="ml-2 text-xs text-gray-500">
+                        (Tối đa {3 - selectedServices.length} addon)
+                      </span>
+                    )}
                   </label>
                   <div className="relative">
                     <input
                       type="text"
                       readOnly
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 cursor-pointer"
+                      disabled={selectedServices.length >= 3}
+                      className={`w-full px-3 py-2 border border-gray-300 rounded-md cursor-pointer ${
+                        selectedServices.length >= 3
+                          ? "bg-gray-100 cursor-not-allowed opacity-50"
+                          : "bg-gray-50"
+                      }`}
                       value={
                         selectedAddons.length > 0
                           ? `Đã chọn ${selectedAddons.length} addon(s)`
+                          : selectedServices.length >= 3
+                          ? "Không thể chọn addon (đã có 3 services)"
                           : "Nhấn để chọn addon"
                       }
                       onClick={handleOpenAddonModal}

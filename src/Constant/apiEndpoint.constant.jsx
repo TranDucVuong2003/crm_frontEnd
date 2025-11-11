@@ -132,6 +132,27 @@ const API_ENDPOINT = {
     DELETE: (id) => `/api/Tax/${id}`,
   },
 
+  // CategoryServiceAddons endpoints
+  CATEGORY_SERVICE_ADDONS: {
+    GET_ALL: "/api/CategoryServiceAddons",
+    CREATE: "/api/CategoryServiceAddons",
+    GET_BY_ID: (id) => `/api/CategoryServiceAddons/${id}`,
+    UPDATE: (id) => `/api/CategoryServiceAddons/${id}`,
+    DELETE: (id) => `/api/CategoryServiceAddons/${id}`,
+    GET_SERVICES: (id) => `/api/CategoryServiceAddons/${id}/services`,
+    GET_ADDONS: (id) => `/api/CategoryServiceAddons/${id}/addons`,
+  },
+
+  // Quotes endpoints
+  QUOTES: {
+    GET_ALL: "/api/Quotes",
+    CREATE: "/api/Quotes",
+    GET_BY_ID: (id) => `/api/Quotes/${id}`,
+    UPDATE: (id) => `/api/Quotes/${id}`,
+    DELETE: (id) => `/api/Quotes/${id}`,
+    GET_BY_CUSTOMER: (customerId) => `/api/Quotes/by-customer/${customerId}`,
+  },
+
   // Test endpoints
   TEST: {
     SEND_TEST_EMAIL: (ticketId) => `/api/Test/send-test-email/${ticketId}`,

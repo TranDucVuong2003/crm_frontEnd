@@ -19,6 +19,10 @@ import TicketForm from "../Components/Helpdesk/TicketForm";
 import TicketEditPage from "../Components/Helpdesk/TicketEditPage";
 import TicketCreatePage from "../Components/Helpdesk/TicketCreatePage";
 import TicketCategory from "../Components/TicketCategory/TicketCategory";
+import CategoryServiceAddons from "../Components/CategoryServiceAddons/CategoryServiceAddons";
+import Quote from "../Components/Quote/Quote";
+import QuoteCreatePage from "../Components/Quote/QuoteCreatePage";
+import QuoteEditPage from "../Components/Quote/QuoteEditPage";
 import SessionManagement from "../Components/SessionManagement";
 import ProtectedRoute from "./ProtectedRoute";
 import PublicRoute from "./PublicRoute";
@@ -67,6 +71,19 @@ function AppRouter() {
         {
           path: "addons",
           element: <Addons />,
+        },
+        {
+          path: "category-service-addons",
+          element: <CategoryServiceAddons />,
+        },
+        {
+          path: "quotes",
+          element: <Outlet />,
+          children: [
+            { path: "", element: <Quote /> },
+            { path: "create", element: <QuoteCreatePage /> },
+            { path: "edit/:id", element: <QuoteEditPage /> },
+          ],
         },
         {
           path: "support",
