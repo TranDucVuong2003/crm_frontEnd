@@ -67,6 +67,9 @@ const API_ENDPOINT = {
     UPDATE: (id) => `/api/Contracts/${id}`,
     DELETE: (id) => `/api/Contracts/${id}`,
     GET_BY_CUSTOMER: (customerId) => `/api/Contracts/customer/${customerId}`,
+    PREVIEW: (id) => `/api/Contracts/${id}/preview`,
+    EXPORT: (id) => `/api/Contracts/${id}/export-contract`,
+    REGENERATE: (id) => `/api/Contracts/${id}/regenerate-contract`,
   },
 
   // Services endpoints
@@ -151,6 +154,8 @@ const API_ENDPOINT = {
     UPDATE: (id) => `/api/Quotes/${id}`,
     DELETE: (id) => `/api/Quotes/${id}`,
     GET_BY_CUSTOMER: (customerId) => `/api/Quotes/by-customer/${customerId}`,
+    PREVIEW: (id) => `/api/Quotes/${id}/preview`,
+    EXPORT_PDF: (id) => `/api/Quotes/${id}/export-pdf`,
   },
 
   // Test endpoints

@@ -144,8 +144,12 @@ const ServiceSelectionModal = ({
     <div
       className="fixed inset-0 bg-opacity-50 overflow-y-auto h-full w-full z-50"
       style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+      onClick={onClose}
     >
-      <div className="relative top-20 mx-auto p-5 border w-full max-w-6xl shadow-lg rounded-md bg-white">
+      <div
+        className="relative top-20 mx-auto p-5 border w-full max-w-6xl shadow-lg rounded-md bg-white"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-xl font-semibold text-gray-900">Chọn Dịch vụ</h3>
           <button

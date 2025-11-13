@@ -66,15 +66,27 @@ function AppRouter() {
         },
         {
           path: "service",
-          element: <Service />,
+          element: (
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <Service />
+            </ProtectedRoute>
+          ),
         },
         {
           path: "addons",
-          element: <Addons />,
+          element: (
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <Addons />
+            </ProtectedRoute>
+          ),
         },
         {
           path: "category-service-addons",
-          element: <CategoryServiceAddons />,
+          element: (
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <CategoryServiceAddons />
+            </ProtectedRoute>
+          ),
         },
         {
           path: "quotes",
@@ -91,11 +103,19 @@ function AppRouter() {
         },
         {
           path: "reports",
-          element: <Report />,
+          element: (
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <Report />
+            </ProtectedRoute>
+          ),
         },
         {
           path: "usermanagement",
-          element: <Usermanagement />,
+          element: (
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <Usermanagement />
+            </ProtectedRoute>
+          ),
         },
         {
           path: "helpdesk",
@@ -108,11 +128,19 @@ function AppRouter() {
         },
         {
           path: "ticket-categories",
-          element: <TicketCategory />,
+          element: (
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <TicketCategory />
+            </ProtectedRoute>
+          ),
         },
         {
           path: "sessions",
-          element: <SessionManagement />,
+          element: (
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <SessionManagement />
+            </ProtectedRoute>
+          ),
         },
       ],
     },

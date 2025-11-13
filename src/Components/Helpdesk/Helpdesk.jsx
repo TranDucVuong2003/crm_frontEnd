@@ -16,12 +16,12 @@ import {
   MinusIcon,
   StarIcon,
   UserIcon,
+  ArchiveBoxIcon,
 } from "@heroicons/react/24/outline";
 import { StarIcon as StarIconSolid } from "@heroicons/react/24/solid";
 import TicketForm from "./TicketForm";
 import ViewAllTicketsModal from "./ViewAllTicketsModal";
 import TicketDetailModal from "./TicketDetailModal";
-import PriorityTicketCard from "./PriorityTicketCard";
 
 const Helpdesk = () => {
   const navigate = useNavigate();
@@ -52,7 +52,7 @@ const Helpdesk = () => {
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [isTicketDetailModalOpen, setIsTicketDetailModalOpen] = useState(false);
   const [isViewAllModalOpen, setIsViewAllModalOpen] = useState(false);
-  const [defaultPriorityFilter, setDefaultPriorityFilter] = useState("all");
+  const [isArchivedModalOpen, setIsArchivedModalOpen] = useState(false);
   // Filter state
   const [activeFilter, setActiveFilter] = useState("all"); // 'all', 'unresolved', 'medium', 'high', 'closed'
   // Pagination state
@@ -122,28 +122,7 @@ const Helpdesk = () => {
       color: "bg-green-100 text-green-800",
     },
     { id: "closed", name: "Đã đóng", color: "bg-gray-100 text-gray-800" },
-  ];
-
-  const PRIORITIES = [
-    { id: "low", name: "Thấp", color: "bg-green-100 text-green-800", sla: 72 },
-    {
-      id: "medium",
-      name: "Trung bình",
-      color: "bg-yellow-100 text-yellow-800",
-      sla: 48,
-    },
-    {
-      id: "high",
-      name: "Cao",
-      color: "bg-orange-100 text-orange-800",
-      sla: 24,
-    },
-    {
-      id: "critical",
-      name: "Khẩn cấp",
-      color: "bg-red-100 text-red-800",
-      sla: 4,
-    },
+    { id: "archived", name: "Lưu trữ", color: "bg-slate-100 text-slate-600" },
   ];
 
   const CATEGORIES = [
@@ -194,16 +173,6 @@ const Helpdesk = () => {
 
   // Modern Ticket Card Component
   const ModernTicketCard = ({ ticket, onView, onStatusChange }) => {
-    const getPriorityConfig = (priority) => {
-      // Chỉ sử dụng dữ liệu thật từ database - hiển thị nguyên bản priority từ API
-      return {
-        color: "bg-blue-500",
-        textColor: "text-blue-700",
-        bgColor: "bg-blue-50",
-        label: priority || "Không xác định",
-      };
-    };
-
     const getStatusConfig = (status) => {
       // Chỉ sử dụng dữ liệu thật từ database - hiển thị nguyên bản status từ API
       return {
@@ -212,7 +181,6 @@ const Helpdesk = () => {
       };
     };
 
-    const priorityConfig = getPriorityConfig(ticket.priority);
     const statusConfig = getStatusConfig(ticket.status);
 
     const formatDate = (dateString) => {
@@ -243,17 +211,7 @@ const Helpdesk = () => {
             <span
               className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${statusConfig.color}`}
             >
-              {/* <div className={`w-2 h-2 rounded-full mr-1 ${statusConfig.color === 'bg-green-100 text-green-800' ? 'bg-green-500' : 
-              statusConfig.color === 'bg-yellow-100 text-yellow-800' ? 'bg-yellow-500' :
-              statusConfig.color === 'bg-blue-100 text-blue-800' ? 'bg-blue-500' :
-              statusConfig.color === 'bg-purple-100 text-purple-800' ? 'bg-purple-500' :
-              statusConfig.color === 'bg-red-100 text-red-800' ? 'bg-red-500' : 'bg-gray-500'}`}></div> */}
-              {/* {statusConfig.label} */}
-            </span>
-            <span
-              className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${priorityConfig.bgColor} ${priorityConfig.textColor}`}
-            >
-              {priorityConfig.label}
+              {/* Status label removed */}
             </span>
           </div>
         </div>
@@ -271,11 +229,11 @@ const Helpdesk = () => {
           </div>
 
           <div className="flex items-center space-x-2">
-            {ticket.stars > 0 && (
+            {ticket.urgencyLevel > 0 && (
               <div className="flex items-center">
                 <StarIconSolid className="h-3 w-3 text-yellow-400" />
                 <span className="text-xs text-slate-600 ml-1">
-                  {ticket.stars}
+                  {ticket.urgencyLevel}
                 </span>
               </div>
             )}
@@ -307,22 +265,7 @@ const Helpdesk = () => {
     );
   };
 
-  const handlePriorityChange = (ticketId, newPriority) => {
-    setTickets(
-      tickets.map((ticket) =>
-        ticket.id === ticketId
-          ? {
-              ...ticket,
-              priority: newPriority,
-              updatedAt: new Date().toISOString(),
-            }
-          : ticket
-      )
-    );
-  };
-
-  const handleViewAllTickets = (priority = "all") => {
-    setDefaultPriorityFilter(priority);
+  const handleViewAllTickets = () => {
     setIsViewAllModalOpen(true);
   };
 
@@ -333,22 +276,30 @@ const Helpdesk = () => {
 
   // Function to get filtered tickets based on active filter
   const getFilteredTickets = () => {
+    // Lọc bỏ tickets có status "archived" trước (case-insensitive)
+    const nonArchivedTickets = tickets.filter(
+      (t) => t.status?.toLowerCase() !== "archived"
+    );
+
+    console.log("Total tickets:", tickets.length);
+    console.log("Non-archived tickets:", nonArchivedTickets.length);
+    console.log(
+      "Archived tickets:",
+      tickets.filter((t) => t.status?.toLowerCase() === "archived")
+    );
+
     switch (activeFilter) {
       case "unresolved":
-        return tickets.filter(
+        return nonArchivedTickets.filter(
           (t) => t.status !== "closed" && t.status !== "resolved"
         );
-      case "medium":
-        return tickets.filter((t) => t.priority === "medium");
-      case "high":
-        return tickets.filter((t) => t.priority === "high");
       case "closed":
-        return tickets.filter(
+        return nonArchivedTickets.filter(
           (t) => t.status === "closed" || t.status === "resolved"
         );
       case "all":
       default:
-        return tickets;
+        return nonArchivedTickets;
     }
   };
 
@@ -397,15 +348,12 @@ const Helpdesk = () => {
     return tickets.filter((ticket) => ticket.status === status);
   };
 
-  const getTicketsByPriority = (priority) => {
-    return tickets.filter((ticket) => ticket.priority === priority);
-  };
-
   const getTicketsResolvedToday = () => {
     const today = new Date().toDateString();
     return tickets.filter(
       (ticket) =>
         ticket.status === "closed" &&
+        ticket.status?.toLowerCase() !== "archived" &&
         new Date(ticket.updatedAt).toDateString() === today
     ).length;
   };
@@ -415,13 +363,18 @@ const Helpdesk = () => {
     lastWeek.setDate(lastWeek.getDate() - 7);
     return tickets.filter(
       (ticket) =>
-        ticket.status === "closed" && new Date(ticket.updatedAt) >= lastWeek
+        ticket.status === "closed" &&
+        ticket.status?.toLowerCase() !== "archived" &&
+        new Date(ticket.updatedAt) >= lastWeek
     ).length;
   };
 
   const getAverageRating = () => {
     const ratedTickets = tickets.filter(
-      (ticket) => ticket.stars && ticket.stars > 0
+      (ticket) =>
+        ticket.stars &&
+        ticket.stars > 0 &&
+        ticket.status?.toLowerCase() !== "archived"
     );
     if (ratedTickets.length === 0) return 0;
     const totalStars = ratedTickets.reduce(
@@ -432,7 +385,12 @@ const Helpdesk = () => {
   };
 
   const getTicketsWithRating = () => {
-    return tickets.filter((ticket) => ticket.stars && ticket.stars > 0);
+    return tickets.filter(
+      (ticket) =>
+        ticket.stars &&
+        ticket.stars > 0 &&
+        ticket.status?.toLowerCase() !== "archived"
+    );
   };
 
   const handleStatusChange = (ticketId, newStatus) => {
@@ -510,19 +468,44 @@ const Helpdesk = () => {
                     <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-slate-100 border border-slate-200 rounded-lg text-sm">
                       <TagIcon className="h-4 w-4 text-slate-600" />
                       <span className="text-slate-700 font-medium">
-                        {tickets.length} tickets
+                        {
+                          tickets.filter(
+                            (t) => t.status?.toLowerCase() !== "archived"
+                          ).length
+                        }{" "}
+                        tickets
                       </span>
                     </div>
                   </div>
                 )}
               </div>
-              <button
-                onClick={() => navigate("/helpdesk/create")}
-                className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl hover:from-blue-600 hover:to-indigo-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-              >
-                <PlusIcon className="h-5 w-5 mr-2" />
-                Tạo phiếu hỗ trợ mới
-              </button>
+              <div className="flex items-center gap-3">
+                {/* Nút xem kho lưu trữ - chỉ Admin */}
+                {user?.role?.toLowerCase() === "admin" && (
+                  <button
+                    onClick={() => setIsArchivedModalOpen(true)}
+                    className="inline-flex items-center px-4 py-3 bg-slate-100 text-slate-700 rounded-xl hover:bg-slate-200 transition-all duration-200 shadow hover:shadow-md border border-slate-300"
+                    title="Xem kho lưu trữ"
+                  >
+                    <ArchiveBoxIcon className="h-5 w-5 mr-2" />
+                    Kho lưu trữ
+                    <span className="ml-2 px-2 py-0.5 bg-slate-200 rounded-full text-xs font-medium">
+                      {
+                        tickets.filter(
+                          (t) => t.status?.toLowerCase() === "archived"
+                        ).length
+                      }
+                    </span>
+                  </button>
+                )}
+                <button
+                  onClick={() => navigate("/helpdesk/create")}
+                  className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl hover:from-blue-600 hover:to-indigo-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                >
+                  <PlusIcon className="h-5 w-5 mr-2" />
+                  Tạo phiếu hỗ trợ mới
+                </button>
+              </div>
             </div>
           </div>
 
@@ -570,54 +553,6 @@ const Helpdesk = () => {
                         </div>
                         <div className="bg-red-100 p-2 rounded-lg">
                           <ExclamationTriangleIcon className="h-5 w-5 text-red-600" />
-                        </div>
-                      </div>
-                    </button>
-
-                    {/* Medium Priority */}
-                    <button
-                      onClick={() => handleFilterChange("medium")}
-                      className={`bg-gradient-to-br from-yellow-50 to-amber-50 p-4 rounded-xl border transition-all duration-200 text-left hover:scale-105 cursor-pointer ${
-                        activeFilter === "medium"
-                          ? "border-yellow-400 shadow-lg ring-2 ring-yellow-300"
-                          : "border-yellow-200 hover:shadow-lg"
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-yellow-600 text-sm font-medium">
-                            Mức trung bình
-                          </p>
-                          <p className="text-2xl font-bold text-yellow-700">
-                            {getTicketsByPriority("medium").length}
-                          </p>
-                        </div>
-                        <div className="bg-yellow-100 p-2 rounded-lg">
-                          <MinusIcon className="h-5 w-5 text-yellow-600" />
-                        </div>
-                      </div>
-                    </button>
-
-                    {/* High Priority */}
-                    <button
-                      onClick={() => handleFilterChange("high")}
-                      className={`bg-gradient-to-br from-orange-50 to-amber-50 p-4 rounded-xl border transition-all duration-200 text-left hover:scale-105 cursor-pointer ${
-                        activeFilter === "high"
-                          ? "border-orange-400 shadow-lg ring-2 ring-orange-300"
-                          : "border-orange-200 hover:shadow-lg"
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-orange-600 text-sm font-medium">
-                            Ưu tiên cao
-                          </p>
-                          <p className="text-2xl font-bold text-orange-700">
-                            {getTicketsByPriority("high").length}
-                          </p>
-                        </div>
-                        <div className="bg-orange-100 p-2 rounded-lg">
-                          <ArrowTrendingUpIcon className="h-5 w-5 text-orange-600" />
                         </div>
                       </div>
                     </button>
@@ -812,14 +747,18 @@ const Helpdesk = () => {
                     <div className="text-center py-12">
                       <TagIcon className="h-12 w-12 text-slate-400 mx-auto mb-4" />
                       <h3 className="text-lg font-medium text-slate-600 mb-2">
-                        {tickets.length === 0
+                        {getFilteredTickets().length === 0 &&
+                        tickets.filter((t) => t.status !== "archived")
+                          .length === 0
                           ? user?.role?.toLowerCase() === "admin"
                             ? "Chưa có phiếu hỗ trợ nào trong hệ thống"
                             : "Chưa có phiếu hỗ trợ nào được phân công cho bạn"
                           : "Không có phiếu nào phù hợp với bộ lọc"}
                       </h3>
                       <p className="text-slate-500 mb-4">
-                        {tickets.length === 0
+                        {getFilteredTickets().length === 0 &&
+                        tickets.filter((t) => t.status !== "archived")
+                          .length === 0
                           ? user?.role?.toLowerCase() === "admin"
                             ? "Bắt đầu bằng cách tạo phiếu hỗ trợ đầu tiên"
                             : "Tickets sẽ xuất hiện khi quản trị viên phân công cho bạn"
@@ -1012,14 +951,11 @@ const Helpdesk = () => {
               isOpen={isViewAllModalOpen}
               onClose={() => setIsViewAllModalOpen(false)}
               tickets={tickets}
-              defaultPriorityFilter={defaultPriorityFilter}
               statuses={STATUSES}
-              priorities={PRIORITIES}
               categories={CATEGORIES}
               agents={AGENTS}
               onStatusChange={handleStatusChange}
               onAssignTicket={handleAssignTicket}
-              onPriorityChange={handlePriorityChange}
               onViewTicket={handleViewTicket}
               onEditTicket={handleEditTicket}
             />
@@ -1035,6 +971,19 @@ const Helpdesk = () => {
               onRefresh={fetchTickets}
             />
           )}
+
+          {/* Modal xem kho lưu trữ - chỉ Admin */}
+          {isArchivedModalOpen && user?.role?.toLowerCase() === "admin" && (
+            <ArchivedTicketsModal
+              isOpen={isArchivedModalOpen}
+              onClose={() => setIsArchivedModalOpen(false)}
+              tickets={tickets.filter(
+                (t) => t.status?.toLowerCase() === "archived"
+              )}
+              onViewTicket={handleViewTicket}
+              onRefresh={fetchTickets}
+            />
+          )}
         </>
       )}
     </div>
@@ -1043,53 +992,77 @@ const Helpdesk = () => {
 
 // Helpdesk Overview Component
 const HelpdeskOverview = ({ tickets }) => {
+  // Lọc bỏ archived tickets trước khi tính toán stats (case-insensitive)
+  const nonArchivedTickets = tickets.filter(
+    (t) => t.status?.toLowerCase() !== "archived"
+  );
+
+  console.log("HelpdeskOverview - Total:", tickets.length);
+  console.log("HelpdeskOverview - Non-archived:", nonArchivedTickets.length);
+
   // Tạo stats dựa trên dữ liệu thực từ database
   const uniqueStatuses = [
-    ...new Set(tickets.map((t) => t.status).filter(Boolean)),
-  ];
-  const uniquePriorities = [
-    ...new Set(tickets.map((t) => t.priority).filter(Boolean)),
+    ...new Set(nonArchivedTickets.map((t) => t.status).filter(Boolean)),
   ];
 
   const stats = {
-    total: tickets.length,
+    total: nonArchivedTickets.length,
     // Chỉ tính dựa trên dữ liệu thật từ database
     byStatus: uniqueStatuses.reduce((acc, status) => {
-      acc[status] = tickets.filter((t) => t.status === status).length;
-      return acc;
-    }, {}),
-    byPriority: uniquePriorities.reduce((acc, priority) => {
-      acc[priority] = tickets.filter((t) => t.priority === priority).length;
+      acc[status] = nonArchivedTickets.filter(
+        (t) => t.status === status
+      ).length;
       return acc;
     }, {}),
   };
 
-  // Tạo priorityCards dựa trên dữ liệu thật từ database
-  const priorityCards = Object.entries(stats.byPriority).map(
-    ([priority, count], index) => ({
-      title: `Priority: ${priority}`,
-      count: count,
-      color: ["bg-red-500", "bg-orange-500", "bg-yellow-500", "bg-green-500"][
-        index % 4
-      ],
-      textColor: [
-        "text-red-600",
-        "text-orange-600",
-        "text-yellow-600",
-        "text-green-600",
-      ][index % 4],
-      bgColor: ["bg-red-50", "bg-orange-50", "bg-yellow-50", "bg-green-50"][
-        index % 4
-      ],
-      icon: [
-        ExclamationTriangleIcon,
-        ArrowTrendingUpIcon,
-        MinusIcon,
-        ArrowTrendingDownIcon,
-      ][index % 4],
-      trend: `${count} tickets`,
-    })
-  );
+  // Tạo urgencyCards dựa trên urgencyLevel (stars) từ database
+  const urgencyLevels = [1, 2, 3, 4, 5];
+  const urgencyCards = urgencyLevels.map((level) => ({
+    title: `${level} sao - ${
+      level === 1
+        ? "Bình thường"
+        : level === 2
+        ? "Quan trọng"
+        : level === 3
+        ? "Khẩn cấp"
+        : level === 4
+        ? "Rất khẩn cấp"
+        : "Cực kỳ khẩn cấp"
+    }`,
+    count: nonArchivedTickets.filter((t) => t.urgencyLevel === level).length,
+    color: [
+      "bg-green-500",
+      "bg-blue-500",
+      "bg-yellow-500",
+      "bg-orange-500",
+      "bg-red-500",
+    ][level - 1],
+    textColor: [
+      "text-green-600",
+      "text-blue-600",
+      "text-yellow-600",
+      "text-orange-600",
+      "text-red-600",
+    ][level - 1],
+    bgColor: [
+      "bg-green-50",
+      "bg-blue-50",
+      "bg-yellow-50",
+      "bg-orange-50",
+      "bg-red-50",
+    ][level - 1],
+    icon: [
+      ArrowTrendingDownIcon,
+      MinusIcon,
+      ArrowTrendingUpIcon,
+      ExclamationTriangleIcon,
+      ExclamationTriangleIcon,
+    ][level - 1],
+    trend: `${
+      nonArchivedTickets.filter((t) => t.urgencyLevel === level).length
+    } tickets`,
+  }));
 
   // Tạo overallStats dựa trên dữ liệu thật từ database
   const overallStats = [
@@ -1119,13 +1092,13 @@ const HelpdeskOverview = ({ tickets }) => {
   return (
     <div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Priority Statistics */}
+        {/* Urgency Level Statistics */}
         <div>
           <h2 className="text-xl font-semibold text-gray-900 mb-4">
-            Priority Overview
+            Mức độ khẩn cấp
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {priorityCards.map((card, index) => (
+            {urgencyCards.map((card, index) => (
               <div
                 key={index}
                 className={`${card.bgColor} rounded-lg p-6 border border-gray-100`}
@@ -1138,9 +1111,7 @@ const HelpdeskOverview = ({ tickets }) => {
                     <p className={`text-3xl font-bold ${card.textColor} mt-2`}>
                       {card.count}
                     </p>
-                    <p className="text-sm text-gray-500 mt-1">
-                      vs last week {card.trend}
-                    </p>
+                    <p className="text-sm text-gray-500 mt-1">{card.trend}</p>
                   </div>
                   {/* <div className={`p-3 rounded-full ${card.color}`}>
                     <card.icon className="h-6 w-6 text-white" />
@@ -1256,6 +1227,184 @@ const HelpdeskOverview = ({ tickets }) => {
               </div>
             ))}
           </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Archived Tickets Modal Component
+const ArchivedTicketsModal = ({
+  isOpen,
+  onClose,
+  tickets,
+  onViewTicket,
+  onRefresh,
+}) => {
+  const [searchTerm, setSearchTerm] = useState("");
+
+  if (!isOpen) return null;
+
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString("vi-VN", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  // Filter tickets by search term
+  const filteredTickets = tickets.filter(
+    (ticket) =>
+      ticket.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      ticket.id?.toString().includes(searchTerm) ||
+      ticket.customer?.name?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  return (
+    <div
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-2xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="bg-gradient-to-r from-slate-600 to-slate-700 px-6 py-5 flex items-center justify-between">
+          <div className="flex items-center">
+            <ArchiveBoxIcon className="h-7 w-7 text-white mr-3" />
+            <div>
+              <h2 className="text-xl font-bold text-white">
+                Kho lưu trữ Ticket
+              </h2>
+              <p className="text-slate-200 text-sm mt-1">
+                Danh sách các ticket đã được lưu trữ
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-white hover:bg-slate-600 p-2 rounded-lg transition-colors"
+          >
+            <XCircleIcon className="h-6 w-6" />
+          </button>
+        </div>
+
+        {/* Search Bar */}
+        <div className="px-6 py-4 bg-slate-50 border-b border-slate-200">
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Tìm kiếm theo ID, tiêu đề, hoặc tên khách hàng..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full px-4 py-3 pl-10 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-slate-500"
+            />
+            <TagIcon className="h-5 w-5 text-slate-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
+          </div>
+          <div className="mt-2 flex items-center justify-between">
+            <p className="text-sm text-slate-600">
+              Tổng số:{" "}
+              <span className="font-semibold">{filteredTickets.length}</span>{" "}
+              ticket đã lưu trữ
+            </p>
+          </div>
+        </div>
+
+        {/* Tickets List */}
+        <div className="overflow-y-auto max-h-[calc(90vh-250px)] px-6 py-4">
+          {filteredTickets.length === 0 ? (
+            <div className="text-center py-12">
+              <ArchiveBoxIcon className="h-16 w-16 text-slate-300 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-slate-600 mb-2">
+                {searchTerm ? "Không tìm thấy ticket nào" : "Kho lưu trữ trống"}
+              </h3>
+              <p className="text-slate-500">
+                {searchTerm
+                  ? "Thử tìm kiếm với từ khóa khác"
+                  : "Chưa có ticket nào được lưu trữ"}
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {filteredTickets.map((ticket) => (
+                <div
+                  key={ticket.id}
+                  className="bg-slate-50 border border-slate-200 rounded-lg p-4 hover:shadow-md hover:border-slate-300 transition-all duration-200 cursor-pointer"
+                  onClick={() => {
+                    onViewTicket(ticket);
+                    onClose();
+                  }}
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center space-x-3 mb-2">
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-slate-200 text-slate-700">
+                          #{ticket.id}
+                        </span>
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-slate-100 text-slate-600">
+                          <ArchiveBoxIcon className="h-3 w-3 mr-1" />
+                          Đã lưu trữ
+                        </span>
+                        {ticket.urgencyLevel > 0 && (
+                          <div className="flex items-center">
+                            {[...Array(ticket.urgencyLevel)].map((_, i) => (
+                              <StarIconSolid
+                                key={i}
+                                className="h-3 w-3 text-yellow-400"
+                              />
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      <h3 className="font-semibold text-slate-900 text-base mb-1">
+                        {ticket.title}
+                      </h3>
+                      <div className="flex items-center space-x-4 text-sm text-slate-600">
+                        <span className="flex items-center">
+                          <UserIcon className="h-4 w-4 mr-1" />
+                          {ticket.customer?.name || "N/A"}
+                        </span>
+                        <span className="flex items-center">
+                          <ClockIcon className="h-4 w-4 mr-1" />
+                          {formatDate(ticket.createdAt)}
+                        </span>
+                        {ticket.category?.name && (
+                          <span className="flex items-center">
+                            <TagIcon className="h-4 w-4 mr-1" />
+                            {ticket.category.name}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onViewTicket(ticket);
+                        onClose();
+                      }}
+                      className="ml-4 p-2 text-slate-600 hover:text-slate-800 hover:bg-slate-200 rounded-lg transition-colors"
+                    >
+                      <EyeIcon className="h-5 w-5" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex justify-end">
+          <button
+            onClick={onClose}
+            className="px-6 py-2.5 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-colors font-medium"
+          >
+            Đóng
+          </button>
         </div>
       </div>
     </div>

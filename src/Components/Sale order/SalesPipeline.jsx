@@ -7,9 +7,17 @@ import {
   UserIcon,
   MagnifyingGlassIcon,
   XMarkIcon,
+  Squares2X2Icon,
+  ListBulletIcon,
+  PencilIcon,
+  TrashIcon,
+  EyeIcon,
+  FunnelIcon,
+  ArchiveBoxIcon,
 } from "@heroicons/react/24/outline";
 import DealModal from "./DealCreateModal";
 import DealDetailsModal from "./DealDetailsModal";
+import StageViewAllModal from "./StageViewAllModal";
 import {
   getAllSaleOrders,
   deleteSaleOrder,
@@ -43,25 +51,32 @@ const SalesPipeline = () => {
   const [deals, setDeals] = useState([]);
   const [filteredDeals, setFilteredDeals] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [filterStage, setFilterStage] = useState("all");
   const [loading, setLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingDeal, setEditingDeal] = useState(null);
   const [selectedStage, setSelectedStage] = useState(null);
   const [viewingDeal, setViewingDeal] = useState(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [viewMode, setViewMode] = useState("pipeline"); // "pipeline" or "list"
+  const [isStageModalOpen, setIsStageModalOpen] = useState(false);
+  const [selectedStageForView, setSelectedStageForView] = useState(null);
+  const [isArchiveModalOpen, setIsArchiveModalOpen] = useState(false);
+  const [inactiveDeals, setInactiveDeals] = useState([]);
 
   // Load deals when component mounts
   useEffect(() => {
     fetchDeals();
   }, []);
 
-  // Filter deals based on search term
+  // Filter deals based on search term and stage
   useEffect(() => {
-    if (!searchTerm.trim()) {
-      setFilteredDeals(deals);
-    } else {
-      const filtered = deals.filter((deal) => {
-        const searchLower = searchTerm.toLowerCase();
+    let filtered = deals;
+
+    // Apply search filter
+    if (searchTerm.trim()) {
+      const searchLower = searchTerm.toLowerCase();
+      filtered = filtered.filter((deal) => {
         return (
           deal.title.toLowerCase().includes(searchLower) ||
           deal.customer.toLowerCase().includes(searchLower) ||
@@ -70,9 +85,15 @@ const SalesPipeline = () => {
           deal.probability.toString().includes(searchLower)
         );
       });
-      setFilteredDeals(filtered);
     }
-  }, [deals, searchTerm]);
+
+    // Apply stage filter
+    if (filterStage !== "all") {
+      filtered = filtered.filter((deal) => deal.stage === filterStage);
+    }
+
+    setFilteredDeals(filtered);
+  }, [deals, searchTerm, filterStage]);
 
   const fetchDeals = async () => {
     try {
@@ -102,37 +123,57 @@ const SalesPipeline = () => {
       setAddons(addonsData);
 
       // Transform API data to match UI requirements
-      const transformedDeals = saleOrders.map((order) => ({
-        id: order.id,
-        title: order.title,
-        customerId: order.customerId,
-        customer: order.customer
-          ? order.customer.name || "Unknown"
-          : getCustomerName(order.customerId, customersData),
-        value: order.value,
-        probability: order.probability,
-        taxId: order.taxId,
-        tax: order.tax,
-        notes: order.notes,
-        saleOrderServices: order.saleOrderServices || [],
-        saleOrderAddons: order.saleOrderAddons || [],
-        createdAt: order.createdAt,
-        updatedAt: order.updatedAt,
-        // Auto assign stage based on probability
-        stage: getStageByProbability(order.probability),
-        expectedCloseDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-          .toISOString()
-          .split("T")[0], // 30 days from now
-        priority:
-          order.value > 100000000
-            ? "high"
-            : order.value > 50000000
-            ? "medium"
-            : "low",
-      }));
+      const transformedDeals = saleOrders
+        .filter((order) => order.status !== "Inactive") // Only show Active orders
+        .map((order) => ({
+          id: order.id,
+          title: order.title,
+          customerId: order.customerId,
+          customer: order.customer
+            ? order.customer.name || "Unknown"
+            : getCustomerName(order.customerId, customersData),
+          value: order.value,
+          probability: order.probability,
+          notes: order.notes,
+          status: order.status || "Active",
+          saleOrderServices: order.saleOrderServices || [],
+          saleOrderAddons: order.saleOrderAddons || [],
+          createdAt: order.createdAt,
+          updatedAt: order.updatedAt,
+          // Auto assign stage based on probability
+          stage: getStageByProbability(order.probability),
+          expectedCloseDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+            .toISOString()
+            .split("T")[0], // 30 days from now
+        }));
+
+      // Transform Inactive deals for archive
+      const transformedInactiveDeals = saleOrders
+        .filter((order) => order.status === "Inactive")
+        .map((order) => ({
+          id: order.id,
+          title: order.title,
+          customerId: order.customerId,
+          customer: order.customer
+            ? order.customer.name || "Unknown"
+            : getCustomerName(order.customerId, customersData),
+          value: order.value,
+          probability: order.probability,
+          notes: order.notes,
+          status: order.status,
+          saleOrderServices: order.saleOrderServices || [],
+          saleOrderAddons: order.saleOrderAddons || [],
+          createdAt: order.createdAt,
+          updatedAt: order.updatedAt,
+          stage: getStageByProbability(order.probability),
+          expectedCloseDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+            .toISOString()
+            .split("T")[0],
+        }));
 
       setDeals(transformedDeals);
       setFilteredDeals(transformedDeals);
+      setInactiveDeals(transformedInactiveDeals);
     } catch (error) {
       console.error("Error fetching sale orders:", error);
       showError("Lỗi!", "Không thể tải danh sách sale orders.");
@@ -175,6 +216,15 @@ const SalesPipeline = () => {
 
   const clearSearch = () => {
     setSearchTerm("");
+  };
+
+  const clearAllFilters = () => {
+    setSearchTerm("");
+    setFilterStage("all");
+  };
+
+  const hasActiveFilters = () => {
+    return searchTerm || filterStage !== "all";
   };
 
   const getSearchStats = () => {
@@ -242,6 +292,11 @@ const SalesPipeline = () => {
     setIsDetailsModalOpen(true);
   };
 
+  const handleViewAllInStage = (stage) => {
+    setSelectedStageForView(stage);
+    setIsStageModalOpen(true);
+  };
+
   const getTotalValue = () => {
     return filteredDeals.reduce((sum, deal) => sum + deal.value, 0);
   };
@@ -277,34 +332,108 @@ const SalesPipeline = () => {
           </div>
         </div>
 
-        {/* Search Bar */}
+        {/* View Mode Toggle */}
+        <div className="mt-4 flex items-center justify-end">
+          <div className="inline-flex rounded-md shadow-sm" role="group">
+            <button
+              type="button"
+              onClick={() => setViewMode("pipeline")}
+              className={`inline-flex items-center px-4 py-2 text-sm font-medium rounded-l-lg border ${
+                viewMode === "pipeline"
+                  ? "bg-indigo-600 text-white border-indigo-600"
+                  : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+              }`}
+            >
+              <Squares2X2Icon className="h-5 w-5 mr-2" />
+              Pipeline
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode("list")}
+              className={`inline-flex items-center px-4 py-2 text-sm font-medium rounded-r-lg border-t border-r border-b ${
+                viewMode === "list"
+                  ? "bg-indigo-600 text-white border-indigo-600"
+                  : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+              }`}
+            >
+              <ListBulletIcon className="h-5 w-5 mr-2" />
+              Danh sách
+            </button>
+          </div>
+        </div>
+
+        {/* Search Bar and Filters */}
         <div className="mt-4 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-          <div className="relative flex-1 max-w-md">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
-            </div>
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={handleSearchChange}
-              className="block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
-              placeholder="Tìm kiếm theo tên deal, khách hàng, ghi chú, giá trị..."
-            />
-            {searchTerm && (
-              <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
-                <button
-                  onClick={clearSearch}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <XMarkIcon className="h-5 w-5" />
-                </button>
+          <div className="flex flex-1 gap-3 w-full max-w-4xl">
+            {/* Search Input */}
+            <div className="relative flex-1">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
               </div>
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={handleSearchChange}
+                className="block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
+                placeholder="Tìm kiếm theo tên deal, khách hàng, ghi chú, giá trị..."
+              />
+              {searchTerm && (
+                <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+                  <button
+                    onClick={clearSearch}
+                    className="text-gray-400 hover:text-gray-600"
+                  >
+                    <XMarkIcon className="h-5 w-5" />
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Stage Filter */}
+            <div className="flex items-center gap-2">
+              <FunnelIcon className="h-5 w-5 text-gray-400" />
+              <select
+                value={filterStage}
+                onChange={(e) => setFilterStage(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-md bg-white text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
+              >
+                <option value="all">Tất cả giai đoạn</option>
+                <option value="low">Tỉ lệ thấp (1-35%)</option>
+                <option value="medium">Tỉ lệ trung bình (36-70%)</option>
+                <option value="high">Tỉ lệ cao (71-99%)</option>
+                <option value="closed-won">Thành công (100%)</option>
+                <option value="closed-lost">Thất bại (0%)</option>
+              </select>
+            </div>
+
+            {/* Archive Button */}
+            <button
+              onClick={() => setIsArchiveModalOpen(true)}
+              className="flex items-center px-3 py-2 border border-gray-300 rounded-md bg-white text-sm text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 whitespace-nowrap"
+            >
+              <ArchiveBoxIcon className="h-5 w-5 mr-2" />
+              Kho lưu trữ
+              {inactiveDeals.length > 0 && (
+                <span className="ml-2 px-2 py-0.5 text-xs font-medium bg-gray-200 text-gray-700 rounded-full">
+                  {inactiveDeals.length}
+                </span>
+              )}
+            </button>
+
+            {/* Clear Filters Button */}
+            {hasActiveFilters() && (
+              <button
+                onClick={clearAllFilters}
+                className="px-3 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-md transition-colors whitespace-nowrap"
+              >
+                Xóa bộ lọc
+              </button>
             )}
           </div>
 
           {/* Search Stats */}
-          {searchTerm && (
-            <div className="text-sm text-gray-600">
+          {hasActiveFilters() && (
+            <div className="text-sm text-gray-600 whitespace-nowrap">
               Hiển thị{" "}
               <span className="font-medium text-indigo-600">
                 {getSearchStats().filtered}
@@ -312,7 +441,7 @@ const SalesPipeline = () => {
               / {getSearchStats().total} deals
               {getSearchStats().hidden > 0 && (
                 <span className="ml-2 text-gray-500">
-                  ({getSearchStats().hidden} deal đã ẩn)
+                  ({getSearchStats().hidden} đã ẩn)
                 </span>
               )}
             </div>
@@ -394,7 +523,7 @@ const SalesPipeline = () => {
                 Xóa bộ lọc
               </button>
             </div>
-          ) : (
+          ) : viewMode === "pipeline" ? (
             <div className="overflow-x-auto">
               <div className="flex space-x-4" style={{ minWidth: "100%" }}>
                 {stages.map((stage) => (
@@ -409,11 +538,24 @@ const SalesPipeline = () => {
                       setIsModalOpen(true);
                     }}
                     onViewDeal={handleViewDeal}
+                    onViewAll={() => handleViewAllInStage(stage)}
                     searchTerm={searchTerm}
                   />
                 ))}
               </div>
             </div>
+          ) : (
+            <ListView
+              deals={filteredDeals}
+              onEditDeal={(deal) => {
+                setEditingDeal(deal);
+                setIsModalOpen(true);
+              }}
+              onDeleteDeal={handleDeleteDeal}
+              onViewDeal={handleViewDeal}
+              searchTerm={searchTerm}
+              stages={stages}
+            />
           )}
         </div>
       </div>
@@ -437,6 +579,430 @@ const SalesPipeline = () => {
         addons={addons}
         onUpdate={fetchDeals}
       />
+
+      {/* Stage View All Modal */}
+      {selectedStageForView && (
+        <StageViewAllModal
+          isOpen={isStageModalOpen}
+          onClose={() => {
+            setIsStageModalOpen(false);
+            setSelectedStageForView(null);
+          }}
+          stage={selectedStageForView}
+          deals={getDealsByStage(selectedStageForView.id)}
+          onEditDeal={(deal) => {
+            setIsStageModalOpen(false);
+            setEditingDeal(deal);
+            setIsModalOpen(true);
+          }}
+          onDeleteDeal={handleDeleteDeal}
+          onViewDeal={(deal) => {
+            setIsStageModalOpen(false);
+            handleViewDeal(deal);
+          }}
+        />
+      )}
+
+      {/* Archive Modal */}
+      <ArchiveModal
+        isOpen={isArchiveModalOpen}
+        onClose={() => setIsArchiveModalOpen(false)}
+        deals={inactiveDeals}
+        onViewDeal={handleViewDeal}
+        onRestoreDeal={(deal) => {
+          // Will be handled by DealDetailsModal to change status back to Active
+          handleViewDeal(deal);
+        }}
+      />
+    </div>
+  );
+};
+
+const ArchiveModal = ({
+  isOpen,
+  onClose,
+  deals,
+  onViewDeal,
+  onRestoreDeal,
+}) => {
+  if (!isOpen) return null;
+
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat("vi-VN", {
+      style: "currency",
+      currency: "VND",
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return "";
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString("vi-VN", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      });
+    } catch (error) {
+      return dateString;
+    }
+  };
+
+  const totalValue = deals.reduce((sum, deal) => sum + deal.value, 0);
+
+  return (
+    <div className="fixed inset-0 z-40 overflow-y-auto">
+      {/* Overlay */}
+      <div
+        style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+        className="fixed inset-0 bg-opacity-50 transition-opacity"
+        onClick={onClose}
+      ></div>
+
+      {/* Modal */}
+      <div className="flex min-h-full items-center justify-center p-4">
+        <div
+          className="relative bg-white rounded-lg shadow-xl w-full max-w-7xl transform transition-all"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Header */}
+          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-gray-50">
+            <div>
+              <div className="flex items-center gap-3">
+                <ArchiveBoxIcon className="h-6 w-6 text-gray-600" />
+                <h2 className="text-xl font-semibold text-gray-900">
+                  Kho lưu trữ
+                </h2>
+              </div>
+              <div className="flex items-center gap-4 mt-2">
+                <p className="text-sm text-gray-600">
+                  Tổng: <span className="font-medium">{deals.length}</span> sale
+                  orders
+                </p>
+                <p className="text-sm text-gray-600">
+                  Giá trị:{" "}
+                  <span className="font-medium">
+                    {formatCurrency(totalValue)}
+                  </span>
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <XMarkIcon className="h-6 w-6" />
+            </button>
+          </div>
+
+          {/* Content */}
+          <div className="px-6 py-4 max-h-[80vh] overflow-y-auto">
+            {deals.length === 0 ? (
+              <div className="text-center py-12">
+                <ArchiveBoxIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-500">Kho lưu trữ trống</p>
+                <p className="text-sm text-gray-400 mt-2">
+                  Các sale order có trạng thái Inactive sẽ hiển thị ở đây
+                </p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Deal
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Khách hàng
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Giá trị
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Cơ hội
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Ngày tạo
+                      </th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Thao tác
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {deals.map((deal) => (
+                      <tr
+                        key={deal.id}
+                        className="hover:bg-gray-50 cursor-pointer"
+                        onClick={() => onViewDeal(deal)}
+                      >
+                        <td className="px-6 py-4">
+                          <div className="text-sm font-medium text-gray-900">
+                            {deal.title}
+                          </div>
+                          {deal.notes && (
+                            <div className="text-xs text-gray-500 truncate max-w-xs">
+                              {deal.notes}
+                            </div>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">
+                            {deal.customer}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-medium text-gray-900">
+                            {formatCurrency(deal.value)}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">
+                            {deal.probability}%
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {formatDate(deal.createdAt)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onViewDeal(deal);
+                            }}
+                            className="text-indigo-600 hover:text-indigo-900 p-1 rounded hover:bg-indigo-50"
+                            title="Xem chi tiết"
+                          >
+                            <EyeIcon className="h-5 w-5" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const ListView = ({
+  deals,
+  onEditDeal,
+  onDeleteDeal,
+  onViewDeal,
+  searchTerm,
+  stages,
+}) => {
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat("vi-VN", {
+      style: "currency",
+      currency: "VND",
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return "";
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString("vi-VN", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      });
+    } catch (error) {
+      return dateString;
+    }
+  };
+
+  const highlightText = (text, searchTerm) => {
+    if (!searchTerm || !text) return text;
+
+    const regex = new RegExp(`(${searchTerm})`, "gi");
+    const parts = text.toString().split(regex);
+
+    return parts.map((part, index) =>
+      regex.test(part) ? (
+        <span key={index} className="bg-yellow-200 font-semibold">
+          {part}
+        </span>
+      ) : (
+        part
+      )
+    );
+  };
+
+  const getStageName = (stageId) => {
+    const stage = stages.find((s) => s.id === stageId);
+    return stage ? stage.name : stageId;
+  };
+
+  const getStageColor = (stageId) => {
+    switch (stageId) {
+      case "low":
+        return "bg-blue-100 text-blue-800";
+      case "medium":
+        return "bg-yellow-100 text-yellow-800";
+      case "high":
+        return "bg-purple-100 text-purple-800";
+      case "closed-won":
+        return "bg-green-100 text-green-800";
+      case "closed-lost":
+        return "bg-red-100 text-red-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case "Active":
+        return "bg-green-100 text-green-800";
+      case "Inactive":
+        return "bg-gray-100 text-gray-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
+
+  return (
+    <div className="overflow-x-auto">
+      <table className="min-w-full divide-y divide-gray-200">
+        <thead className="bg-gray-50">
+          <tr>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Deal
+            </th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Khách hàng
+            </th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Giá trị
+            </th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Giai đoạn
+            </th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Trạng thái
+            </th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Cơ hội
+            </th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Ngày dự kiến
+            </th>
+            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Thao tác
+            </th>
+          </tr>
+        </thead>
+        <tbody className="bg-white divide-y divide-gray-200">
+          {deals.length === 0 ? (
+            <tr>
+              <td colSpan="8" className="px-6 py-12 text-center">
+                <div className="text-gray-500">Chưa có deal nào</div>
+              </td>
+            </tr>
+          ) : (
+            deals.map((deal) => (
+              <tr
+                key={deal.id}
+                className="hover:bg-gray-50 cursor-pointer"
+                onClick={() => onViewDeal(deal)}
+              >
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm font-medium text-gray-900">
+                    {highlightText(deal.title, searchTerm)}
+                  </div>
+                  {deal.notes && (
+                    <div className="text-xs text-gray-500 truncate max-w-xs">
+                      {highlightText(deal.notes, searchTerm)}
+                    </div>
+                  )}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm text-gray-900">
+                    {highlightText(deal.customer, searchTerm)}
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm font-medium text-gray-900">
+                    {highlightText(formatCurrency(deal.value), searchTerm)}
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <span
+                    className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStageColor(
+                      deal.stage
+                    )}`}
+                  >
+                    {getStageName(deal.stage)}
+                  </span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <span
+                    className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(
+                      deal.status
+                    )}`}
+                  >
+                    {deal.status}
+                  </span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm text-gray-900">
+                    {deal.probability}%
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {formatDate(deal.expectedCloseDate)}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                  <div className="flex items-center justify-end gap-2">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onViewDeal(deal);
+                      }}
+                      className="text-indigo-600 hover:text-indigo-900 p-1 rounded hover:bg-indigo-50"
+                      title="Xem chi tiết"
+                    >
+                      <EyeIcon className="h-5 w-5" />
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onEditDeal(deal);
+                      }}
+                      className="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50"
+                      title="Chỉnh sửa"
+                    >
+                      <PencilIcon className="h-5 w-5" />
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDeleteDeal(deal.id);
+                      }}
+                      className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50"
+                      title="Xóa"
+                    >
+                      <TrashIcon className="h-5 w-5" />
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))
+          )}
+        </tbody>
+      </table>
     </div>
   );
 };
@@ -448,6 +1014,7 @@ const PipelineColumn = ({
   onDeleteDeal,
   onEditDeal,
   onViewDeal,
+  onViewAll,
   searchTerm,
 }) => {
   const getColumnColor = (stageId) => {
@@ -507,17 +1074,25 @@ const PipelineColumn = ({
             </div>
           )}
         </div>
-        {/* <button 
-          onClick={() => onAddDeal(stage.id)}
-          className="mt-2 w-full flex items-center justify-center px-2 py-2 border border-dashed border-gray-300 rounded-md text-xs text-gray-600 hover:border-gray-400 hover:text-gray-800"
-        >
-          <PlusIcon className="h-3 w-3 mr-1" />
-          Thêm deal
-        </button> */}
+        {deals.length > 0 && (
+          <button
+            onClick={onViewAll}
+            className="mt-2 w-full flex items-center justify-center px-2 py-1.5 border border-gray-300 rounded-md text-xs text-gray-700 hover:bg-white hover:border-gray-400 transition-colors"
+          >
+            Xem tất cả
+          </button>
+        )}
       </div>
 
       {/* Deals List */}
-      <div className="p-2 space-y-2 flex-grow">
+      <div
+        className={`p-2 space-y-2 flex-grow ${
+          deals.length > 3 ? "overflow-y-auto" : ""
+        }`}
+        style={{
+          maxHeight: deals.length > 3 ? "600px" : "none",
+        }}
+      >
         {deals.map((deal) => (
           <DealCard
             key={deal.id}
@@ -576,19 +1151,6 @@ const DealCard = ({ deal, onEdit, onDelete, onView, searchTerm }) => {
       });
     } catch (error) {
       return dateString;
-    }
-  };
-
-  const getPriorityColor = (priority) => {
-    switch (priority) {
-      case "high":
-        return "bg-red-100 text-red-800";
-      case "medium":
-        return "bg-yellow-100 text-yellow-800";
-      case "low":
-        return "bg-green-100 text-green-800";
-      default:
-        return "bg-gray-100 text-gray-800";
     }
   };
 
@@ -658,6 +1220,21 @@ const DealCard = ({ deal, onEdit, onDelete, onView, searchTerm }) => {
           <span className="truncate">{formatDate(deal.expectedCloseDate)}</span>
         </div>
 
+        {/* Status Badge */}
+        {deal.status && (
+          <div className="flex items-center">
+            <span
+              className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full ${
+                deal.status === "Active"
+                  ? "bg-green-100 text-green-800"
+                  : "bg-gray-100 text-gray-800"
+              }`}
+            >
+              {deal.status}
+            </span>
+          </div>
+        )}
+
         {/* Show service/addon info if available */}
         {(deal.serviceId || deal.addonId) && (
           <div className="text-xs text-blue-600 truncate">
@@ -665,18 +1242,7 @@ const DealCard = ({ deal, onEdit, onDelete, onView, searchTerm }) => {
           </div>
         )}
 
-        <div className="flex justify-between items-center mt-1.5">
-          <span
-            className={`inline-flex px-1.5 py-0.5 text-xs font-medium rounded-full ${getPriorityColor(
-              deal.priority
-            )}`}
-          >
-            {deal.priority === "high"
-              ? "Cao"
-              : deal.priority === "medium"
-              ? "TB"
-              : "Thấp"}
-          </span>
+        <div className="flex justify-end items-center mt-1.5">
           <div className="text-xs text-gray-500">
             {deal.probability}% cơ hội
           </div>

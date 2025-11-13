@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { XMarkIcon, CheckIcon } from "@heroicons/react/24/outline";
 import {
-  createContract,
   updateContract,
   getContractById,
   getAllCustomers,
@@ -17,19 +16,13 @@ import {
   showErrorAlert,
 } from "../../utils/sweetAlert";
 
-const ContractCreateModal = ({
-  isOpen,
-  onClose,
-  onSuccess,
-  contractId = null,
-}) => {
+const ContractEditModal = ({ isOpen, onClose, onSuccess, contractId }) => {
   const [customers, setCustomers] = useState([]);
   const [users, setUsers] = useState([]);
   const [services, setServices] = useState([]);
   const [addons, setAddons] = useState([]);
   const [taxes, setTaxes] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const isEditMode = !!contractId;
 
   const [formData, setFormData] = useState({
     name: "",
@@ -44,51 +37,43 @@ const ContractCreateModal = ({
     notes: "",
   });
 
-  // Fetch all dropdown data
+  // Fetch all data when modal opens
   useEffect(() => {
-    if (isOpen) {
-      if (!isEditMode) {
-        resetForm();
-      }
-      fetchDropdownData();
+    if (isOpen && contractId) {
+      fetchAllData();
     }
   }, [isOpen, contractId]);
 
-  const fetchDropdownData = async () => {
+  const fetchAllData = async () => {
     try {
       setIsLoading(true);
-      const [customersRes, usersRes, servicesRes, addonsRes, taxesRes] =
-        await Promise.all([
-          getAllCustomers(),
-          getAllUsers(),
-          getAllServices(),
-          getAllAddons(),
-          getAllTax(),
-        ]);
 
+      // Fetch dropdown data and contract data in parallel
+      const [
+        customersRes,
+        usersRes,
+        servicesRes,
+        addonsRes,
+        taxesRes,
+        contractRes,
+      ] = await Promise.all([
+        getAllCustomers(),
+        getAllUsers(),
+        getAllServices(),
+        getAllAddons(),
+        getAllTax(),
+        getContractById(contractId),
+      ]);
+
+      // Set dropdown data
       setCustomers(customersRes.data || []);
       setUsers(usersRes.data || []);
       setServices(servicesRes.data || []);
       setAddons(addonsRes.data || []);
       setTaxes(taxesRes.data || []);
 
-      // After loading dropdown data, load contract data if in edit mode
-      if (isEditMode && contractId) {
-        await fetchContractData();
-      }
-    } catch (error) {
-      console.error("Error fetching dropdown data:", error);
-      showErrorAlert("Lỗi", "Không thể tải dữ liệu dropdown");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const fetchContractData = async () => {
-    try {
-      const response = await getContractById(contractId);
-      const contract = response.data;
-
+      // Fill form with contract data
+      const contract = contractRes.data;
       console.log("Contract data from API:", contract);
 
       // Format expiration date for datetime-local input
@@ -97,26 +82,15 @@ const ContractCreateModal = ({
         : "";
 
       // Extract data from contract structure
-      // Customer ID from saleOrder.customer
       const customerIdValue =
         contract.saleOrder?.customerId ||
         contract.saleOrder?.customer?.id ||
         "";
-
-      // User ID directly from contract
       const userIdValue = contract.userId || contract.user?.id || "";
-
-      // Service ID from first service in saleOrder.services array
       const serviceIdValue = contract.saleOrder?.services?.[0]?.serviceId || "";
-
-      // Addon ID from first addon in saleOrder.addons array (if exists)
       const addonIdValue = contract.saleOrder?.addons?.[0]?.addonId || "";
-
-      // Tax ID from saleOrder.taxId
       const taxIdValue =
         contract.saleOrder?.taxId || contract.saleOrder?.tax?.id || "";
-
-      // Contract name from saleOrder.title
       const contractName = contract.saleOrder?.title || "";
 
       const formDataToSet = {
@@ -132,11 +106,13 @@ const ContractCreateModal = ({
         notes: contract.notes || "",
       };
 
-      console.log("Form data to be set:", formDataToSet);
+      console.log("Form data filled:", formDataToSet);
       setFormData(formDataToSet);
     } catch (error) {
-      console.error("Error fetching contract data:", error);
+      console.error("Error fetching data:", error);
       showErrorAlert("Lỗi", "Không thể tải thông tin hợp đồng");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -152,10 +128,7 @@ const ContractCreateModal = ({
     e.preventDefault();
 
     try {
-      showLoading(
-        isEditMode ? "Đang cập nhật hợp đồng..." : "Đang tạo hợp đồng...",
-        "Vui lòng đợi"
-      );
+      showLoading("Đang cập nhật hợp đồng...", "Vui lòng đợi");
 
       // Prepare data
       const contractData = {
@@ -171,51 +144,24 @@ const ContractCreateModal = ({
         notes: formData.notes,
       };
 
-      if (isEditMode) {
-        await updateContract(contractId, contractData);
-        closeLoading();
-        showSuccessAlert("Thành công", "Cập nhật hợp đồng thành công!");
-      } else {
-        await createContract(contractData);
-        closeLoading();
-        showSuccessAlert("Thành công", "Tạo hợp đồng mới thành công!");
-      }
+      await updateContract(contractId, contractData);
+      closeLoading();
+      showSuccessAlert("Thành công", "Cập nhật hợp đồng thành công!");
 
-      // Reset form and close modal
-      resetForm();
+      // Close modal and refresh
       if (onSuccess) onSuccess();
       onClose();
     } catch (error) {
-      console.error(
-        `Error ${isEditMode ? "updating" : "creating"} contract:`,
-        error
-      );
+      console.error("Error updating contract:", error);
       closeLoading();
       showErrorAlert(
         "Lỗi",
-        error.response?.data?.message ||
-          `Không thể ${isEditMode ? "cập nhật" : "tạo"} hợp đồng`
+        error.response?.data?.message || "Không thể cập nhật hợp đồng"
       );
     }
   };
 
-  const resetForm = () => {
-    setFormData({
-      name: "",
-      customerId: "",
-      userId: "",
-      serviceId: "",
-      addonsId: "",
-      taxId: "",
-      status: "Draft",
-      paymentMethod: "Chuyển khoản",
-      expiration: "",
-      notes: "",
-    });
-  };
-
   const handleCancel = () => {
-    resetForm();
     onClose();
   };
 
@@ -233,19 +179,17 @@ const ContractCreateModal = ({
       {/* Modal */}
       <div className="flex min-h-full items-center justify-center p-4">
         <div
-          className="relative bg-white rounded-lg shadow-xl w-full max-w-3xl transform transition-all"
+          className="relative bg-white rounded-lg shadow-xl w-full max-w-5xl transform transition-all"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
             <div>
               <h2 className="text-xl font-semibold text-gray-900">
-                {isEditMode ? "Chỉnh sửa hợp đồng" : "Tạo hợp đồng mới"}
+                Chỉnh sửa hợp đồng
               </h2>
               <p className="text-sm text-gray-600 mt-1">
-                {isEditMode
-                  ? "Cập nhật thông tin hợp đồng"
-                  : "Điền thông tin để tạo hợp đồng mới"}
+                Cập nhật thông tin hợp đồng
               </p>
             </div>
             <button
@@ -257,7 +201,7 @@ const ContractCreateModal = ({
           </div>
 
           {/* Content */}
-          <div className="px-6 py-4 max-h-[70vh] overflow-y-auto">
+          <div className="px-6 py-4 max-h-[80vh] overflow-y-auto">
             {isLoading ? (
               <div className="flex justify-center items-center py-12">
                 <svg
@@ -500,7 +444,7 @@ const ContractCreateModal = ({
                     className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                   >
                     <CheckIcon className="h-5 w-5 mr-2" />
-                    {isEditMode ? "Cập nhật hợp đồng" : "Tạo hợp đồng"}
+                    Cập nhật hợp đồng
                   </button>
                 </div>
               </form>
@@ -512,4 +456,4 @@ const ContractCreateModal = ({
   );
 };
 
-export default ContractCreateModal;
+export default ContractEditModal;

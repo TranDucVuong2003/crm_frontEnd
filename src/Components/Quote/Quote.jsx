@@ -6,7 +6,6 @@ import {
   MagnifyingGlassIcon,
   PencilIcon,
   TrashIcon,
-  EyeIcon,
   DocumentIcon,
 } from "@heroicons/react/24/outline";
 import {
@@ -339,13 +338,6 @@ const Quote = () => {
                           title="Xem trước PDF"
                         >
                           <DocumentIcon className="h-5 w-5" />
-                        </button>
-                        <button
-                          onClick={() => handleViewQuote(quote)}
-                          className="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50 transition-colors"
-                          title="Xem chi tiết"
-                        >
-                          <EyeIcon className="h-5 w-5" />
                         </button>
                         <button
                           onClick={() => handleEditQuote(quote)}

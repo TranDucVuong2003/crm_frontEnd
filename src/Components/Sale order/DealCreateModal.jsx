@@ -3,7 +3,6 @@ import {
   getAllCustomers,
   getAllServices,
   getAllAddons,
-  getAllTax,
   createSaleOrder,
   updateSaleOrder,
 } from "../../Service/ApiService";
@@ -24,7 +23,7 @@ const DealModal = ({
       value: "",
       probability: 0,
       notes: "",
-      taxId: "",
+      status: "Active",
     }
   );
 
@@ -32,7 +31,6 @@ const DealModal = ({
   const [customers, setCustomers] = useState([]);
   const [services, setServices] = useState([]);
   const [addons, setAddons] = useState([]);
-  const [taxes, setTaxes] = useState([]);
   const [loading, setLoading] = useState(false);
 
   // State for service selection modal
@@ -54,7 +52,7 @@ const DealModal = ({
         value: "",
         probability: 0,
         notes: "",
-        taxId: "",
+        status: "Active",
       });
     }
   }, [deal, isOpen]);
@@ -69,22 +67,16 @@ const DealModal = ({
   const loadDropdownData = async () => {
     setLoading(true);
     try {
-      const [
-        customersResponse,
-        servicesResponse,
-        addonsResponse,
-        taxesResponse,
-      ] = await Promise.all([
-        getAllCustomers(),
-        getAllServices(),
-        getAllAddons(),
-        getAllTax(),
-      ]);
+      const [customersResponse, servicesResponse, addonsResponse] =
+        await Promise.all([
+          getAllCustomers(),
+          getAllServices(),
+          getAllAddons(),
+        ]);
 
       setCustomers(customersResponse.data || []);
       setServices(servicesResponse.data || []);
       setAddons(addonsResponse.data || []);
-      setTaxes(taxesResponse.data || []);
     } catch (error) {
       console.error("Error loading dropdown data:", error);
       // Fallback to mock data if API fails
@@ -252,7 +244,7 @@ const DealModal = ({
         customerId: parseInt(formData.customerId),
         probability: parseInt(formData.probability) || 0,
         notes: formData.notes.trim() || null,
-        taxId: formData.taxId ? parseInt(formData.taxId) : null,
+        status: formData.status || "Active",
         services: selectedServices.map((service) => ({
           serviceId: service.serviceId,
           duration: parseInt(service.duration),
@@ -295,11 +287,15 @@ const DealModal = ({
     <div
       className="fixed inset-0 flex items-center justify-center p-4 z-50"
       style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+      onClick={onClose}
     >
-      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-screen overflow-y-auto">
+      <div
+        className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-screen overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="px-6 py-4 border-b border-gray-200">
           <h2 className="text-lg font-medium text-gray-900">
-            {deal ? "Chỉnh sửa Sale Order" : "Thêm Sale Order mới"}
+            Thêm Sale Order mới
           </h2>
         </div>
 
@@ -355,21 +351,18 @@ const DealModal = ({
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Thuế
+                    Trạng thái *
                   </label>
                   <select
+                    required
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                    value={formData.taxId}
+                    value={formData.status}
                     onChange={(e) =>
-                      setFormData({ ...formData, taxId: e.target.value })
+                      setFormData({ ...formData, status: e.target.value })
                     }
                   >
-                    <option value="">Chọn thuế</option>
-                    {taxes.map((tax) => (
-                      <option key={tax.id} value={tax.id}>
-                        {tax.name} ({tax.rate}%)
-                      </option>
-                    ))}
+                    <option value="Active">Active</option>
+                    <option value="Inactive">Inactive</option>
                   </select>
                 </div>
 
@@ -680,7 +673,7 @@ const DealModal = ({
                 type="submit"
                 className="px-6 py-2 bg-indigo-600 text-white rounded-md text-sm font-medium hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
               >
-                {deal ? "Cập nhật" : "Thêm mới"}
+                Thêm mới
               </button>
             </div>
           </form>

@@ -4,6 +4,7 @@ import {
   getTicketLogsByTicket,
   createTicketLog,
   downloadTicketLogAttachment,
+  deleteTicket,
 } from "../../Service/ApiService";
 import { useAuth } from "../../Context/AuthContext";
 import Swal from "sweetalert2";
@@ -23,6 +24,8 @@ import {
   PhotoIcon,
   DocumentIcon,
   ArrowDownTrayIcon,
+  TrashIcon,
+  ArchiveBoxIcon,
 } from "@heroicons/react/24/outline";
 import { StarIcon as StarIconSolid } from "@heroicons/react/24/solid";
 
@@ -66,37 +69,6 @@ const TicketDetailModal = ({
     return sanitized;
   };
 
-  const getPriorityConfig = (priority) => {
-    const priorityLower = priority?.toLowerCase() || "low";
-    const configs = {
-      low: {
-        icon: <ArrowPathIcon className="h-4 w-4" />,
-        color: "text-green-600",
-        bgColor: "bg-green-100",
-        label: "Thấp",
-      },
-      medium: {
-        icon: <ClockIcon className="h-4 w-4" />,
-        color: "text-yellow-600",
-        bgColor: "bg-yellow-100",
-        label: "Trung bình",
-      },
-      high: {
-        icon: <ExclamationTriangleIcon className="h-4 w-4" />,
-        color: "text-orange-600",
-        bgColor: "bg-orange-100",
-        label: "Cao",
-      },
-      critical: {
-        icon: <ExclamationTriangleIcon className="h-4 w-4" />,
-        color: "text-red-600",
-        bgColor: "bg-red-100",
-        label: "Khẩn cấp",
-      },
-    };
-    return configs[priorityLower] || configs.medium;
-  };
-
   const getStatusConfig = (status) => {
     const statusLower = status?.toLowerCase() || "new";
     const configs = {
@@ -120,8 +92,8 @@ const TicketDetailModal = ({
       },
       pending: {
         icon: <ClockIcon className="h-4 w-4" />,
-        color: "text-gray-600",
-        bgColor: "bg-gray-100",
+        color: "text-purple-600",
+        bgColor: "bg-purple-100",
         label: "Chờ xử lý",
       },
       resolved: {
@@ -141,6 +113,12 @@ const TicketDetailModal = ({
         color: "text-red-600",
         bgColor: "bg-red-100",
         label: "Đã leo thang",
+      },
+      archived: {
+        icon: <ArchiveBoxIcon className="h-4 w-4" />,
+        color: "text-slate-600",
+        bgColor: "bg-slate-100",
+        label: "Lưu trữ",
       },
       // Fallback cho các status không xác định từ API
       hello: {
@@ -349,6 +327,131 @@ const TicketDetailModal = ({
     }
   };
 
+  // Hàm xóa ticket (chỉ dành cho Admin)
+  const handleDeleteTicket = async () => {
+    // Kiểm tra quyền Admin
+    if (user?.role?.toLowerCase() !== "admin") {
+      Swal.fire({
+        title: "Không có quyền!",
+        text: "Chỉ Admin mới có thể xóa ticket.",
+        icon: "warning",
+        confirmButtonText: "OK",
+      });
+      return;
+    }
+
+    // Xác nhận trước khi xóa
+    const result = await Swal.fire({
+      title: "Xác nhận xóa ticket?",
+      html: `Bạn có chắc chắn muốn xóa ticket <strong>#${ticket.id}</strong>?<br/><span class="text-red-600 text-sm">Hành động này không thể hoàn tác!</span>`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Xóa ticket",
+      cancelButtonText: "Hủy",
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+      await deleteTicket(ticket.id);
+
+      Swal.fire({
+        title: "Đã xóa!",
+        text: "Ticket đã được xóa thành công.",
+        icon: "success",
+        timer: 2000,
+        showConfirmButton: false,
+      });
+
+      // Refresh danh sách và đóng modal
+      if (onRefresh) {
+        await onRefresh();
+      }
+      onClose();
+    } catch (error) {
+      console.error("Error deleting ticket:", error);
+      Swal.fire({
+        title: "Lỗi!",
+        text: error.response?.data?.message || "Có lỗi xảy ra khi xóa ticket.",
+        icon: "error",
+        confirmButtonText: "OK",
+      });
+    }
+  };
+
+  // Hàm archive ticket (chỉ dành cho Admin)
+  const handleArchiveTicket = async () => {
+    // Kiểm tra quyền Admin
+    if (user?.role?.toLowerCase() !== "admin") {
+      Swal.fire({
+        title: "Không có quyền!",
+        text: "Chỉ Admin mới có thể lưu trữ ticket.",
+        icon: "warning",
+        confirmButtonText: "OK",
+      });
+      return;
+    }
+
+    // Kiểm tra nếu ticket đã được archive
+    if (ticket.status === "archived") {
+      Swal.fire({
+        title: "Thông báo",
+        text: "Ticket này đã được lưu trữ rồi.",
+        icon: "info",
+        confirmButtonText: "OK",
+      });
+      return;
+    }
+
+    // Xác nhận trước khi archive
+    const result = await Swal.fire({
+      title: "Xác nhận lưu trữ ticket?",
+      html: `Bạn có chắc chắn muốn lưu trữ ticket <strong>#${ticket.id}</strong>?<br/><span class="text-gray-600 text-sm">Ticket sẽ không hiển thị trong danh sách thông thường.</span>`,
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonColor: "#6B7280",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Lưu trữ",
+      cancelButtonText: "Hủy",
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+      // Gọi API cập nhật status thành "archived"
+      await updateTicketStatus(ticket.id, { status: "archived" });
+
+      Swal.fire({
+        title: "Đã lưu trữ!",
+        text: "Ticket đã được chuyển vào kho lưu trữ.",
+        icon: "success",
+        timer: 2000,
+        showConfirmButton: false,
+      });
+
+      // Update ticket object locally
+      ticket.status = "archived";
+      ticket.updatedAt = new Date().toISOString();
+
+      // Refresh danh sách và đóng modal
+      if (onRefresh) {
+        await onRefresh();
+      }
+      onClose();
+    } catch (error) {
+      console.error("Error archiving ticket:", error);
+      Swal.fire({
+        title: "Lỗi!",
+        text:
+          error.response?.data?.message || "Có lỗi xảy ra khi lưu trữ ticket.",
+        icon: "error",
+        confirmButtonText: "OK",
+      });
+    }
+  };
+
   const renderStars = (stars) => {
     const starElements = [];
     for (let i = 1; i <= 5; i++) {
@@ -382,7 +485,6 @@ const TicketDetailModal = ({
   // Early return nếu modal không mở hoặc không có ticket
   if (!isOpen || !ticket) return null;
 
-  const priorityConfig = getPriorityConfig(ticket.priority);
   const statusConfig = getStatusConfig(ticket.status);
 
   return (
@@ -399,22 +501,45 @@ const TicketDetailModal = ({
             </h2>
             <p className="text-sm text-gray-600 mt-1">{ticket.title}</p>
           </div>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 p-2 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            <XMarkIcon className="h-6 w-6" />
-          </button>
+          <div className="flex items-center space-x-2">
+            {/* Nút lưu trữ ticket - chỉ Admin */}
+            {user?.role?.toLowerCase() === "admin" &&
+              ticket.status !== "archived" && (
+                <button
+                  onClick={handleArchiveTicket}
+                  className="text-slate-600 hover:text-slate-700 hover:bg-slate-50 p-2 rounded-lg transition-colors group"
+                  title="Lưu trữ ticket (chỉ Admin)"
+                >
+                  <ArchiveBoxIcon className="h-5 w-5" />
+                </button>
+              )}
+            {/* Nút xóa ticket - chỉ Admin */}
+            {user?.role?.toLowerCase() === "admin" && (
+              <button
+                onClick={handleDeleteTicket}
+                className="text-red-600 hover:text-red-700 hover:bg-red-50 p-2 rounded-lg transition-colors group"
+                title="Xóa ticket (chỉ Admin)"
+              >
+                <TrashIcon className="h-5 w-5" />
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600 p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <XMarkIcon className="h-6 w-6" />
+            </button>
+          </div>
         </div>
 
         <div className="p-6">
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
             {/* Left Sidebar - Info (1/5 width) */}
             <div className="lg:col-span-1 space-y-4">
-              {/* Priority & Status */}
+              {/* Status & Urgency */}
               <div className="bg-white border border-gray-200 rounded-lg p-4">
                 <h3 className="text-sm font-medium text-gray-900 mb-3">
-                  Trạng thái & Ưu tiên
+                  Trạng thái & Mức độ khẩn cấp
                 </h3>
                 <div className="space-y-3">
                   <div>
@@ -426,17 +551,6 @@ const TicketDetailModal = ({
                     >
                       {statusConfig.icon}
                       <span className="ml-1">{statusConfig.label}</span>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                      Độ ưu tiên
-                    </label>
-                    <div
-                      className={`mt-1 inline-flex items-center px-2.5 py-1.5 rounded-full text-xs font-medium ${priorityConfig.bgColor} ${priorityConfig.color}`}
-                    >
-                      {priorityConfig.icon}
-                      <span className="ml-1">{priorityConfig.label}</span>
                     </div>
                   </div>
                   <div>
@@ -545,16 +659,6 @@ const TicketDetailModal = ({
                       {formatDate(ticket.updatedAt)}
                     </p>
                   </div>
-                  {ticket.dueDate && (
-                    <div>
-                      <label className="text-xs font-medium text-gray-500">
-                        Hạn xử lý
-                      </label>
-                      <p className="text-sm text-gray-900">
-                        {formatDate(ticket.dueDate)}
-                      </p>
-                    </div>
-                  )}
                 </div>
               </div>
             </div>
@@ -631,14 +735,26 @@ const TicketDetailModal = ({
                           const isCurrent =
                             ticket.status?.toLowerCase() === status;
 
+                          // Xác định màu ring dựa trên status
+                          const getRingColor = () => {
+                            if (status === "open") return "ring-orange-500";
+                            if (status === "in_progress")
+                              return "ring-yellow-500";
+                            if (status === "pending") return "ring-purple-500";
+                            if (status === "resolved") return "ring-green-500";
+                            return "ring-blue-500";
+                          };
+
                           return (
                             <button
                               key={status}
                               onClick={() => setSelectedStatus(status)}
                               disabled={isCurrent}
-                              className={`flex items-center justify-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                              className={`flex items-center justify-center px-3 py-2 rounded-md text-sm font-medium transition-all ${
                                 isCurrent
-                                  ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+                                  ? `${config.bgColor} ${
+                                      config.color
+                                    } ring-2 ring-offset-2 ${getRingColor()} cursor-not-allowed shadow-md scale-105`
                                   : isSelected
                                   ? `${config.bgColor} ${config.color} ring-2 ring-blue-500`
                                   : "bg-gray-100 text-gray-700 hover:bg-gray-200"

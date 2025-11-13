@@ -1,16 +1,58 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { XMarkIcon, ArrowDownTrayIcon } from "@heroicons/react/24/outline";
+import { previewQuote, exportQuotePdf } from "../../Service/ApiService";
 
 const QuotePreviewModal = ({ quoteId, isOpen, onClose }) => {
-  if (!isOpen) return null;
+  const [previewHTML, setPreviewHTML] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  const baseURL = import.meta.env.VITE_BASE_URL || "https://localhost:7210";
-  const previewURL = `${baseURL}/api/Quotes/${quoteId}/preview`;
-  const exportURL = `${baseURL}/api/Quotes/${quoteId}/export-pdf`;
+  // Fetch HTML content khi modal mở
+  useEffect(() => {
+    if (isOpen && quoteId) {
+      fetchPreview();
+    }
+  }, [isOpen, quoteId]);
 
-  const handleDownload = () => {
-    window.open(exportURL, "_blank");
+  const fetchPreview = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const response = await previewQuote(quoteId);
+      setPreviewHTML(response.data);
+    } catch (err) {
+      console.error("Error loading preview:", err);
+      setError("Không thể tải xem trước báo giá");
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const handleDownload = async () => {
+    try {
+      const response = await exportQuotePdf(quoteId);
+
+      // Tạo URL tạm thời cho blob
+      const url = window.URL.createObjectURL(response.data);
+
+      // Tạo link download
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `quote_${quoteId}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+
+      // Cleanup
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Error downloading quote:", error);
+      alert("Không thể tải xuống báo giá. Vui lòng thử lại.");
+    }
+  };
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
@@ -48,14 +90,36 @@ const QuotePreviewModal = ({ quoteId, isOpen, onClose }) => {
 
           {/* Content */}
           <div className="p-6">
-            <iframe
-              src={previewURL}
-              width="100%"
-              height="700px"
-              style={{ border: "none", borderRadius: "4px" }}
-              title="Quote Preview"
-              className="shadow-inner"
-            />
+            {loading && (
+              <div className="flex items-center justify-center h-[700px]">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+              </div>
+            )}
+
+            {error && (
+              <div className="flex items-center justify-center h-[700px]">
+                <div className="text-center">
+                  <p className="text-red-600 mb-4">{error}</p>
+                  <button
+                    onClick={fetchPreview}
+                    className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+                  >
+                    Thử lại
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {!loading && !error && previewHTML && (
+              <iframe
+                srcDoc={previewHTML}
+                width="100%"
+                height="700px"
+                style={{ border: "none", borderRadius: "4px" }}
+                title="Quote Preview"
+                className="shadow-inner"
+              />
+            )}
           </div>
 
           {/* Footer */}

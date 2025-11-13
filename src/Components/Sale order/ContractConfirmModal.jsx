@@ -16,6 +16,7 @@ const ContractConfirmModal = ({
   const { user } = useAuth();
 
   const [formData, setFormData] = useState({
+    numberContract: "",
     status: "Draft",
     paymentMethod: "Chuyển khoản",
     expiration: "",
@@ -35,6 +36,7 @@ const ContractConfirmModal = ({
         expirationDate.setFullYear(expirationDate.getFullYear() + 1);
 
         setFormData({
+          numberContract: "",
           status: "Draft",
           paymentMethod: "Chuyển khoản",
           expiration: expirationDate.toISOString().slice(0, 16),
@@ -105,6 +107,7 @@ const ContractConfirmModal = ({
       const contractData = {
         saleOrderId: deal.id,
         userId: user.id,
+        numberContract: formData.numberContract.trim() || "",
         status: formData.status,
         paymentMethod: formData.paymentMethod,
         expiration: new Date(formData.expiration).toISOString(),
@@ -275,20 +278,24 @@ const ContractConfirmModal = ({
                 </div>
               )}
 
-            {/* Thông tin thuế từ Sale Order */}
-            {deal && deal.tax && (
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Thuế áp dụng
-                </label>
-                <div className="w-full px-4 py-2 border border-gray-200 rounded-md bg-gray-50">
-                  <p className="text-sm text-gray-900">
-                    {deal.tax.name || `Thuế ${deal.tax.rate}%`} -{" "}
-                    <span className="font-semibold">{deal.tax.rate}%</span>
-                  </p>
-                </div>
-              </div>
-            )}
+            {/* Số hợp đồng */}
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Số hợp đồng
+              </label>
+              <input
+                type="text"
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                placeholder="VD: HD-2025-001 (Để trống nếu không có)"
+                value={formData.numberContract}
+                onChange={(e) =>
+                  setFormData({ ...formData, numberContract: e.target.value })
+                }
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                Nhập số hợp đồng nếu có, hệ thống sẽ sử dụng ID tự động nếu bỏ trống
+              </p>
+            </div>
 
             {/* Trạng thái */}
             <div>

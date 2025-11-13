@@ -8,13 +8,16 @@ import {
   PencilIcon,
   TrashIcon,
 } from "@heroicons/react/24/outline";
-import { getAllContracts } from "../../Service/ApiService";
+import { getAllContracts, deleteContract } from "../../Service/ApiService";
 import {
   showLoading,
   closeLoading,
   showErrorAlert,
+  showSuccess,
+  showDeleteConfirm,
 } from "../../utils/sweetAlert";
 import ContractCreateModal from "./ContractCreateModal";
+import ContractEditModal from "./ContractEditModal";
 import ContractPreviewModal from "./ContractPreviewModal";
 
 const Contract = () => {
@@ -23,8 +26,10 @@ const Contract = () => {
   const [filterStatus, setFilterStatus] = useState("all");
   const [isLoading, setIsLoading] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [selectedContractId, setSelectedContractId] = useState(null);
+  const [editContractId, setEditContractId] = useState(null);
 
   // Fetch contracts from API
   useEffect(() => {
@@ -87,6 +92,34 @@ const Contract = () => {
     setSelectedContractId(null);
   };
 
+  const handleEditContract = (contractId) => {
+    setEditContractId(contractId);
+    setShowEditModal(true);
+  };
+
+  const handleCloseEditModal = () => {
+    setShowEditModal(false);
+    setEditContractId(null);
+  };
+
+  const handleDeleteContract = async (contractId, contractTitle) => {
+    const confirmed = await showDeleteConfirm(
+      "Xóa hợp đồng",
+      `Bạn có chắc chắn muốn xóa hợp đồng "${contractTitle}"? Hành động này không thể hoàn tác.`
+    );
+
+    if (confirmed) {
+      try {
+        await deleteContract(contractId);
+        showSuccess("Thành công!", "Đã xóa hợp đồng");
+        fetchContracts(); // Reload the contracts list
+      } catch (error) {
+        console.error("Error deleting contract:", error);
+        showErrorAlert("Lỗi!", "Không thể xóa hợp đồng. Vui lòng thử lại.");
+      }
+    }
+  };
+
   const filteredContracts = contracts.filter((contract) => {
     const matchesSearch =
       (contract.saleOrder?.title?.toLowerCase() || "").includes(
@@ -116,13 +149,13 @@ const Contract = () => {
               Quản lý tất cả hợp đồng của khách hàng
             </p>
           </div>
-          <button
+          {/* <button
             onClick={() => setShowCreateModal(true)}
             className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
             <PlusIcon className="h-5 w-5 mr-2" />
             Tạo hợp đồng mới
-          </button>
+          </button> */}
         </div>
       </div>
 
@@ -304,12 +337,19 @@ const Contract = () => {
                           <EyeIcon className="h-5 w-5" />
                         </button>
                         <button
+                          onClick={() => handleEditContract(contract.id)}
                           className="text-yellow-600 hover:text-yellow-900 p-1 rounded hover:bg-yellow-50 transition-colors"
                           title="Chỉnh sửa"
                         >
                           <PencilIcon className="h-5 w-5" />
                         </button>
                         <button
+                          onClick={() =>
+                            handleDeleteContract(
+                              contract.id,
+                              contract.saleOrder?.title || "Hợp đồng"
+                            )
+                          }
                           className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50 transition-colors"
                           title="Xóa"
                         >
@@ -386,6 +426,16 @@ const Contract = () => {
         onClose={() => setShowCreateModal(false)}
         onSuccess={fetchContracts}
       />
+
+      {/* Edit Contract Modal */}
+      {editContractId && (
+        <ContractEditModal
+          isOpen={showEditModal}
+          onClose={handleCloseEditModal}
+          onSuccess={fetchContracts}
+          contractId={editContractId}
+        />
+      )}
 
       {/* Contract Preview Modal */}
       {selectedContractId && (

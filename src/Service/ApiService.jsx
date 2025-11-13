@@ -355,6 +355,26 @@ export const getContractsByCustomer = (customerId) => {
   return apiClient.get(API_ENDPOINT.CONTRACTS.GET_BY_CUSTOMER(customerId));
 };
 
+export const previewContract = (id) => {
+  return apiClient.get(API_ENDPOINT.CONTRACTS.PREVIEW(id), {
+    headers: {
+      Accept: "text/html",
+    },
+  });
+};
+
+export const exportContract = (id) => {
+  return apiClient.get(API_ENDPOINT.CONTRACTS.EXPORT(id), {
+    responseType: "blob",
+  });
+};
+
+export const regenerateContract = (id) => {
+  return apiClient.post(API_ENDPOINT.CONTRACTS.REGENERATE(id), null, {
+    responseType: "blob",
+  });
+};
+
 // =============================
 // TICKETS APIs
 // =============================
@@ -577,6 +597,20 @@ export const deleteQuote = (id) => {
 
 export const getQuotesByCustomer = (customerId) => {
   return apiClient.get(API_ENDPOINT.QUOTES.GET_BY_CUSTOMER(customerId));
+};
+
+export const previewQuote = (id) => {
+  return apiClient.get(API_ENDPOINT.QUOTES.PREVIEW(id), {
+    headers: {
+      Accept: "text/html",
+    },
+  });
+};
+
+export const exportQuotePdf = (id) => {
+  return apiClient.get(API_ENDPOINT.QUOTES.EXPORT_PDF(id), {
+    responseType: "blob",
+  });
 };
 
 // =============================
