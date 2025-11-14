@@ -5,13 +5,13 @@ import { AuthProvider } from './Context/AuthContext'
 
 function App() {
   // Chỉ hiển thị AuthDebugPanel trong development
-  const isDevelopment = import.meta.env.MODE === 'development';
+  // const isDevelopment = import.meta.env.MODE === 'development';
   
   return (
     <AuthProvider>
       <div>
         <AppRouter />
-        {isDevelopment && <AuthDebugPanel />}
+        {/* {isDevelopment && <AuthDebugPanel />} */}
       </div>
     </AuthProvider>
   )

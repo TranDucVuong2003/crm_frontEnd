@@ -5,7 +5,7 @@ import { successToast, showError } from "../../utils/sweetAlert";
 
 const CustomerModal = ({ isOpen, onClose, customer = null, onSave }) => {
   const [customerType, setCustomerType] = useState("individual"); // individual or company
-  
+
   const initialFormData = {
     // Common fields
     customerType: "individual",
@@ -48,7 +48,7 @@ const CustomerModal = ({ isOpen, onClose, customer = null, onSave }) => {
 
   // Update customerType in formData when customerType changes
   useEffect(() => {
-    setFormData(prev => ({ ...prev, customerType }));
+    setFormData((prev) => ({ ...prev, customerType }));
   }, [customerType]);
 
   // Handle form population when modal opens
@@ -60,8 +60,12 @@ const CustomerModal = ({ isOpen, onClose, customer = null, onSave }) => {
           ...initialFormData,
           ...customer,
           // Convert dates to proper format for inputs
-          birthDate: customer.birthDate ? new Date(customer.birthDate).toISOString().split('T')[0] : '',
-          establishedDate: customer.establishedDate ? new Date(customer.establishedDate).toISOString().split('T')[0] : ''
+          birthDate: customer.birthDate
+            ? new Date(customer.birthDate).toISOString().split("T")[0]
+            : "",
+          establishedDate: customer.establishedDate
+            ? new Date(customer.establishedDate).toISOString().split("T")[0]
+            : "",
         };
         setFormData(editFormData);
         setCustomerType(customer.customerType || "individual");
@@ -82,6 +86,37 @@ const CustomerModal = ({ isOpen, onClose, customer = null, onSave }) => {
     setError("");
 
     try {
+      // Validation for individual customer
+      if (customerType === "individual") {
+        if (!formData.name || formData.name.trim() === "") {
+          setError("Vui lòng nhập họ tên");
+          setLoading(false);
+          return;
+        }
+        if (!formData.phoneNumber || formData.phoneNumber.trim() === "") {
+          setError("Vui lòng nhập số điện thoại");
+          setLoading(false);
+          return;
+        }
+      }
+
+      // Validation for company customer
+      if (customerType === "company") {
+        if (!formData.companyName || formData.companyName.trim() === "") {
+          setError("Vui lòng nhập tên công ty");
+          setLoading(false);
+          return;
+        }
+        if (
+          !formData.representativePhone ||
+          formData.representativePhone.trim() === ""
+        ) {
+          setError("Vui lòng nhập số điện thoại người đại diện");
+          setLoading(false);
+          return;
+        }
+      }
+
       // Prepare data for API - format dates and set customerType
       const apiData = {
         customerType: customerType,
@@ -92,7 +127,9 @@ const CustomerModal = ({ isOpen, onClose, customer = null, onSave }) => {
         // Individual fields
         name: formData.name || null,
         address: formData.address || null,
-        birthDate: formData.birthDate ? new Date(formData.birthDate + 'T00:00:00Z').toISOString() : null,
+        birthDate: formData.birthDate
+          ? new Date(formData.birthDate + "T00:00:00Z").toISOString()
+          : null,
         idNumber: formData.idNumber || null,
         phoneNumber: formData.phoneNumber || null,
         email: formData.email || null,
@@ -100,7 +137,9 @@ const CustomerModal = ({ isOpen, onClose, customer = null, onSave }) => {
         // Company fields
         companyName: formData.companyName || null,
         companyAddress: formData.companyAddress || null,
-        establishedDate: formData.establishedDate ? new Date(formData.establishedDate + 'T00:00:00Z').toISOString() : null,
+        establishedDate: formData.establishedDate
+          ? new Date(formData.establishedDate + "T00:00:00Z").toISOString()
+          : null,
         taxCode: formData.taxCode || null,
         companyDomain: formData.companyDomain || null,
         // Representative info
@@ -117,13 +156,13 @@ const CustomerModal = ({ isOpen, onClose, customer = null, onSave }) => {
 
       // Call parent's save handler which will handle API calls
       onSave(apiData);
-      
+
       // Reset form after successful creation (only for new customers)
       if (!customer) {
         setFormData(initialFormData);
         setCustomerType("individual");
       }
-      
+
       onClose();
     } catch (err) {
       setError("Có lỗi xảy ra khi lưu thông tin khách hàng");
@@ -185,7 +224,9 @@ const CustomerModal = ({ isOpen, onClose, customer = null, onSave }) => {
                 customerType === "individual"
                   ? "bg-indigo-100 text-indigo-700 border-2 border-indigo-300"
                   : "bg-gray-100 text-gray-700 border-2 border-gray-300"
-              } ${!!customer ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+              } ${
+                !!customer ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
+              }`}
             >
               Cá nhân
             </button>
@@ -197,7 +238,9 @@ const CustomerModal = ({ isOpen, onClose, customer = null, onSave }) => {
                 customerType === "company"
                   ? "bg-indigo-100 text-indigo-700 border-2 border-indigo-300"
                   : "bg-gray-100 text-gray-700 border-2 border-gray-300"
-              } ${!!customer ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+              } ${
+                !!customer ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
+              }`}
             >
               Công ty
             </button>
@@ -221,11 +264,12 @@ const CustomerModal = ({ isOpen, onClose, customer = null, onSave }) => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Họ tên
+                    Họ tên <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
                     maxLength={100}
+                    required
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                     value={formData.name}
                     onChange={(e) =>
@@ -233,7 +277,6 @@ const CustomerModal = ({ isOpen, onClose, customer = null, onSave }) => {
                     }
                   />
                 </div>
-
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Ngày sinh
@@ -247,7 +290,6 @@ const CustomerModal = ({ isOpen, onClose, customer = null, onSave }) => {
                     }
                   />
                 </div>
-
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Số CMND/Số hộ chiếu
@@ -262,22 +304,21 @@ const CustomerModal = ({ isOpen, onClose, customer = null, onSave }) => {
                     }
                   />
                 </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Số điện thoại
-                    </label>
-                    <input
-                      type="tel"
-                      maxLength={20}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                      value={formData.phoneNumber}
-                      onChange={(e) =>
-                        setFormData({ ...formData, phoneNumber: e.target.value })
-                      }
-                    />
-                  </div>
-
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Số điện thoại <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="tel"
+                    maxLength={20}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    value={formData.phoneNumber}
+                    onChange={(e) =>
+                      setFormData({ ...formData, phoneNumber: e.target.value })
+                    }
+                  />
+                </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Email
@@ -291,7 +332,8 @@ const CustomerModal = ({ isOpen, onClose, customer = null, onSave }) => {
                       setFormData({ ...formData, email: e.target.value })
                     }
                   />
-                </div>                <div>
+                </div>{" "}
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Tên miền
                   </label>
@@ -305,10 +347,9 @@ const CustomerModal = ({ isOpen, onClose, customer = null, onSave }) => {
                     }
                   />
                 </div>
-
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Trạng thái
+                    Trạng thái cuộc gọi
                   </label>
                   <select
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
@@ -318,9 +359,11 @@ const CustomerModal = ({ isOpen, onClose, customer = null, onSave }) => {
                     }
                   >
                     <option value="">Chọn trạng thái</option>
-                    <option value="active">Hoạt động</option>
-                    <option value="inactive">Không hoạt động</option>
-                    <option value="pending">Đang chờ</option>
+                    <option value="not_called">Chưa gọi</option>
+                    <option value="calling">Đang gọi</option>
+                    <option value="no_answer">Không nghe máy</option>
+                    <option value="connected">Đã liên hệ thành công</option>
+                    <option value="rejected">Từ chối / Không quan tâm</option>
                   </select>
                 </div>
               </div>
@@ -374,7 +417,10 @@ const CustomerModal = ({ isOpen, onClose, customer = null, onSave }) => {
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                       value={formData.companyName}
                       onChange={(e) =>
-                        setFormData({ ...formData, companyName: e.target.value })
+                        setFormData({
+                          ...formData,
+                          companyName: e.target.value,
+                        })
                       }
                     />
                   </div>
@@ -388,7 +434,10 @@ const CustomerModal = ({ isOpen, onClose, customer = null, onSave }) => {
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                       value={formData.establishedDate}
                       onChange={(e) =>
-                        setFormData({ ...formData, establishedDate: e.target.value })
+                        setFormData({
+                          ...formData,
+                          establishedDate: e.target.value,
+                        })
                       }
                     />
                   </div>
@@ -418,7 +467,10 @@ const CustomerModal = ({ isOpen, onClose, customer = null, onSave }) => {
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                       value={formData.companyDomain}
                       onChange={(e) =>
-                        setFormData({ ...formData, companyDomain: e.target.value })
+                        setFormData({
+                          ...formData,
+                          companyDomain: e.target.value,
+                        })
                       }
                     />
                   </div>
@@ -452,7 +504,10 @@ const CustomerModal = ({ isOpen, onClose, customer = null, onSave }) => {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                     value={formData.companyAddress}
                     onChange={(e) =>
-                      setFormData({ ...formData, companyAddress: e.target.value })
+                      setFormData({
+                        ...formData,
+                        companyAddress: e.target.value,
+                      })
                     }
                   />
                 </div>
@@ -472,7 +527,10 @@ const CustomerModal = ({ isOpen, onClose, customer = null, onSave }) => {
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                         value={formData.representativeName}
                         onChange={(e) =>
-                          setFormData({ ...formData, representativeName: e.target.value })
+                          setFormData({
+                            ...formData,
+                            representativeName: e.target.value,
+                          })
                         }
                       />
                     </div>
@@ -487,7 +545,10 @@ const CustomerModal = ({ isOpen, onClose, customer = null, onSave }) => {
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                         value={formData.representativePosition}
                         onChange={(e) =>
-                          setFormData({ ...formData, representativePosition: e.target.value })
+                          setFormData({
+                            ...formData,
+                            representativePosition: e.target.value,
+                          })
                         }
                       />
                     </div>
@@ -502,7 +563,10 @@ const CustomerModal = ({ isOpen, onClose, customer = null, onSave }) => {
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                         value={formData.representativeIdNumber}
                         onChange={(e) =>
-                          setFormData({ ...formData, representativeIdNumber: e.target.value })
+                          setFormData({
+                            ...formData,
+                            representativeIdNumber: e.target.value,
+                          })
                         }
                       />
                     </div>
@@ -517,7 +581,10 @@ const CustomerModal = ({ isOpen, onClose, customer = null, onSave }) => {
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                         value={formData.representativePhone}
                         onChange={(e) =>
-                          setFormData({ ...formData, representativePhone: e.target.value })
+                          setFormData({
+                            ...formData,
+                            representativePhone: e.target.value,
+                          })
                         }
                       />
                     </div>
@@ -532,7 +599,10 @@ const CustomerModal = ({ isOpen, onClose, customer = null, onSave }) => {
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                         value={formData.representativeEmail}
                         onChange={(e) =>
-                          setFormData({ ...formData, representativeEmail: e.target.value })
+                          setFormData({
+                            ...formData,
+                            representativeEmail: e.target.value,
+                          })
                         }
                       />
                     </div>
@@ -555,7 +625,10 @@ const CustomerModal = ({ isOpen, onClose, customer = null, onSave }) => {
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                       value={formData.techContactName}
                       onChange={(e) =>
-                        setFormData({ ...formData, techContactName: e.target.value })
+                        setFormData({
+                          ...formData,
+                          techContactName: e.target.value,
+                        })
                       }
                     />
                   </div>
@@ -570,7 +643,10 @@ const CustomerModal = ({ isOpen, onClose, customer = null, onSave }) => {
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                       value={formData.techContactPhone}
                       onChange={(e) =>
-                        setFormData({ ...formData, techContactPhone: e.target.value })
+                        setFormData({
+                          ...formData,
+                          techContactPhone: e.target.value,
+                        })
                       }
                     />
                   </div>
@@ -585,7 +661,10 @@ const CustomerModal = ({ isOpen, onClose, customer = null, onSave }) => {
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                       value={formData.techContactEmail}
                       onChange={(e) =>
-                        setFormData({ ...formData, techContactEmail: e.target.value })
+                        setFormData({
+                          ...formData,
+                          techContactEmail: e.target.value,
+                        })
                       }
                     />
                   </div>

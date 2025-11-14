@@ -1,9 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import { XMarkIcon, PlusIcon, TrashIcon } from '@heroicons/react/24/outline';
-import { getAllServices } from '../../Service/ApiService';
-import { showError } from '../../utils/sweetAlert';
+import React, { useState, useEffect } from "react";
+import { XMarkIcon, PlusIcon, TrashIcon } from "@heroicons/react/24/outline";
+import { getAllServices } from "../../Service/ApiService";
+import { showError } from "../../utils/sweetAlert";
 
-const ServiceSelectionModal = ({ isOpen, onClose, onSave, initialServices = [] }) => {
+const ServiceSelectionModal = ({
+  isOpen,
+  onClose,
+  onSave,
+  initialServices = [],
+}) => {
   const [services, setServices] = useState([]);
   const [selectedServices, setSelectedServices] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -16,15 +21,17 @@ const ServiceSelectionModal = ({ isOpen, onClose, onSave, initialServices = [] }
         setSelectedServices(initialServices);
       } else {
         // Start with one empty row
-        setSelectedServices([{
-          stt: 1,
-          serviceId: '',
-          serviceName: '',
-          maMau: '',
-          thoiHan: '',
-          price: 0,
-          thanhTien: 0
-        }]);
+        setSelectedServices([
+          {
+            stt: 1,
+            serviceId: "",
+            serviceName: "",
+            duration: "",
+            template: "",
+            price: 0,
+            thanhTien: 0,
+          },
+        ]);
       }
     }
   }, [isOpen, initialServices]);
@@ -33,10 +40,10 @@ const ServiceSelectionModal = ({ isOpen, onClose, onSave, initialServices = [] }
     try {
       setLoading(true);
       const response = await getAllServices();
-      setServices(response.data.filter(service => service.isActive));
+      setServices(response.data.filter((service) => service.isActive));
     } catch (error) {
-      console.error('Error fetching services:', error);
-      showError('Lỗi!', 'Không thể tải danh sách dịch vụ.');
+      console.error("Error fetching services:", error);
+      showError("Lỗi!", "Không thể tải danh sách dịch vụ.");
     } finally {
       setLoading(false);
     }
@@ -45,12 +52,12 @@ const ServiceSelectionModal = ({ isOpen, onClose, onSave, initialServices = [] }
   const addNewRow = () => {
     const newRow = {
       stt: selectedServices.length + 1,
-      serviceId: '',
-      serviceName: '',
-      maMau: '',
-      thoiHan: '',
+      serviceId: "",
+      serviceName: "",
+      duration: "",
+      template: "",
       price: 0,
-      thanhTien: 0
+      thanhTien: 0,
     };
     setSelectedServices([...selectedServices, newRow]);
   };
@@ -61,34 +68,34 @@ const ServiceSelectionModal = ({ isOpen, onClose, onSave, initialServices = [] }
       // Update STT numbers
       const renumberedServices = updatedServices.map((service, i) => ({
         ...service,
-        stt: i + 1
+        stt: i + 1,
       }));
       setSelectedServices(renumberedServices);
     }
   };
 
   const handleServiceChange = (index, serviceId) => {
-    const selectedService = services.find(s => s.id === parseInt(serviceId));
+    const selectedService = services.find((s) => s.id === parseInt(serviceId));
     const updatedServices = [...selectedServices];
-    
+
     if (selectedService) {
       updatedServices[index] = {
         ...updatedServices[index],
         serviceId: selectedService.id,
         serviceName: selectedService.name,
         price: selectedService.price,
-        thanhTien: selectedService.price
+        thanhTien: selectedService.price,
       };
     } else {
       updatedServices[index] = {
         ...updatedServices[index],
-        serviceId: '',
-        serviceName: '',
+        serviceId: "",
+        serviceName: "",
         price: 0,
-        thanhTien: 0
+        thanhTien: 0,
       };
     }
-    
+
     setSelectedServices(updatedServices);
   };
 
@@ -96,28 +103,33 @@ const ServiceSelectionModal = ({ isOpen, onClose, onSave, initialServices = [] }
     const updatedServices = [...selectedServices];
     updatedServices[index] = {
       ...updatedServices[index],
-      [field]: value
+      [field]: value,
     };
     setSelectedServices(updatedServices);
   };
 
   const calculateTotal = () => {
-    return selectedServices.reduce((total, service) => total + (service.thanhTien || 0), 0);
+    return selectedServices.reduce(
+      (total, service) => total + (service.thanhTien || 0),
+      0
+    );
   };
 
   const formatPrice = (price) => {
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND'
+    return new Intl.NumberFormat("vi-VN", {
+      style: "currency",
+      currency: "VND",
     }).format(price);
   };
 
   const handleSave = () => {
     // Validate that at least one service is selected
-    const validServices = selectedServices.filter(service => service.serviceId);
-    
+    const validServices = selectedServices.filter(
+      (service) => service.serviceId
+    );
+
     if (validServices.length === 0) {
-      showError('Lỗi!', 'Vui lòng chọn ít nhất một dịch vụ.');
+      showError("Lỗi!", "Vui lòng chọn ít nhất một dịch vụ.");
       return;
     }
 
@@ -129,8 +141,15 @@ const ServiceSelectionModal = ({ isOpen, onClose, onSave, initialServices = [] }
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-opacity-50 overflow-y-auto h-full w-full z-50" style={{backgroundColor: 'rgba(0,0,0,0.5)'}}>
-      <div className="relative top-20 mx-auto p-5 border w-full max-w-6xl shadow-lg rounded-md bg-white">
+    <div
+      className="fixed inset-0 bg-opacity-50 overflow-y-auto h-full w-full z-50"
+      style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+      onClick={onClose}
+    >
+      <div
+        className="relative top-20 mx-auto p-5 border w-full max-w-6xl shadow-lg rounded-md bg-white"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-xl font-semibold text-gray-900">Chọn Dịch vụ</h3>
           <button
@@ -170,10 +189,10 @@ const ServiceSelectionModal = ({ isOpen, onClose, onSave, initialServices = [] }
                       Khoản mục
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-200">
-                      Mã mẫu
+                      Duration (tháng)
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-200">
-                      Thời hạn
+                      Template
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-200">
                       Thành tiền
@@ -192,11 +211,13 @@ const ServiceSelectionModal = ({ isOpen, onClose, onSave, initialServices = [] }
                       <td className="px-4 py-3 whitespace-nowrap border-r border-gray-200">
                         <select
                           value={service.serviceId}
-                          onChange={(e) => handleServiceChange(index, e.target.value)}
+                          onChange={(e) =>
+                            handleServiceChange(index, e.target.value)
+                          }
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
                         >
                           <option value="">Chọn dịch vụ</option>
-                          {services.map(s => (
+                          {services.map((s) => (
                             <option key={s.id} value={s.id}>
                               {s.name} - {formatPrice(s.price)}
                             </option>
@@ -205,25 +226,30 @@ const ServiceSelectionModal = ({ isOpen, onClose, onSave, initialServices = [] }
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap border-r border-gray-200">
                         <input
-                          type="text"
-                          value={service.maMau}
-                          onChange={(e) => handleFieldChange(index, 'maMau', e.target.value)}
+                          type="number"
+                          value={service.duration}
+                          onChange={(e) =>
+                            handleFieldChange(
+                              index,
+                              "duration",
+                              parseInt(e.target.value) || ""
+                            )
+                          }
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
-                          placeholder="Nhập mã mẫu"
+                          placeholder="Nhập số tháng"
+                          min="1"
                         />
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap border-r border-gray-200">
-                        <select
-                          value={service.thoiHan}
-                          onChange={(e) => handleFieldChange(index, 'thoiHan', e.target.value)}
+                        <input
+                          type="text"
+                          value={service.template}
+                          onChange={(e) =>
+                            handleFieldChange(index, "template", e.target.value)
+                          }
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
-                        >
-                          <option value="">Chọn thời hạn</option>
-                          <option value="3">3 tháng</option>
-                          <option value="6">6 tháng</option>
-                          <option value="12">12 tháng</option>
-                          <option value="24">24 tháng</option>
-                        </select>
+                          placeholder="Nhập template"
+                        />
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 border-r border-gray-200">
                         <span className="font-medium text-green-600">
@@ -251,7 +277,9 @@ const ServiceSelectionModal = ({ isOpen, onClose, onSave, initialServices = [] }
             <div className="mt-4 flex justify-end">
               <div className="bg-gray-50 px-4 py-3 rounded-lg">
                 <div className="flex items-center space-x-4">
-                  <span className="text-sm font-medium text-gray-700">Tổng tiền:</span>
+                  <span className="text-sm font-medium text-gray-700">
+                    Tổng tiền:
+                  </span>
                   <span className="text-lg font-bold text-green-600">
                     {formatPrice(calculateTotal())}
                   </span>

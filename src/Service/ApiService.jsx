@@ -1,6 +1,6 @@
-import axios from 'axios';
-import API_ENDPOINT from '../Constant/apiEndpoint.constant';
-import { AuthCookies } from '../utils/cookieUtils';
+import axios from "axios";
+import API_ENDPOINT from "../Constant/apiEndpoint.constant";
+import { AuthCookies } from "../utils/cookieUtils";
 
 // Token management utilities using cookies
 const getToken = () => {
@@ -10,7 +10,7 @@ const getToken = () => {
 const removeToken = () => {
   AuthCookies.clearAuth();
   // Trigger custom event for logout
-  window.dispatchEvent(new CustomEvent('auth-logout'));
+  window.dispatchEvent(new CustomEvent("auth-logout"));
 };
 
 const setToken = (token) => {
@@ -23,8 +23,9 @@ const setToken = (token) => {
 const apiClient = axios.create({
   baseURL: API_ENDPOINT.BASE_URL,
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
+  withCredentials: true, // Enable sending cookies with requests (for refresh token in HttpOnly cookie)
 });
 
 // Add token to request headers
@@ -32,29 +33,118 @@ apiClient.interceptors.request.use(
   (config) => {
     const token = getToken();
     if (token) {
-      config.headers['Authorization'] = `Bearer ${token}`;
+      config.headers["Authorization"] = `Bearer ${token}`;
     }
     return config;
   },
   (error) => Promise.reject(error)
 );
 
-// Handle 401 Unauthorized
+// Token refresh state
+let isRefreshing = false;
+let failedQueue = [];
+
+const processQueue = (error, token = null) => {
+  failedQueue.forEach((prom) => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+
+  failedQueue = [];
+};
+
+// Handle 401 Unauthorized with token refresh
 apiClient.interceptors.response.use(
   (response) => {
-    console.log('API Response:', response);
+    console.log("API Response:", response);
     return response;
   },
-  (error) => {
-    console.error('API Error:', error);
-    
+  async (error) => {
+    console.error("API Error:", error);
+
+    const originalRequest = error.config;
+
     if (error.response?.status === 401) {
-      // Only remove token if this is not a login request
-      if (!error.config?.url?.includes('/login')) {
+      // Don't retry for login, logout, or refresh-token endpoints
+      const excludedUrls = ["/login", "/logout", "/refresh-token"];
+      const isExcluded = excludedUrls.some((url) =>
+        originalRequest?.url?.includes(url)
+      );
+
+      if (isExcluded) {
+        return Promise.reject(error);
+      }
+
+      // If already retried, logout
+      if (originalRequest._retry) {
+        console.log("Token refresh failed, logging out...");
         removeToken();
-        window.location.reload();
+
+        // Force reload to trigger ProtectedRoute check
+        setTimeout(() => {
+          window.location.href = "/login";
+        }, 100);
+
+        return Promise.reject(error);
+      }
+
+      // If already refreshing, queue this request
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        })
+          .then((token) => {
+            originalRequest.headers["Authorization"] = "Bearer " + token;
+            return apiClient(originalRequest);
+          })
+          .catch((err) => {
+            return Promise.reject(err);
+          });
+      }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      try {
+        console.log("Attempting to refresh token...");
+        const response = await apiClient.post(API_ENDPOINT.AUTH.REFRESH_TOKEN);
+
+        if (response.data && response.data.accessToken) {
+          const newToken = response.data.accessToken;
+          setToken(newToken);
+          console.log("Token refreshed successfully");
+
+          // Update authorization header
+          apiClient.defaults.headers.common["Authorization"] =
+            "Bearer " + newToken;
+          originalRequest.headers["Authorization"] = "Bearer " + newToken;
+
+          processQueue(null, newToken);
+          isRefreshing = false;
+
+          // Retry the original request
+          return apiClient(originalRequest);
+        } else {
+          throw new Error("Invalid refresh token response");
+        }
+      } catch (refreshError) {
+        console.error("Token refresh failed:", refreshError);
+        processQueue(refreshError, null);
+        isRefreshing = false;
+        removeToken();
+
+        // Force reload to trigger ProtectedRoute check
+        setTimeout(() => {
+          window.location.href = "/login";
+        }, 100);
+
+        return Promise.reject(refreshError);
       }
     }
+
     return Promise.reject(error);
   }
 );
@@ -64,6 +154,33 @@ apiClient.interceptors.response.use(
 // =============================
 export const login = (loginData) => {
   return apiClient.post(API_ENDPOINT.AUTH.LOGIN, loginData);
+};
+
+export const refreshToken = () => {
+  return apiClient.post(API_ENDPOINT.AUTH.REFRESH_TOKEN);
+};
+
+export const logout = () => {
+  return apiClient.post(API_ENDPOINT.AUTH.LOGOUT);
+};
+
+export const getSessions = () => {
+  return apiClient.get(API_ENDPOINT.AUTH.GET_SESSIONS);
+};
+
+export const revokeSession = (id) => {
+  return apiClient.post(API_ENDPOINT.AUTH.REVOKE_SESSION(id));
+};
+
+export const revokeAllSessions = () => {
+  return apiClient.post(API_ENDPOINT.AUTH.REVOKE_ALL_SESSIONS);
+};
+
+// =============================
+// MENU APIs
+// =============================
+export const getSidebarMenu = () => {
+  return apiClient.get(API_ENDPOINT.MENU.GET_SIDEBAR);
 };
 
 // =============================
@@ -211,7 +328,61 @@ export const deleteSaleOrder = (id) => {
 };
 
 export const updateSaleOrderProbability = (id, probabilityData) => {
-  return apiClient.patch(API_ENDPOINT.SALE_ORDERS.UPDATE_PROBABILITY(id), probabilityData);
+  return apiClient.patch(
+    API_ENDPOINT.SALE_ORDERS.UPDATE_PROBABILITY(id),
+    probabilityData
+  );
+};
+
+export const exportSaleOrderContract = (id) => {
+  return apiClient.get(API_ENDPOINT.SALE_ORDERS.EXPORT_CONTRACT(id));
+};
+
+// =============================
+// CONTRACTS APIs
+// =============================
+export const getAllContracts = () => {
+  return apiClient.get(API_ENDPOINT.CONTRACTS.GET_ALL);
+};
+
+export const createContract = (contractData) => {
+  return apiClient.post(API_ENDPOINT.CONTRACTS.CREATE, contractData);
+};
+
+export const getContractById = (id) => {
+  return apiClient.get(API_ENDPOINT.CONTRACTS.GET_BY_ID(id));
+};
+
+export const updateContract = (id, contractData) => {
+  return apiClient.put(API_ENDPOINT.CONTRACTS.UPDATE(id), contractData);
+};
+
+export const deleteContract = (id) => {
+  return apiClient.delete(API_ENDPOINT.CONTRACTS.DELETE(id));
+};
+
+export const getContractsByCustomer = (customerId) => {
+  return apiClient.get(API_ENDPOINT.CONTRACTS.GET_BY_CUSTOMER(customerId));
+};
+
+export const previewContract = (id) => {
+  return apiClient.get(API_ENDPOINT.CONTRACTS.PREVIEW(id), {
+    headers: {
+      Accept: "text/html",
+    },
+  });
+};
+
+export const exportContract = (id) => {
+  return apiClient.get(API_ENDPOINT.CONTRACTS.EXPORT(id), {
+    responseType: "blob",
+  });
+};
+
+export const regenerateContract = (id) => {
+  return apiClient.post(API_ENDPOINT.CONTRACTS.REGENERATE(id), null, {
+    responseType: "blob",
+  });
 };
 
 // =============================
@@ -219,6 +390,10 @@ export const updateSaleOrderProbability = (id, probabilityData) => {
 // =============================
 export const getAllTickets = () => {
   return apiClient.get(API_ENDPOINT.TICKETS.GET_ALL);
+};
+
+export const getMyTickets = () => {
+  return apiClient.get(API_ENDPOINT.TICKETS.GET_MY_TICKETS);
 };
 
 export const createTicket = (ticketData) => {
@@ -269,7 +444,10 @@ export const updateTicketCategory = (id, categoryData) => {
 };
 
 export const patchTicketCategory = (id, categoryData) => {
-  return apiClient.patch(API_ENDPOINT.TICKET_CATEGORIES.PATCH(id), categoryData);
+  return apiClient.patch(
+    API_ENDPOINT.TICKET_CATEGORIES.PATCH(id),
+    categoryData
+  );
 };
 
 export const deleteTicketCategory = (id) => {
@@ -284,7 +462,16 @@ export const getAllTicketLogs = () => {
 };
 
 export const createTicketLog = (logData) => {
-  return apiClient.post(API_ENDPOINT.TICKET_LOGS.CREATE, logData);
+  // Check if logData is FormData (has files)
+  const isFormData = logData instanceof FormData;
+
+  return apiClient.post(API_ENDPOINT.TICKET_LOGS.CREATE, logData, {
+    headers: isFormData
+      ? {
+          "Content-Type": "multipart/form-data",
+        }
+      : undefined,
+  });
 };
 
 export const getTicketLogById = (id) => {
@@ -301,6 +488,15 @@ export const deleteTicketLog = (id) => {
 
 export const getTicketLogsByTicket = (ticketId) => {
   return apiClient.get(API_ENDPOINT.TICKET_LOGS.GET_BY_TICKET(ticketId));
+};
+
+export const downloadTicketLogAttachment = (attachmentId) => {
+  return apiClient.get(
+    API_ENDPOINT.TICKET_LOGS.DOWNLOAD_ATTACHMENT(attachmentId),
+    {
+      responseType: "blob",
+    }
+  );
 };
 
 // =============================
@@ -324,4 +520,124 @@ export const updateUser = (id, userData) => {
 
 export const deleteUser = (id) => {
   return apiClient.delete(API_ENDPOINT.USERS.DELETE(id));
+};
+
+// =============================
+// TAX APIs
+// =============================
+export const getAllTax = () => {
+  return apiClient.get(API_ENDPOINT.TAX.GET_ALL);
+};
+
+export const createTax = (taxData) => {
+  return apiClient.post(API_ENDPOINT.TAX.CREATE, taxData);
+};
+
+export const getTaxById = (id) => {
+  return apiClient.get(API_ENDPOINT.TAX.GET_BY_ID(id));
+};
+
+export const updateTax = (id, taxData) => {
+  return apiClient.put(API_ENDPOINT.TAX.UPDATE(id), taxData);
+};
+
+export const deleteTax = (id) => {
+  return apiClient.delete(API_ENDPOINT.TAX.DELETE(id));
+};
+
+// =============================
+// CATEGORY SERVICE ADDONS APIs
+// =============================
+export const getAllCategoryServiceAddons = () => {
+  return apiClient.get(API_ENDPOINT.CATEGORY_SERVICE_ADDONS.GET_ALL);
+};
+
+export const createCategoryServiceAddon = (categoryData) => {
+  return apiClient.post(
+    API_ENDPOINT.CATEGORY_SERVICE_ADDONS.CREATE,
+    categoryData
+  );
+};
+
+export const getCategoryServiceAddonById = (id) => {
+  return apiClient.get(API_ENDPOINT.CATEGORY_SERVICE_ADDONS.GET_BY_ID(id));
+};
+
+export const updateCategoryServiceAddon = (id, categoryData) => {
+  return apiClient.put(
+    API_ENDPOINT.CATEGORY_SERVICE_ADDONS.UPDATE(id),
+    categoryData
+  );
+};
+
+export const deleteCategoryServiceAddon = (id) => {
+  return apiClient.delete(API_ENDPOINT.CATEGORY_SERVICE_ADDONS.DELETE(id));
+};
+
+export const getCategoryServices = (id) => {
+  return apiClient.get(API_ENDPOINT.CATEGORY_SERVICE_ADDONS.GET_SERVICES(id));
+};
+
+export const getCategoryAddons = (id) => {
+  return apiClient.get(API_ENDPOINT.CATEGORY_SERVICE_ADDONS.GET_ADDONS(id));
+};
+
+// =============================
+// QUOTES APIs
+// =============================
+export const getAllQuotes = () => {
+  return apiClient.get(API_ENDPOINT.QUOTES.GET_ALL);
+};
+
+export const createQuote = (quoteData) => {
+  return apiClient.post(API_ENDPOINT.QUOTES.CREATE, quoteData);
+};
+
+export const getQuoteById = (id) => {
+  return apiClient.get(API_ENDPOINT.QUOTES.GET_BY_ID(id));
+};
+
+export const updateQuote = (id, quoteData) => {
+  return apiClient.put(API_ENDPOINT.QUOTES.UPDATE(id), quoteData);
+};
+
+export const deleteQuote = (id) => {
+  return apiClient.delete(API_ENDPOINT.QUOTES.DELETE(id));
+};
+
+export const getQuotesByCustomer = (customerId) => {
+  return apiClient.get(API_ENDPOINT.QUOTES.GET_BY_CUSTOMER(customerId));
+};
+
+export const previewQuote = (id) => {
+  return apiClient.get(API_ENDPOINT.QUOTES.PREVIEW(id), {
+    headers: {
+      Accept: "text/html",
+    },
+  });
+};
+
+export const exportQuotePdf = (id) => {
+  return apiClient.get(API_ENDPOINT.QUOTES.EXPORT_PDF(id), {
+    responseType: "blob",
+  });
+};
+
+// =============================
+// TEST APIs
+// =============================
+export const sendTestEmail = (ticketId) => {
+  return apiClient.post(API_ENDPOINT.TEST.SEND_TEST_EMAIL(ticketId));
+};
+
+export const getTicketEmailInfo = (ticketId) => {
+  return apiClient.get(API_ENDPOINT.TEST.GET_TICKET_EMAIL_INFO(ticketId));
+};
+
+export const getEmailConfigStatus = () => {
+  return apiClient.get(API_ENDPOINT.TEST.GET_EMAIL_CONFIG_STATUS);
+};
+
+export const debugUserClaims = () => {
+  return apiClient.get(API_ENDPOINT.TEST.DEBUG_USER_CLAIMS);
 };
