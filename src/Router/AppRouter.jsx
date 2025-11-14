@@ -128,19 +128,11 @@ function AppRouter() {
         },
         {
           path: "ticket-categories",
-          element: (
-            <ProtectedRoute allowedRoles={["admin"]}>
-              <TicketCategory />
-            </ProtectedRoute>
-          ),
+          element: <TicketCategory />,
         },
         {
           path: "sessions",
-          element: (
-            <ProtectedRoute allowedRoles={["admin"]}>
-              <SessionManagement />
-            </ProtectedRoute>
-          ),
+          element: <SessionManagement />,
         },
       ],
     },

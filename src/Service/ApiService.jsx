@@ -82,7 +82,12 @@ apiClient.interceptors.response.use(
       if (originalRequest._retry) {
         console.log("Token refresh failed, logging out...");
         removeToken();
-        window.location.href = "/login";
+
+        // Force reload to trigger ProtectedRoute check
+        setTimeout(() => {
+          window.location.href = "/login";
+        }, 100);
+
         return Promise.reject(error);
       }
 
@@ -130,7 +135,12 @@ apiClient.interceptors.response.use(
         processQueue(refreshError, null);
         isRefreshing = false;
         removeToken();
-        window.location.href = "/login";
+
+        // Force reload to trigger ProtectedRoute check
+        setTimeout(() => {
+          window.location.href = "/login";
+        }, 100);
+
         return Promise.reject(refreshError);
       }
     }
