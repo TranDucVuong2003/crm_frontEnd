@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { XMarkIcon, DocumentTextIcon } from "@heroicons/react/24/outline";
+import { useNavigate } from "react-router-dom";
 import { createContract, getAllTax } from "../../Service/ApiService";
 import { showSuccess, showError } from "../../utils/sweetAlert";
 import { useAuth } from "../../Context/AuthContext";
@@ -14,6 +15,7 @@ const ContractConfirmModal = ({
   onSuccess,
 }) => {
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
     status: "Draft",
@@ -35,7 +37,7 @@ const ContractConfirmModal = ({
         expirationDate.setFullYear(expirationDate.getFullYear() + 1);
 
         setFormData({
-          status: "Draft",
+          status: "Mới",
           paymentMethod: "Chuyển khoản",
           expiration: expirationDate.toISOString().slice(0, 16),
           notes: deal.notes || "",
@@ -120,6 +122,9 @@ const ContractConfirmModal = ({
       }
 
       onClose();
+
+      // Navigate to contract page
+      navigate("/contract");
     } catch (error) {
       console.error("Error creating contract:", error);
       const errorMessage =
@@ -134,7 +139,7 @@ const ContractConfirmModal = ({
 
   return (
     <div className="fixed inset-0  bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[100vh] overflow-y-auto">
         {/* Header */}
         <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center">
           <div className="flex items-center">
@@ -288,8 +293,8 @@ const ContractConfirmModal = ({
                   setFormData({ ...formData, status: e.target.value })
                 }
               >
-                <option value="Draft">Draft</option>
-                <option value="Active">Active</option>
+                <option value="Mới">Mới</option>
+                <option value="Cũ">Cũ</option>
                 <option value="Expired">Expired</option>
                 <option value="Terminated">Terminated</option>
                 <option value="Cancelled">Cancelled</option>

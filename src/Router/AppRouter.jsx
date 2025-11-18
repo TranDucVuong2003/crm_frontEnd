@@ -27,6 +27,7 @@ import SessionManagement from "../Components/SessionManagement";
 import ProtectedRoute from "./ProtectedRoute";
 import PublicRoute from "./PublicRoute";
 import Test_contact from "../Components/test_contact";
+import BankTransactionHistory from "../Components/test_api_mb";
 
 function AppRouter() {
   const router = createBrowserRouter([
@@ -47,6 +48,10 @@ function AppRouter() {
         {
           path: "test-contact",
           element: <Test_contact />,
+        },
+        {
+          path: "test-bank-api",
+          element: <BankTransactionHistory />,
         },
         {
           path: "customers",

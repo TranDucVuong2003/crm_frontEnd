@@ -1,9 +1,11 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import TicketForm from './TicketForm';
 
 const TicketCreatePage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const contractData = location.state; // Get data from Contract
 
   const handleSubmit = (ticketData) => {
     // Here you would typically send the data to your API
@@ -24,6 +26,7 @@ const TicketCreatePage = () => {
         onClose={handleClose}
         ticket={null}
         onSubmit={handleSubmit}
+        prefilledData={contractData} // Pass contract data to TicketForm
       />
     </div>
   );

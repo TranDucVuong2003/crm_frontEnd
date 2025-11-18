@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   MagnifyingGlassIcon as SearchIcon,
   FunnelIcon as FilterIcon,
@@ -27,6 +28,7 @@ import {
 } from "../../utils/sweetAlert";
 
 const CustomerManagement = () => {
+  const navigate = useNavigate();
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -66,17 +68,21 @@ const CustomerManagement = () => {
     }
   };
 
-  // Filter customers
-  const filteredCustomers = customers.filter((customer) => {
-    const customerName = customer.fullName || customer.name || "";
-    const matchesSearch =
-      customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (customer.email || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (customer.phone || "").includes(searchTerm);
-    const matchesStatus =
-      statusFilter === "all" || customer.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
+  // Filter and sort customers (descending by ID - newest first)
+  const filteredCustomers = customers
+    .filter((customer) => {
+      const customerName = customer.fullName || customer.name || "";
+      const matchesSearch =
+        customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (customer.email || "")
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase()) ||
+        (customer.phone || "").includes(searchTerm);
+      const matchesStatus =
+        statusFilter === "all" || customer.status === statusFilter;
+      return matchesSearch && matchesStatus;
+    })
+    .sort((a, b) => b.id - a.id);
 
   // Pagination calculations
   const totalItems = filteredCustomers.length;
@@ -357,7 +363,6 @@ const CustomerManagement = () => {
                 </select>
               </div>
             </div>
-           
           </div>
         </div>
       </div>
@@ -617,6 +622,8 @@ const CustomerManagement = () => {
           setIsSaleOrderModalOpen(false);
           setSelectedCustomer(null);
           showSuccess("Thành công!", "Tạo Sale Order thành công");
+          // Navigate to sales pipeline page
+          navigate("/sales");
         }}
       />
     </div>

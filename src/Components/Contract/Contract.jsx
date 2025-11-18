@@ -51,30 +51,6 @@ const Contract = () => {
     }
   };
 
-  const getStatusBadge = (status) => {
-    const statusConfig = {
-      Draft: { label: "Nháp", color: "bg-gray-100 text-gray-800" },
-      Active: { label: "Đang hoạt động", color: "bg-green-100 text-green-800" },
-      Expired: { label: "Hết hạn", color: "bg-red-100 text-red-800" },
-      Terminated: {
-        label: "Đã kết thúc",
-        color: "bg-orange-100 text-orange-800",
-      },
-      Cancelled: { label: "Đã hủy", color: "bg-red-100 text-red-800" },
-    };
-    const config = statusConfig[status] || {
-      label: status,
-      color: "bg-gray-100 text-gray-800",
-    };
-    return (
-      <span
-        className={`px-2 py-1 text-xs font-medium rounded-full ${config.color}`}
-      >
-        {config.label}
-      </span>
-    );
-  };
-
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat("vi-VN", {
       style: "currency",
@@ -277,7 +253,9 @@ const Contract = () => {
                     {/* Customer */}
                     <td className="px-6 py-2">
                       <div className="text-sm text-gray-900">
-                        {contract.saleOrder?.customer?.name || "N/A"}
+                        {contract.saleOrder?.customer?.companyName ||
+                          contract.saleOrder?.customer?.name ||
+                          "N/A"}
                       </div>
                       <div className="text-xs text-gray-500">
                         {contract.saleOrder?.customer?.phoneNumber || ""}
@@ -323,7 +301,7 @@ const Contract = () => {
 
                     {/* Status */}
                     <td className="px-6 py-4 whitespace-nowrap">
-                      {getStatusBadge(contract.status)}
+                      {contract.status}
                     </td>
 
                     {/* Actions */}
