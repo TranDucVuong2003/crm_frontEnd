@@ -8,9 +8,8 @@ const API_ENDPOINT = {
     LOGIN: "/api/Auth/login",
     REFRESH_TOKEN: "/api/Auth/refresh-token",
     LOGOUT: "/api/Auth/logout",
-    GET_SESSIONS: "/api/Auth/sessions",
-    REVOKE_SESSION: (id) => `/api/Auth/revoke-session/${id}`,
-    REVOKE_ALL_SESSIONS: "/api/Auth/revoke-all-sessions",
+    GET_ALL_SESSIONS_ADMIN: "/api/Auth/admin/all-sessions",
+    REVOKE_SESSION_ADMIN: (id) => `/api/Auth/admin/revoke-session/${id}`,
   },
 
   // Menu endpoints
@@ -156,6 +155,17 @@ const API_ENDPOINT = {
     GET_BY_CUSTOMER: (customerId) => `/api/Quotes/by-customer/${customerId}`,
     PREVIEW: (id) => `/api/Quotes/${id}/preview`,
     EXPORT_PDF: (id) => `/api/Quotes/${id}/export-pdf`,
+  },
+
+  // MatchedTransactions endpoints
+  MATCHED_TRANSACTIONS: {
+    GET_ALL: "/api/MatchedTransactions",
+    CREATE: "/api/MatchedTransactions",
+    GET_BY_ID: (id) => `/api/MatchedTransactions/${id}`,
+    UPDATE: (id) => `/api/MatchedTransactions/${id}`,
+    DELETE: (id) => `/api/MatchedTransactions/${id}`,
+    GET_BY_CONTRACT: (contractId) =>
+      `/api/MatchedTransactions/contract/${contractId}`,
   },
 
   // Test endpoints

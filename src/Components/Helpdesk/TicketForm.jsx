@@ -35,18 +35,26 @@ const TicketForm = ({ ticket, onSubmit, prefilledData }) => {
 
   const [formData, setFormData] = useState({
     title: ticket?.title || prefilledData?.contractName || "",
-    description: ticket?.description || 
-      (prefilledData ? `Ticket liên quan đến hợp đồng: ${prefilledData.contractName}\nDịch vụ: ${prefilledData.serviceName}\nTrạng thái hợp đồng: ${prefilledData.contractStatus}` : ""),
-    customer: ticket?.customer || 
-      (prefilledData ? { 
-        id: prefilledData.customerId || "", 
-        name: prefilledData.customerName || "", 
-        email: prefilledData.customerEmail || "", 
-        phone: prefilledData.customerPhone || "" 
-      } : { id: "", name: "", email: "", phone: "" }),
+    description:
+      ticket?.description ||
+      (prefilledData
+        ? `Ticket liên quan đến hợp đồng: ${prefilledData.contractName}\nDịch vụ: ${prefilledData.serviceName}\nTrạng thái hợp đồng: ${prefilledData.contractStatus}`
+        : ""),
+    customer:
+      ticket?.customer ||
+      (prefilledData
+        ? {
+            id: prefilledData.customerId || "",
+            name: prefilledData.customerName || "",
+            email: prefilledData.customerEmail || "",
+            phone: prefilledData.customerPhone || "",
+          }
+        : { id: "", name: "", email: "", phone: "" }),
     category: ticket?.category || "technical",
     assignedTo: ticket?.assignedTo || { id: "", name: "", email: "" },
-    tags: ticket?.tags || (prefilledData ? ["Hợp đồng", prefilledData.contractName] : []),
+    tags:
+      ticket?.tags ||
+      (prefilledData ? ["Hợp đồng", prefilledData.contractName] : []),
     status: ticket?.status || "new",
     stars: ticket?.stars || 1,
   });

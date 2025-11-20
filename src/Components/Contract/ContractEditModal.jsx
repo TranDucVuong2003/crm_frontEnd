@@ -201,21 +201,23 @@ const ContractEditModal = ({ isOpen, onClose, onSuccess, contractId }) => {
   const handleCreateTicket = () => {
     // Close modal first
     onClose();
-    
+
     // Navigate to ticket create page with pre-filled data
-    navigate('/helpdesk/create', {
+    navigate("/helpdesk/create", {
       state: {
         contractId: contractId,
         contractName: formData.name,
         customerId: formData.customerId,
-        customerName: customerInfo?.companyName || customerInfo?.name || '',
-        customerEmail: customerInfo?.email || '',
-        customerPhone: customerInfo?.phoneNumber || '',
+        customerName: customerInfo?.companyName || customerInfo?.name || "",
+        customerEmail: customerInfo?.email || "",
+        customerPhone: customerInfo?.phoneNumber || "",
         serviceId: formData.serviceId,
-        serviceName: services.find(s => s.id.toString() === formData.serviceId)?.name || '',
+        serviceName:
+          services.find((s) => s.id.toString() === formData.serviceId)?.name ||
+          "",
         contractStatus: formData.status,
         contractAmount: formData.totalAmount,
-      }
+      },
     });
   };
 
@@ -509,8 +511,9 @@ const ContractEditModal = ({ isOpen, onClose, onSuccess, contractId }) => {
                         Xuất hóa đơn
                       </button>
                     )}
-                    
-                    {(formData.status === "Đã cọc 50%" || formData.status === "Đã thanh toán") && (
+
+                    {(formData.status === "Đã cọc 50%" ||
+                      formData.status === "Đã thanh toán") && (
                       <button
                         type="button"
                         onClick={handleCreateTicket}

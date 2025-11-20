@@ -45,11 +45,6 @@ function SideBar() {
         if (response.data) {
           setMenuItems(response.data.menu || []);
           setUserRole(response.data.role);
-          console.log("Sidebar menu loaded:", {
-            role: response.data.role,
-            userId: response.data.userId,
-            menuCount: response.data.menu?.length,
-          });
         }
       } catch (error) {
         console.error("Error fetching sidebar menu:", error);

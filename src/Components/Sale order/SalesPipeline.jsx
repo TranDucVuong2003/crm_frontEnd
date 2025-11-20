@@ -94,7 +94,7 @@ const SalesPipeline = () => {
       filtered = filtered.filter((deal) => {
         return (
           deal.title.toLowerCase().includes(searchLower) ||
-          deal.customer.toLowerCase().includes(searchLower) ||
+          deal.customerName?.toLowerCase().includes(searchLower) ||
           deal.notes?.toLowerCase().includes(searchLower) ||
           deal.value.toString().includes(searchLower) ||
           deal.probability.toString().includes(searchLower)
@@ -128,6 +128,10 @@ const SalesPipeline = () => {
       ]);
 
       const saleOrders = saleOrdersResponse.data || [];
+      console.log(
+        "data saleorderrrrrrrrrrrrrrrrrrrrrrrrr",
+        saleOrdersResponse.data
+      );
       const customersData = customersResponse.data || [];
       const servicesData = servicesResponse.data || [];
       const addonsData = addonsResponse.data || [];
@@ -144,9 +148,11 @@ const SalesPipeline = () => {
           id: order.id,
           title: order.title,
           customerId: order.customerId,
-          customer: order.customer
-            ? order.customer.name || "Unknown"
-            : getCustomerName(order.customerId, customersData),
+          customer: order.customer || null, // Giữ nguyên customer object từ API
+          customerName:
+            order.customer?.name ||
+            getCustomerName(order.customerId, customersData), // Thêm field để hiển thị
+          createdByUser: order.createdByUser || null, // Giữ nguyên createdByUser object
           value: order.value,
           probability: order.probability,
           notes: order.notes,
@@ -169,9 +175,11 @@ const SalesPipeline = () => {
           id: order.id,
           title: order.title,
           customerId: order.customerId,
-          customer: order.customer
-            ? order.customer.name || "Unknown"
-            : getCustomerName(order.customerId, customersData),
+          customer: order.customer || null, // Giữ nguyên customer object
+          customerName:
+            order.customer?.name ||
+            getCustomerName(order.customerId, customersData),
+          createdByUser: order.createdByUser || null, // Giữ nguyên createdByUser object
           value: order.value,
           probability: order.probability,
           notes: order.notes,
@@ -205,11 +213,8 @@ const SalesPipeline = () => {
     const customer = customersData.find((c) => c.id === customerId);
     if (!customer) return "Unknown Customer";
 
-    if (customer.customerType === "individual") {
-      return customer.name || "Individual Customer";
-    } else {
-      return customer.companyName || customer.name || "Company Customer";
-    }
+    // API mới: customer.name chứa tên (individual) hoặc tên công ty (company)
+    return customer.name || "Unknown Customer";
   };
 
   // Helper function to determine stage based on probability
@@ -222,7 +227,8 @@ const SalesPipeline = () => {
   };
 
   const getDealsByStage = (stageId) => {
-    return filteredDeals.filter((deal) => deal.stage === stageId);
+    // Sử dụng deals gốc thay vì filteredDeals để hiển thị tất cả deals trong stage
+    return deals.filter((deal) => deal.stage === stageId);
   };
 
   const handleSearchChange = (e) => {
@@ -843,7 +849,7 @@ const ArchiveModal = ({
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm text-gray-900">
-                            {deal.customer}
+                            {deal.customerName}
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
@@ -1022,7 +1028,7 @@ const ListView = ({
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="text-sm text-gray-900">
-                    {highlightText(deal.customer, searchTerm)}
+                    {highlightText(deal.customerName, searchTerm)}
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
@@ -1168,7 +1174,7 @@ const PipelineColumn = ({
         </div>
         {deals.length > 0 && (
           <button
-            onClick={onViewAll}
+            onClick={() => onViewAll(stage)}
             className="mt-2 w-full flex items-center justify-center px-2 py-1.5 border border-gray-300 rounded-md text-xs text-gray-700 hover:bg-white hover:border-gray-400 transition-colors"
           >
             Xem tất cả
@@ -1335,7 +1341,7 @@ const DealCard = ({ deal, index, onEdit, onDelete, onView, searchTerm }) => {
             <div className="flex items-center text-xs text-gray-600">
               <UserIcon className="h-3 w-3 mr-1 flex-shrink-0" />
               <span className="truncate">
-                {highlightText(deal.customer, searchTerm)}
+                {highlightText(deal.customerName, searchTerm)}
               </span>
             </div>
 

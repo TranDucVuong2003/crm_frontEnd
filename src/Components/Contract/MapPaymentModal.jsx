@@ -5,7 +5,11 @@ import {
   CheckIcon,
 } from "@heroicons/react/24/outline";
 import axios from "axios";
-import { updateContract } from "../../Service/ApiService";
+import {
+  updateContract,
+  createMatchedTransaction,
+  getAllMatchedTransactions,
+} from "../../Service/ApiService";
 import {
   showLoading,
   closeLoading,
@@ -28,11 +32,29 @@ const MapPaymentModal = ({
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedTransaction, setSelectedTransaction] = useState(null);
+  const [matchedTransactionIds, setMatchedTransactionIds] = useState(new Set());
+
+  // Fetch matched transactions từ API
+  const fetchMatchedTransactions = async () => {
+    try {
+      const response = await getAllMatchedTransactions();
+      // Lấy danh sách transactionId đã được match
+      const matchedIds = new Set(response.data.map((mt) => mt.transactionId));
+      setMatchedTransactionIds(matchedIds);
+      return matchedIds;
+    } catch (err) {
+      console.error("Error fetching matched transactions:", err);
+      return new Set();
+    }
+  };
 
   // Fetch transactions từ API
   const fetchTransactions = async () => {
     try {
       setLoading(true);
+
+      // Lấy danh sách các transaction đã được match
+      const matchedIds = await fetchMatchedTransactions();
 
       // Sử dụng Vite proxy để tránh CORS
       const response = await axios.get("/api/sepay/transactions/list", {
@@ -44,8 +66,14 @@ const MapPaymentModal = ({
         const incomingTransactions = response.data.transactions.filter(
           (t) => parseFloat(t.amount_in) > 0
         );
-        setTransactions(incomingTransactions);
-        setFilteredTransactions(incomingTransactions);
+
+        // Filter ra những giao dịch chưa được match
+        const unmatchedTransactions = incomingTransactions.filter(
+          (t) => !matchedIds.has(t.id)
+        );
+
+        setTransactions(unmatchedTransactions);
+        setFilteredTransactions(unmatchedTransactions);
       } else {
         showErrorAlert("Lỗi", "Không thể tải dữ liệu giao dịch");
       }
@@ -178,18 +206,32 @@ const MapPaymentModal = ({
       }
 
       // Chuẩn bị dữ liệu Match Payment
-      const paymentData = {
+      // Chuyển đổi định dạng date từ "2025-11-18 15:22:00" sang "2025-11-18T15:22:00Z"
+      const transactionDate = selectedTransaction.transaction_date
+        ? selectedTransaction.transaction_date.replace(" ", "T") + "Z"
+        : new Date().toISOString();
+
+      const matchPaymentRequest = {
         transactionId: selectedTransaction.id,
-        referenceNumber: selectedTransaction.reference_number,
+        contractId: parseInt(contractId),
         amount: transactionAmount,
-        transactionDate: selectedTransaction.transaction_date,
-        transactionContent: selectedTransaction.transaction_content,
-        bankBrandName: selectedTransaction.bank_brand_name,
-        newStatus: newStatus,
+        referenceNumber: selectedTransaction.reference_number || null,
+        status: newStatus,
+        transactionDate: transactionDate,
+        transactionContent: selectedTransaction.transaction_content || null,
+        bankBrandName: selectedTransaction.bank_brand_name || null,
+        accountNumber: selectedTransaction.account_number || null,
+        notes: `Matched via MapPaymentModal - ${statusMessage}`,
       };
 
-      // TODO: Call API to Match Payment with transaction details
-      // await axios.post(`/api/Contracts/${contractId}/map-payment`, paymentData);
+      // Call API để lưu matched transaction
+      const matchedTransactionResponse = await createMatchedTransaction(
+        matchPaymentRequest
+      );
+      console.log(
+        "Matched transaction created:",
+        matchedTransactionResponse.data
+      );
 
       // Update contract status with saleOrderId and userId
       await updateContract(contractId, {
@@ -283,6 +325,30 @@ const MapPaymentModal = ({
                   placeholder="Tìm kiếm theo nội dung, mã giao dịch, số tiền..."
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
+              </div>
+            </div>
+
+            {/* Info Box */}
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="flex items-start gap-2">
+                <svg
+                  className="h-5 w-5 text-blue-600 mt-0.5"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+                <div className="text-sm text-blue-800">
+                  <p className="font-medium mb-1">Thông tin:</p>
+                  <p>
+                    • Chỉ hiển thị giao dịch chưa được match với hợp đồng nào
+                  </p>
+                  <p>• Sau khi match, giao dịch sẽ không hiển thị lại</p>
+                </div>
               </div>
             </div>
 

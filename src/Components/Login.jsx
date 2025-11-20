@@ -132,9 +132,6 @@ function Login() {
         deviceInfo: deviceInfo
       });
 
-      console.log('Login API response:', response);
-      console.log('Device Info sent:', deviceInfo);
-
       // Check if login successful
       if (response.data) {
         // Handle new response structure from backend

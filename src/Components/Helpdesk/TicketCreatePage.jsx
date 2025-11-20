@@ -1,6 +1,6 @@
-import React from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import TicketForm from './TicketForm';
+import React from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import TicketForm from "./TicketForm";
 
 const TicketCreatePage = () => {
   const navigate = useNavigate();
@@ -9,14 +9,14 @@ const TicketCreatePage = () => {
 
   const handleSubmit = (ticketData) => {
     // Here you would typically send the data to your API
-    console.log('Creating new ticket:', ticketData);
-    
+    console.log("Creating new ticket:", ticketData);
+
     // After successful creation, navigate back to helpdesk
-    navigate('/helpdesk');
+    navigate("/helpdesk");
   };
 
   const handleClose = () => {
-    navigate('/helpdesk');
+    navigate("/helpdesk");
   };
 
   return (

@@ -59,7 +59,6 @@ const processQueue = (error, token = null) => {
 // Handle 401 Unauthorized with token refresh
 apiClient.interceptors.response.use(
   (response) => {
-    console.log("API Response:", response);
     return response;
   },
   async (error) => {
@@ -164,16 +163,12 @@ export const logout = () => {
   return apiClient.post(API_ENDPOINT.AUTH.LOGOUT);
 };
 
-export const getSessions = () => {
-  return apiClient.get(API_ENDPOINT.AUTH.GET_SESSIONS);
+export const getAllSessionsAdmin = () => {
+  return apiClient.get(API_ENDPOINT.AUTH.GET_ALL_SESSIONS_ADMIN);
 };
 
-export const revokeSession = (id) => {
-  return apiClient.post(API_ENDPOINT.AUTH.REVOKE_SESSION(id));
-};
-
-export const revokeAllSessions = () => {
-  return apiClient.post(API_ENDPOINT.AUTH.REVOKE_ALL_SESSIONS);
+export const revokeSessionAdmin = (id, reason = null) => {
+  return apiClient.post(API_ENDPOINT.AUTH.REVOKE_SESSION_ADMIN(id), { reason });
 };
 
 // =============================
@@ -621,6 +616,41 @@ export const exportQuotePdf = (id) => {
   return apiClient.get(API_ENDPOINT.QUOTES.EXPORT_PDF(id), {
     responseType: "blob",
   });
+};
+
+// =============================
+// MATCHED TRANSACTIONS APIs
+// =============================
+export const getAllMatchedTransactions = () => {
+  return apiClient.get(API_ENDPOINT.MATCHED_TRANSACTIONS.GET_ALL);
+};
+
+export const createMatchedTransaction = (matchPaymentData) => {
+  return apiClient.post(
+    API_ENDPOINT.MATCHED_TRANSACTIONS.CREATE,
+    matchPaymentData
+  );
+};
+
+export const getMatchedTransactionById = (id) => {
+  return apiClient.get(API_ENDPOINT.MATCHED_TRANSACTIONS.GET_BY_ID(id));
+};
+
+export const updateMatchedTransaction = (id, matchedTransactionData) => {
+  return apiClient.put(
+    API_ENDPOINT.MATCHED_TRANSACTIONS.UPDATE(id),
+    matchedTransactionData
+  );
+};
+
+export const deleteMatchedTransaction = (id) => {
+  return apiClient.delete(API_ENDPOINT.MATCHED_TRANSACTIONS.DELETE(id));
+};
+
+export const getMatchedTransactionsByContract = (contractId) => {
+  return apiClient.get(
+    API_ENDPOINT.MATCHED_TRANSACTIONS.GET_BY_CONTRACT(contractId)
+  );
 };
 
 // =============================

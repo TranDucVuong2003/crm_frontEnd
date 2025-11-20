@@ -38,7 +38,7 @@ const CategoryServiceAddons = () => {
     try {
       setIsLoading(true);
       const response = await getAllCategoryServiceAddons();
-      console.log("CategoryServiceAddons response:", response.data);
+
 
       // Handle different response structures
       let categoriesList = [];
