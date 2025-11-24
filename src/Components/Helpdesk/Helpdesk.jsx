@@ -291,11 +291,15 @@ const Helpdesk = () => {
     switch (activeFilter) {
       case "unresolved":
         return nonArchivedTickets.filter(
-          (t) => t.status?.toLowerCase() !== "closed" && t.status?.toLowerCase() !== "resolved"
+          (t) =>
+            t.status?.toLowerCase() !== "closed" &&
+            t.status?.toLowerCase() !== "resolved"
         );
       case "closed":
         return nonArchivedTickets.filter(
-          (t) => t.status?.toLowerCase() === "closed" || t.status?.toLowerCase() === "resolved"
+          (t) =>
+            t.status?.toLowerCase() === "closed" ||
+            t.status?.toLowerCase() === "resolved"
         );
       case "all":
       default:
@@ -606,7 +610,7 @@ const Helpdesk = () => {
                                 (t) =>
                                   t.status?.toLowerCase() !== "archived" &&
                                   (t.status?.toLowerCase() === "closed" ||
-                                  t.status?.toLowerCase() === "resolved")
+                                    t.status?.toLowerCase() === "resolved")
                               ).length
                             }
                           </p>

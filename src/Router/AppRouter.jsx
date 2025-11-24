@@ -27,6 +27,7 @@ import SessionManagement from "../Components/SessionManagement";
 import ProtectedRoute from "./ProtectedRoute";
 import PublicRoute from "./PublicRoute";
 import Test_contact from "../Components/test_contact";
+import LeadDataCompany from "../Components/LeadDataCompany";
 // import TestAdminSession from "../Components/test-session";
 
 function AppRouter() {
@@ -56,6 +57,10 @@ function AppRouter() {
         {
           path: "customers",
           element: <CustomerManagement />,
+        },
+        {
+          path: "companies",
+          element: <LeadDataCompany />,
         },
         {
           path: "sales",

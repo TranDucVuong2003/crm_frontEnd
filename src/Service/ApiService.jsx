@@ -230,6 +230,42 @@ export const getCompanyCustomers = () => {
 };
 
 // =============================
+// COMPANIES APIs
+// =============================
+export const getAllCompanies = () => {
+  return apiClient.get(API_ENDPOINT.COMPANIES.GET_ALL);
+};
+
+export const createCompany = (companyData) => {
+  return apiClient.post(API_ENDPOINT.COMPANIES.CREATE, companyData);
+};
+
+export const getCompanyById = (id) => {
+  return apiClient.get(API_ENDPOINT.COMPANIES.GET_BY_ID(id));
+};
+
+export const updateCompany = (id, companyData) => {
+  return apiClient.put(API_ENDPOINT.COMPANIES.UPDATE(id), companyData);
+};
+
+export const deleteCompany = (id) => {
+  return apiClient.delete(API_ENDPOINT.COMPANIES.DELETE(id));
+};
+
+export const batchUpdateCompanies = (companyIds, userId) => {
+  return apiClient.put(API_ENDPOINT.COMPANIES.BATCH_UPDATE, {
+    companyIds,
+    userId,
+  });
+};
+
+export const batchDeleteCompanies = (companyIds) => {
+  return apiClient.delete(API_ENDPOINT.COMPANIES.BATCH_DELETE, {
+    data: { companyIds },
+  });
+};
+
+// =============================
 // ADDONS APIs
 // =============================
 export const getAllAddons = () => {

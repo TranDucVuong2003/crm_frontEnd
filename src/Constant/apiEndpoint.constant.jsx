@@ -44,6 +44,17 @@ const API_ENDPOINT = {
     GET_COMPANIES: "/api/Customers/companies",
   },
 
+  // Companies endpoints
+  COMPANIES: {
+    GET_ALL: "/api/Companies",
+    CREATE: "/api/Companies",
+    GET_BY_ID: (id) => `/api/Companies/${id}`,
+    UPDATE: (id) => `/api/Companies/${id}`,
+    DELETE: (id) => `/api/Companies/${id}`,
+    BATCH_UPDATE: "/api/Companies/batch-update",
+    BATCH_DELETE: "/api/Companies/batch-delete",
+  },
+
   // SaleOrders endpoints
   SALE_ORDERS: {
     GET_ALL: "/api/SaleOrders",
