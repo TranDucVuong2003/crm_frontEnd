@@ -10,6 +10,9 @@ const API_ENDPOINT = {
     LOGOUT: "/api/Auth/logout",
     GET_ALL_SESSIONS_ADMIN: "/api/Auth/admin/all-sessions",
     REVOKE_SESSION_ADMIN: (id) => `/api/Auth/admin/revoke-session/${id}`,
+    VERIFY_ACTIVATION_TOKEN: (token) =>
+      `/api/Auth/verify-activation-token?token=${token}`,
+    CHANGE_PASSWORD_FIRST_TIME: "/api/Auth/change-password-first-time",
   },
 
   // Menu endpoints
@@ -186,6 +189,53 @@ const API_ENDPOINT = {
       `/api/Test/ticket-email-info/${ticketId}`,
     GET_EMAIL_CONFIG_STATUS: "/api/Test/email-config-status",
     DEBUG_USER_CLAIMS: "/api/Test/debug-user-claims",
+  },
+
+  // Roles endpoints
+  ROLES: {
+    GET_ALL: "/api/Roles",
+    CREATE: "/api/Roles",
+    GET_BY_ID: (id) => `/api/Roles/${id}`,
+    UPDATE: (id) => `/api/Roles/${id}`,
+    DELETE: (id) => `/api/Roles/${id}`,
+  },
+
+  // Positions endpoints
+  POSITIONS: {
+    GET_ALL: "/api/Positions",
+    CREATE: "/api/Positions",
+    GET_BY_ID: (id) => `/api/Positions/${id}`,
+    UPDATE: (id) => `/api/Positions/${id}`,
+    DELETE: (id) => `/api/Positions/${id}`,
+    GET_BY_LEVEL: (level) => `/api/Positions/level/${level}`,
+  },
+
+  // Departments endpoints
+  DEPARTMENTS: {
+    GET_ALL: "/api/Departments",
+    CREATE: "/api/Departments",
+    GET_BY_ID: (id) => `/api/Departments/${id}`,
+    UPDATE: (id) => `/api/Departments/${id}`,
+    DELETE: (id) => `/api/Departments/${id}`,
+    GET_BY_RESION: (resionId) => `/api/Departments/resion/${resionId}`,
+  },
+
+  // Tax endpoints
+  TAX: {
+    GET_ALL: "/api/Tax",
+    CREATE: "/api/Tax",
+    GET_BY_ID: (id) => `/api/Tax/${id}`,
+    UPDATE: (id) => `/api/Tax/${id}`,
+    DELETE: (id) => `/api/Tax/${id}`,
+  },
+
+  // Resion endpoints
+  Resions: {
+    GET_ALL: "/api/Resions",
+    CREATE: "/api/Resions",
+    GET_BY_ID: (id) => `/api/Resions/${id}`,
+    UPDATE: (id) => `/api/Resions/${id}`,
+    DELETE: (id) => `/api/Resions/${id}`,
   },
 };
 

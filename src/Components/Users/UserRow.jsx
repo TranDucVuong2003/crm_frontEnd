@@ -1,24 +1,25 @@
-import React from 'react';
-import { PencilIcon, TrashIcon, EyeIcon } from '@heroicons/react/24/outline';
+import React from "react";
+import { PencilIcon, TrashIcon, EyeIcon } from "@heroicons/react/24/outline";
 
 const UserRow = ({ user, onEdit, onDelete, onView }) => {
   const formatDate = (dateString) => {
-    if (!dateString) return '-';
-    return new Date(dateString).toLocaleDateString('vi-VN', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric'
+    if (!dateString) return "-";
+    return new Date(dateString).toLocaleDateString("vi-VN", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
     });
   };
 
   const getRoleBadgeColor = (role) => {
-    switch (role) {
-      case 'Admin':
-        return 'bg-purple-100 text-purple-800';
-      case 'User':
-        return 'bg-blue-100 text-blue-800';
+    const roleName = typeof role === "string" ? role : role?.name;
+    switch (roleName) {
+      case "Admin":
+        return "bg-purple-100 text-purple-800";
+      case "User":
+        return "bg-blue-100 text-blue-800";
       default:
-        return 'bg-gray-100 text-gray-800';
+        return "bg-gray-100 text-gray-800";
     }
   };
 
@@ -32,7 +33,9 @@ const UserRow = ({ user, onEdit, onDelete, onView }) => {
             </div>
           </div>
           <div className="ml-4">
-            <div className="text-sm font-semibold text-slate-900">{user.name}</div>
+            <div className="text-sm font-semibold text-slate-900">
+              {user.name}
+            </div>
             <div className="text-xs text-slate-500">ID: {user.id}</div>
           </div>
         </div>
@@ -44,15 +47,24 @@ const UserRow = ({ user, onEdit, onDelete, onView }) => {
         )}
       </td>
       <td className="px-6 py-4">
-        <div className="text-sm text-slate-900">{user.position || '-'}</div>
+        <div className="text-sm text-slate-900">
+          {user.position?.positionName || "-"}
+        </div>
+        {user.department?.name && (
+          <div className="text-xs text-slate-500">{user.department.name}</div>
+        )}
       </td>
       <td className="px-6 py-4">
-        <span className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${getRoleBadgeColor(user.role)}`}>
-          {user.role}
+        <span
+          className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${getRoleBadgeColor(
+            user.role
+          )}`}
+        >
+          {user.role?.name || user.role}
         </span>
       </td>
       <td className="px-6 py-4">
-        <div className="text-sm text-slate-900">{user.phoneNumber || '-'}</div>
+        <div className="text-sm text-slate-900">{user.phoneNumber || "-"}</div>
       </td>
       <td className="px-6 py-4">
         <div className="flex items-center justify-center space-x-2">

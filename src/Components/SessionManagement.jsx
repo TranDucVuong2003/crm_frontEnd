@@ -306,10 +306,10 @@ const SessionManagement = () => {
                       </div>
                     </div>
 
-                    {session.reasonRevoked && (
+                    {session.resionRevoked && (
                       <div className="mt-3 p-2 bg-red-50 border border-red-200 rounded text-sm text-red-800">
                         <span className="font-medium">Lý do thu hồi:</span>{" "}
-                        {session.reasonRevoked}
+                        {session.resionRevoked}
                       </div>
                     )}
                   </div>

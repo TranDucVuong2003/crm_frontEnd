@@ -167,8 +167,19 @@ export const getAllSessionsAdmin = () => {
   return apiClient.get(API_ENDPOINT.AUTH.GET_ALL_SESSIONS_ADMIN);
 };
 
-export const revokeSessionAdmin = (id, reason = null) => {
-  return apiClient.post(API_ENDPOINT.AUTH.REVOKE_SESSION_ADMIN(id), { reason });
+export const revokeSessionAdmin = (id, resion = null) => {
+  return apiClient.post(API_ENDPOINT.AUTH.REVOKE_SESSION_ADMIN(id), { resion });
+};
+
+export const verifyActivationToken = (token) => {
+  return apiClient.get(API_ENDPOINT.AUTH.VERIFY_ACTIVATION_TOKEN(token));
+};
+
+export const changePasswordFirstTime = (passwordData) => {
+  return apiClient.post(
+    API_ENDPOINT.AUTH.CHANGE_PASSWORD_FIRST_TIME,
+    passwordData
+  );
 };
 
 // =============================
@@ -706,4 +717,104 @@ export const getEmailConfigStatus = () => {
 
 export const debugUserClaims = () => {
   return apiClient.get(API_ENDPOINT.TEST.DEBUG_USER_CLAIMS);
+};
+
+// =============================
+// ROLES APIs
+// =============================
+export const getAllRoles = () => {
+  return apiClient.get(API_ENDPOINT.ROLES.GET_ALL);
+};
+
+export const createRole = (roleData) => {
+  return apiClient.post(API_ENDPOINT.ROLES.CREATE, roleData);
+};
+
+export const getRoleById = (id) => {
+  return apiClient.get(API_ENDPOINT.ROLES.GET_BY_ID(id));
+};
+
+export const updateRole = (id, roleData) => {
+  return apiClient.put(API_ENDPOINT.ROLES.UPDATE(id), roleData);
+};
+
+export const deleteRole = (id) => {
+  return apiClient.delete(API_ENDPOINT.ROLES.DELETE(id));
+};
+
+// =============================
+// POSITIONS APIs
+// =============================
+export const getAllPositions = () => {
+  return apiClient.get(API_ENDPOINT.POSITIONS.GET_ALL);
+};
+
+export const createPosition = (positionData) => {
+  return apiClient.post(API_ENDPOINT.POSITIONS.CREATE, positionData);
+};
+
+export const getPositionById = (id) => {
+  return apiClient.get(API_ENDPOINT.POSITIONS.GET_BY_ID(id));
+};
+
+export const updatePosition = (id, positionData) => {
+  return apiClient.put(API_ENDPOINT.POSITIONS.UPDATE(id), positionData);
+};
+
+export const deletePosition = (id) => {
+  return apiClient.delete(API_ENDPOINT.POSITIONS.DELETE(id));
+};
+
+export const getPositionsByLevel = (level) => {
+  return apiClient.get(API_ENDPOINT.POSITIONS.GET_BY_LEVEL(level));
+};
+
+// =============================
+// DEPARTMENTS APIs
+// =============================
+export const getAllDepartments = () => {
+  return apiClient.get(API_ENDPOINT.DEPARTMENTS.GET_ALL);
+};
+
+export const createDepartment = (departmentData) => {
+  return apiClient.post(API_ENDPOINT.DEPARTMENTS.CREATE, departmentData);
+};
+
+export const getDepartmentById = (id) => {
+  return apiClient.get(API_ENDPOINT.DEPARTMENTS.GET_BY_ID(id));
+};
+
+export const updateDepartment = (id, departmentData) => {
+  return apiClient.put(API_ENDPOINT.DEPARTMENTS.UPDATE(id), departmentData);
+};
+
+export const deleteDepartment = (id) => {
+  return apiClient.delete(API_ENDPOINT.DEPARTMENTS.DELETE(id));
+};
+
+export const getDepartmentsByReasion = (reasionId) => {
+  return apiClient.get(API_ENDPOINT.DEPARTMENTS.GET_BY_REASION(reasionId));
+};
+
+// =============================
+// Resion APIs
+// =============================
+export const getAllResions = () => {
+  return apiClient.get(API_ENDPOINT.Resions.GET_ALL);
+};
+
+export const createResion = (resionData) => {
+  return apiClient.post(API_ENDPOINT.Resions.CREATE, resionData);
+};
+
+export const getResionById = (id) => {
+  return apiClient.get(API_ENDPOINT.Resions.GET_BY_ID(id));
+};
+
+export const updateResion = (id, resionData) => {
+  return apiClient.put(API_ENDPOINT.Resions.UPDATE(id), resionData);
+};
+
+export const deleteResion = (id) => {
+  return apiClient.delete(API_ENDPOINT.Resions.DELETE(id));
 };

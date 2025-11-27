@@ -169,17 +169,17 @@ const Header = ({ title }) => {
                     <span>Cài đặt</span>
                   </button>
 
-                  {/* Cấu hình thuế - chỉ hiển thị cho Admin */}
+                  {/* Cấu hình - chỉ hiển thị cho Admin */}
                   {user?.role?.toLowerCase() === "admin" && (
                     <button
                       onClick={() => {
                         setShowUserMenu(false);
-                        setShowTaxModal(true);
+                        navigate("/configuration");
                       }}
                       className="w-full flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors duration-150"
                     >
                       <CalculatorIcon className="h-5 w-5 mr-3 text-gray-500" />
-                      <span>Cấu hình thuế</span>
+                      <span>Cấu hình </span>
                     </button>
                   )}
 

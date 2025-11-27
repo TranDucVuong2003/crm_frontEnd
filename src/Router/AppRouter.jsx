@@ -19,7 +19,6 @@ import TicketForm from "../Components/Helpdesk/TicketForm";
 import TicketEditPage from "../Components/Helpdesk/TicketEditPage";
 import TicketCreatePage from "../Components/Helpdesk/TicketCreatePage";
 import TicketCategory from "../Components/TicketCategory/TicketCategory";
-import CategoryServiceAddons from "../Components/CategoryServiceAddons/CategoryServiceAddons";
 import Quote from "../Components/Quote/Quote";
 import QuoteCreatePage from "../Components/Quote/QuoteCreatePage";
 import QuoteEditPage from "../Components/Quote/QuoteEditPage";
@@ -28,6 +27,8 @@ import ProtectedRoute from "./ProtectedRoute";
 import PublicRoute from "./PublicRoute";
 import Test_contact from "../Components/test_contact";
 import LeadDataCompany from "../Components/LeadDataCompany";
+import Configuration from "../Components/Configuration";
+import ActiveAccount from "../Pages/ActiveAccount";
 // import TestAdminSession from "../Components/test-session";
 
 function AppRouter() {
@@ -91,14 +92,6 @@ function AppRouter() {
           ),
         },
         {
-          path: "category-service-addons",
-          element: (
-            <ProtectedRoute allowedRoles={["admin"]}>
-              <CategoryServiceAddons />
-            </ProtectedRoute>
-          ),
-        },
-        {
           path: "quotes",
           element: <Outlet />,
           children: [
@@ -144,6 +137,10 @@ function AppRouter() {
           path: "sessions",
           element: <SessionManagement />,
         },
+        {
+          path: "configuration",
+          element: <Configuration />,
+        },
       ],
     },
     {
@@ -159,6 +156,10 @@ function AppRouter() {
           element: <Login />,
         },
       ],
+    },
+    {
+      path: "/activate-account",
+      element: <ActiveAccount />,
     },
 
     {
