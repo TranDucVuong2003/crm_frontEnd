@@ -8,9 +8,11 @@ const API_ENDPOINT = {
     LOGIN: "/api/Auth/login",
     REFRESH_TOKEN: "/api/Auth/refresh-token",
     LOGOUT: "/api/Auth/logout",
-    GET_SESSIONS: "/api/Auth/sessions",
-    REVOKE_SESSION: (id) => `/api/Auth/revoke-session/${id}`,
-    REVOKE_ALL_SESSIONS: "/api/Auth/revoke-all-sessions",
+    GET_ALL_SESSIONS_ADMIN: "/api/Auth/admin/all-sessions",
+    REVOKE_SESSION_ADMIN: (id) => `/api/Auth/admin/revoke-session/${id}`,
+    VERIFY_ACTIVATION_TOKEN: (token) =>
+      `/api/Auth/verify-activation-token?token=${token}`,
+    CHANGE_PASSWORD_FIRST_TIME: "/api/Auth/change-password-first-time",
   },
 
   // Menu endpoints
@@ -43,6 +45,17 @@ const API_ENDPOINT = {
     GET_TYPE_STATISTICS: "/api/Customers/type-statistics",
     GET_INDIVIDUALS: "/api/Customers/individuals",
     GET_COMPANIES: "/api/Customers/companies",
+  },
+
+  // Companies endpoints
+  COMPANIES: {
+    GET_ALL: "/api/Companies",
+    CREATE: "/api/Companies",
+    GET_BY_ID: (id) => `/api/Companies/${id}`,
+    UPDATE: (id) => `/api/Companies/${id}`,
+    DELETE: (id) => `/api/Companies/${id}`,
+    BATCH_UPDATE: "/api/Companies/batch-update",
+    BATCH_DELETE: "/api/Companies/batch-delete",
   },
 
   // SaleOrders endpoints
@@ -158,6 +171,17 @@ const API_ENDPOINT = {
     EXPORT_PDF: (id) => `/api/Quotes/${id}/export-pdf`,
   },
 
+  // MatchedTransactions endpoints
+  MATCHED_TRANSACTIONS: {
+    GET_ALL: "/api/MatchedTransactions",
+    CREATE: "/api/MatchedTransactions",
+    GET_BY_ID: (id) => `/api/MatchedTransactions/${id}`,
+    UPDATE: (id) => `/api/MatchedTransactions/${id}`,
+    DELETE: (id) => `/api/MatchedTransactions/${id}`,
+    GET_BY_CONTRACT: (contractId) =>
+      `/api/MatchedTransactions/contract/${contractId}`,
+  },
+
   // Test endpoints
   TEST: {
     SEND_TEST_EMAIL: (ticketId) => `/api/Test/send-test-email/${ticketId}`,
@@ -165,6 +189,126 @@ const API_ENDPOINT = {
       `/api/Test/ticket-email-info/${ticketId}`,
     GET_EMAIL_CONFIG_STATUS: "/api/Test/email-config-status",
     DEBUG_USER_CLAIMS: "/api/Test/debug-user-claims",
+  },
+
+  // Roles endpoints
+  ROLES: {
+    GET_ALL: "/api/Roles",
+    CREATE: "/api/Roles",
+    GET_BY_ID: (id) => `/api/Roles/${id}`,
+    UPDATE: (id) => `/api/Roles/${id}`,
+    DELETE: (id) => `/api/Roles/${id}`,
+  },
+
+  // Positions endpoints
+  POSITIONS: {
+    GET_ALL: "/api/Positions",
+    CREATE: "/api/Positions",
+    GET_BY_ID: (id) => `/api/Positions/${id}`,
+    UPDATE: (id) => `/api/Positions/${id}`,
+    DELETE: (id) => `/api/Positions/${id}`,
+    GET_BY_LEVEL: (level) => `/api/Positions/level/${level}`,
+  },
+
+  // Departments endpoints
+  DEPARTMENTS: {
+    GET_ALL: "/api/Departments",
+    CREATE: "/api/Departments",
+    GET_BY_ID: (id) => `/api/Departments/${id}`,
+    UPDATE: (id) => `/api/Departments/${id}`,
+    DELETE: (id) => `/api/Departments/${id}`,
+    GET_BY_RESION: (resionId) => `/api/Departments/resion/${resionId}`,
+  },
+
+  // Tax endpoints
+  TAX: {
+    GET_ALL: "/api/Tax",
+    CREATE: "/api/Tax",
+    GET_BY_ID: (id) => `/api/Tax/${id}`,
+    UPDATE: (id) => `/api/Tax/${id}`,
+    DELETE: (id) => `/api/Tax/${id}`,
+  },
+
+  // Resion endpoints
+  Resions: {
+    GET_ALL: "/api/Resions",
+    CREATE: "/api/Resions",
+    GET_BY_ID: (id) => `/api/Resions/${id}`,
+    UPDATE: (id) => `/api/Resions/${id}`,
+    DELETE: (id) => `/api/Resions/${id}`,
+  },
+
+  // KPI endpoints
+  KPI: {
+    GET_ALL: "/api/KPIs",
+    CREATE: "/api/KPIs",
+    GET_BY_ID: (id) => `/api/KPIs/${id}`,
+    UPDATE: (id) => `/api/KPIs/${id}`,
+    DELETE: (id) => `/api/KPIs/${id}`,
+  },
+
+  // KPI Commission Tiers endpoints
+  KPI_COMMISSION_TIERS: {
+    GET_ALL: "/api/KpiCommissionTiers",
+    GET_BY_KPI: (kpiId) => `/api/KpiCommissionTiers/kpi/${kpiId}`,
+    CREATE: "/api/KpiCommissionTiers",
+    CREATE_BULK: "/api/KpiCommissionTiers/bulk",
+    UPDATE: (id) => `/api/KpiCommissionTiers/${id}`,
+    DELETE: (id) => `/api/KpiCommissionTiers/${id}`,
+    CALCULATE: "/api/KpiCommissionTiers/calculate",
+  },
+
+  // User KPI Assignments endpoints
+  USER_KPI_ASSIGNMENTS: {
+    GET_ALL: "/api/UserKpiAssignments",
+    CREATE: "/api/UserKpiAssignments",
+    UPDATE: (id) => `/api/UserKpiAssignments/${id}`,
+    DELETE: (id) => `/api/UserKpiAssignments/${id}`,
+  },
+
+  // KPI Records endpoints
+  KPI_RECORDS: {
+    GET_ALL: "/api/KpiRecords",
+    GET_BY_ID: (id) => `/api/KpiRecords/${id}`,
+    CALCULATE: "/api/KpiRecords/calculate",
+    SUMMARY: "/api/KpiRecords/summary",
+    USER_SUMMARY: (userId) => `/api/KpiRecords/user/${userId}/summary`,
+    APPROVE: (id) => `/api/KpiRecords/${id}/approve`,
+    REJECT: (id) => `/api/KpiRecords/${id}/reject`,
+    BATCH_APPROVE: "/api/KpiRecords/batch-approve",
+  },
+
+  // Marketing Budget endpoints
+  MARKETING_BUDGET: {
+    GET_ALL: "/api/MarketingBudgets",
+    CREATE: "/api/MarketingBudgets",
+    UPDATE: (id) => `/api/MarketingBudgets/${id}`,
+    DELETE: (id) => `/api/MarketingBudgets/${id}`,
+    APPROVE: (id) => `/api/MarketingBudgets/${id}/approve`,
+  },
+
+  // Marketing Expense endpoints
+  MARKETING_EXPENSE: {
+    GET_ALL: "/api/MarketingExpenses",
+    CREATE: "/api/MarketingExpenses",
+    UPDATE: (id) => `/api/MarketingExpenses/${id}`,
+    DELETE: (id) => `/api/MarketingExpenses/${id}`,
+    APPROVE: (id) => `/api/MarketingExpenses/${id}/approve`,
+  },
+
+  // Leads endpoints
+  LEADS: {
+    GET_ALL: "/api/Leads",
+    CREATE: "/api/Leads",
+    UPDATE: (id) => `/api/Leads/${id}`,
+    DELETE: (id) => `/api/Leads/${id}`,
+    ASSIGN: (id) => `/api/Leads/${id}/assign`,
+  },
+
+  // Dashboard endpoints
+  DASHBOARD: {
+    ADMIN: "/api/Dashboard/admin",
+    USER: (userId) => `/api/Dashboard/user/${userId}`,
   },
 };
 

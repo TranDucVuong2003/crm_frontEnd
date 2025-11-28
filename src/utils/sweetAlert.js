@@ -1,92 +1,97 @@
-import Swal from 'sweetalert2';
+import Swal from "sweetalert2";
 
 // ========== Success Alert ==========
 export const showSuccess = (title, text, options = {}) => {
   return Swal.fire({
-    icon: 'success',
+    icon: "success",
     title: title,
     text: text,
-    confirmButtonColor: '#10B981',
-    confirmButtonText: 'OK',
+    confirmButtonColor: "#10B981",
+    confirmButtonText: "OK",
     timer: 3000,
     timerProgressBar: true,
-    ...options
+    ...options,
   });
 };
 
 // ========== Error Alert ==========
 export const showError = (title, text, options = {}) => {
   return Swal.fire({
-    icon: 'error',
+    icon: "error",
     title: title,
     text: text,
-    confirmButtonColor: '#EF4444',
-    confirmButtonText: 'Đóng',
-    ...options
+    confirmButtonColor: "#EF4444",
+    confirmButtonText: "Đóng",
+    ...options,
   });
 };
 
 // ========== Warning Alert ==========
 export const showWarning = (title, text, options = {}) => {
   return Swal.fire({
-    icon: 'warning',
+    icon: "warning",
     title: title,
     text: text,
-    confirmButtonColor: '#F59E0B',
-    confirmButtonText: 'OK',
-    ...options
+    confirmButtonColor: "#F59E0B",
+    confirmButtonText: "OK",
+    ...options,
   });
 };
 
 // ========== Info Alert ==========
 export const showInfo = (title, text, options = {}) => {
   return Swal.fire({
-    icon: 'info',
+    icon: "info",
     title: title,
     text: text,
-    confirmButtonColor: '#3B82F6',
-    confirmButtonText: 'OK',
-    ...options
+    confirmButtonColor: "#3B82F6",
+    confirmButtonText: "OK",
+    ...options,
   });
 };
 
 // ========== Confirmation Dialog ==========
 export const showConfirm = (title, text, options = {}) => {
   return Swal.fire({
-    icon: 'question',
+    icon: "question",
     title: title,
     text: text,
     showCancelButton: true,
-    confirmButtonColor: '#3B82F6',
-    cancelButtonColor: '#6B7280',
-    confirmButtonText: 'Xác nhận',
-    cancelButtonText: 'Hủy',
+    confirmButtonColor: "#3B82F6",
+    cancelButtonColor: "#6B7280",
+    confirmButtonText: "Xác nhận",
+    cancelButtonText: "Hủy",
     reverseButtons: true,
-    ...options
+    ...options,
   });
 };
 
 // ========== Delete Confirmation ==========
-export const showDeleteConfirm = (itemName = 'mục này', options = {}) => {
-  return Swal.fire({
-    icon: 'warning',
-    title: 'Xác nhận xóa',
-    html: `Bạn có chắc chắn muốn xóa <strong>${itemName}</strong>?<br><small style="color: #6B7280;">Hành động này không thể hoàn tác!</small>`,
+export const showDeleteConfirm = async (
+  title = "Xác nhận xóa",
+  text = "Bạn có chắc chắn muốn xóa mục này?",
+  options = {}
+) => {
+  const result = await Swal.fire({
+    icon: "warning",
+    title: title,
+    text: text,
     showCancelButton: true,
-    confirmButtonColor: '#EF4444',
-    cancelButtonColor: '#6B7280',
-    confirmButtonText: 'Xóa',
-    cancelButtonText: 'Hủy',
+    confirmButtonColor: "#EF4444",
+    cancelButtonColor: "#6B7280",
+    confirmButtonText: "Xóa",
+    cancelButtonText: "Hủy",
     reverseButtons: true,
     customClass: {
-      popup: 'swal2-delete'
+      popup: "swal2-delete",
     },
-    ...options
+    ...options,
   });
+  return result.isConfirmed;
 };
 
 // ========== Loading Alert ==========
-export const showLoading = (title = 'Đang xử lý...', text = 'Vui lòng đợi') => {
+export const showLoading = (title = "Đang xử lý...", text = "Vui lòng đợi") => {
   return Swal.fire({
     title: title,
     text: text,
@@ -96,7 +101,7 @@ export const showLoading = (title = 'Đang xử lý...', text = 'Vui lòng đợ
     showConfirmButton: false,
     didOpen: () => {
       Swal.showLoading();
-    }
+    },
   });
 };
 
@@ -116,37 +121,43 @@ export const showToast = (type, message, options = {}) => {
     timerProgressBar: true,
     toast: true,
     customClass: {
-      popup: type === 'success' ? 'swal2-success-toast' :
-             type === 'error' ? 'swal2-error-toast' :
-             type === 'warning' ? 'swal2-warning-toast' :
-             type === 'info' ? 'swal2-info-toast' : ''
+      popup:
+        type === "success"
+          ? "swal2-success-toast"
+          : type === "error"
+          ? "swal2-error-toast"
+          : type === "warning"
+          ? "swal2-warning-toast"
+          : type === "info"
+          ? "swal2-info-toast"
+          : "",
     },
     didOpen: (toast) => {
-      toast.addEventListener('mouseenter', Swal.stopTimer);
-      toast.addEventListener('mouseleave', Swal.resumeTimer);
+      toast.addEventListener("mouseenter", Swal.stopTimer);
+      toast.addEventListener("mouseleave", Swal.resumeTimer);
     },
-    ...options
+    ...options,
   });
 };
 
 // ========== Quick Success Toast ==========
 export const successToast = (message, options = {}) => {
-  return showToast('success', message, options);
+  return showToast("success", message, options);
 };
 
 // ========== Quick Error Toast ==========
 export const errorToast = (message, options = {}) => {
-  return showToast('error', message, options);
+  return showToast("error", message, options);
 };
 
 // ========== Quick Info Toast ==========
 export const infoToast = (message, options = {}) => {
-  return showToast('info', message, options);
+  return showToast("info", message, options);
 };
 
 // ========== Quick Warning Toast ==========
 export const warningToast = (message, options = {}) => {
-  return showToast('warning', message, options);
+  return showToast("warning", message, options);
 };
 
 // ========== Aliases for consistency ==========
@@ -174,6 +185,5 @@ export default {
   showErrorAlert,
   showWarningAlert,
   showInfoAlert,
-  showConfirmDialog
+  showConfirmDialog,
 };
-

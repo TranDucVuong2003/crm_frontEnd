@@ -29,23 +29,40 @@ import {
 import { StarIcon as StarIconSolid } from "@heroicons/react/24/solid";
 import { showSuccess, showError } from "../../utils/sweetAlert";
 
-const TicketForm = ({ ticket, onSubmit }) => {
+const TicketForm = ({ ticket, onSubmit, prefilledData }) => {
   // Lấy thông tin user đang đăng nhập từ AuthContext
   const { user } = useAuth();
 
   const [formData, setFormData] = useState({
-    title: ticket?.title || "",
-    description: ticket?.description || "",
-    customer: ticket?.customer || { id: "", name: "", email: "", phone: "" },
+    title: ticket?.title || prefilledData?.contractName || "",
+    description:
+      ticket?.description ||
+      (prefilledData
+        ? `Ticket liên quan đến hợp đồng: ${prefilledData.contractName}\nDịch vụ: ${prefilledData.serviceName}\nTrạng thái hợp đồng: ${prefilledData.contractStatus}`
+        : ""),
+    customer:
+      ticket?.customer ||
+      (prefilledData
+        ? {
+            id: prefilledData.customerId || "",
+            name: prefilledData.customerName || "",
+            email: prefilledData.customerEmail || "",
+            phone: prefilledData.customerPhone || "",
+          }
+        : { id: "", name: "", email: "", phone: "" }),
     category: ticket?.category || "technical",
     assignedTo: ticket?.assignedTo || { id: "", name: "", email: "" },
-    tags: ticket?.tags || [],
+    tags:
+      ticket?.tags ||
+      (prefilledData ? ["Hợp đồng", prefilledData.contractName] : []),
     status: ticket?.status || "new",
     stars: ticket?.stars || 1,
   });
 
   // Customer search states
-  const [customerSearchTerm, setCustomerSearchTerm] = useState("");
+  const [customerSearchTerm, setCustomerSearchTerm] = useState(
+    prefilledData?.customerName || ""
+  );
   const [isCustomerDropdownOpen, setIsCustomerDropdownOpen] = useState(false);
   const [isCustomerPopupOpen, setIsCustomerPopupOpen] = useState(false);
   const customerDropdownRef = useRef(null);

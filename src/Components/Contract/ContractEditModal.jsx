@@ -1,5 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { XMarkIcon, CheckIcon } from "@heroicons/react/24/outline";
+import { useNavigate } from "react-router-dom";
+import {
+  XMarkIcon,
+  CheckIcon,
+  DocumentTextIcon,
+  TicketIcon,
+} from "@heroicons/react/24/outline";
 import {
   updateContract,
   getContractById,
@@ -15,19 +21,24 @@ import {
   showSuccessAlert,
   showErrorAlert,
 } from "../../utils/sweetAlert";
+import MapPaymentModal from "./MapPaymentModal";
 
 const ContractEditModal = ({ isOpen, onClose, onSuccess, contractId }) => {
+  const navigate = useNavigate();
   const [customers, setCustomers] = useState([]);
   const [users, setUsers] = useState([]);
   const [services, setServices] = useState([]);
   const [addons, setAddons] = useState([]);
   const [taxes, setTaxes] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [showMapPaymentModal, setShowMapPaymentModal] = useState(false);
+  const [customerInfo, setCustomerInfo] = useState(null);
 
   const [formData, setFormData] = useState({
     name: "",
     customerId: "",
     userId: "",
+    saleOrderId: "",
     serviceId: "",
     addonsId: "",
     taxId: "",
@@ -35,6 +46,7 @@ const ContractEditModal = ({ isOpen, onClose, onSuccess, contractId }) => {
     paymentMethod: "Chuyển khoản",
     expiration: "",
     notes: "",
+    totalAmount: 0,
   });
 
   // Fetch all data when modal opens
@@ -75,6 +87,16 @@ const ContractEditModal = ({ isOpen, onClose, onSuccess, contractId }) => {
       // Fill form with contract data
       const contract = contractRes.data;
       console.log("Contract data from API:", contract);
+      console.log("SaleOrder data:", contract.saleOrder);
+
+      // Save customer info to check if company
+      setCustomerInfo(contract.saleOrder?.customer || null);
+      console.log(
+        "Total value:",
+        contract.saleOrder?.totalValue,
+        contract.saleOrder?.value,
+        contract.saleOrder?.amount
+      );
 
       // Format expiration date for datetime-local input
       const formattedExpiration = contract.expiration
@@ -97,6 +119,7 @@ const ContractEditModal = ({ isOpen, onClose, onSuccess, contractId }) => {
         name: contractName,
         customerId: customerIdValue ? customerIdValue.toString() : "",
         userId: userIdValue ? userIdValue.toString() : "",
+        saleOrderId: contract.saleOrderId || contract.saleOrder?.id || "",
         serviceId: serviceIdValue ? serviceIdValue.toString() : "",
         addonsId: addonIdValue ? addonIdValue.toString() : "",
         taxId: taxIdValue ? taxIdValue.toString() : "",
@@ -104,6 +127,7 @@ const ContractEditModal = ({ isOpen, onClose, onSuccess, contractId }) => {
         paymentMethod: contract.paymentMethod || "Chuyển khoản",
         expiration: formattedExpiration,
         notes: contract.notes || "",
+        totalAmount: contract.totalAmount || 0,
       };
 
       console.log("Form data filled:", formDataToSet);
@@ -124,41 +148,77 @@ const ContractEditModal = ({ isOpen, onClose, onSuccess, contractId }) => {
     }));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
+  const handleMarkAsSigned = async () => {
     try {
-      showLoading("Đang cập nhật hợp đồng...", "Vui lòng đợi");
+      showLoading("Đang cập nhật trạng thái...", "Vui lòng đợi");
 
-      // Prepare data
+      // Update status to "Đã ký" with userId and saleOrderId
       const contractData = {
-        name: formData.name,
-        customerId: parseInt(formData.customerId),
+        status: "Đã ký",
         userId: parseInt(formData.userId),
-        serviceId: parseInt(formData.serviceId),
-        addonsId: formData.addonsId ? parseInt(formData.addonsId) : null,
-        taxId: parseInt(formData.taxId),
-        status: formData.status,
-        paymentMethod: formData.paymentMethod,
-        expiration: formData.expiration,
-        notes: formData.notes,
+        saleOrderId: parseInt(formData.saleOrderId),
       };
 
       await updateContract(contractId, contractData);
       closeLoading();
-      showSuccessAlert("Thành công", "Cập nhật hợp đồng thành công!");
+      showSuccessAlert("Thành công", "Đã đánh dấu hợp đồng là đã ký!");
 
       // Close modal and refresh
       if (onSuccess) onSuccess();
       onClose();
     } catch (error) {
-      console.error("Error updating contract:", error);
+      console.error("Error updating contract status:", error);
       closeLoading();
       showErrorAlert(
         "Lỗi",
-        error.response?.data?.message || "Không thể cập nhật hợp đồng"
+        error.response?.data?.message ||
+          "Không thể cập nhật trạng thái hợp đồng"
       );
     }
+  };
+
+  const handleMapPayment = () => {
+    setShowMapPaymentModal(true);
+  };
+
+  const handleMapPaymentSuccess = () => {
+    // Refresh contract data after mapping payment
+    if (onSuccess) onSuccess();
+    // Close the contract edit modal
+    onClose();
+  };
+
+  const handleExportInvoice = () => {
+    showLoading("Đang xuất hóa đơn...", "Vui lòng đợi");
+
+    // TODO: Implement export invoice API
+    setTimeout(() => {
+      closeLoading();
+      showSuccessAlert("Thành công", "Đã xuất hóa đơn thành công!");
+    }, 1000);
+  };
+
+  const handleCreateTicket = () => {
+    // Close modal first
+    onClose();
+
+    // Navigate to ticket create page with pre-filled data
+    navigate("/helpdesk/create", {
+      state: {
+        contractId: contractId,
+        contractName: formData.name,
+        customerId: formData.customerId,
+        customerName: customerInfo?.companyName || customerInfo?.name || "",
+        customerEmail: customerInfo?.email || "",
+        customerPhone: customerInfo?.phoneNumber || "",
+        serviceId: formData.serviceId,
+        serviceName:
+          services.find((s) => s.id.toString() === formData.serviceId)?.name ||
+          "",
+        contractStatus: formData.status,
+        contractAmount: formData.totalAmount,
+      },
+    });
   };
 
   const handleCancel = () => {
@@ -227,7 +287,7 @@ const ContractEditModal = ({ isOpen, onClose, onSuccess, contractId }) => {
                 <span className="ml-3 text-gray-600">Đang tải dữ liệu...</span>
               </div>
             ) : (
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form className="space-y-4">
                 {/* Contract Name */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -237,9 +297,8 @@ const ContractEditModal = ({ isOpen, onClose, onSuccess, contractId }) => {
                     type="text"
                     name="name"
                     value={formData.name}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    disabled
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed"
                     placeholder="VD: Hợp đồng Hosting VPS Premium"
                   />
                 </div>
@@ -253,9 +312,8 @@ const ContractEditModal = ({ isOpen, onClose, onSuccess, contractId }) => {
                     <select
                       name="customerId"
                       value={formData.customerId}
-                      onChange={handleInputChange}
-                      required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      disabled
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed"
                     >
                       <option value="">-- Chọn khách hàng --</option>
                       {customers.map((customer) => (
@@ -273,9 +331,8 @@ const ContractEditModal = ({ isOpen, onClose, onSuccess, contractId }) => {
                     <select
                       name="userId"
                       value={formData.userId}
-                      onChange={handleInputChange}
-                      required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      disabled
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed"
                     >
                       <option value="">-- Chọn người phụ trách --</option>
                       {users.map((user) => (
@@ -296,9 +353,8 @@ const ContractEditModal = ({ isOpen, onClose, onSuccess, contractId }) => {
                     <select
                       name="serviceId"
                       value={formData.serviceId}
-                      onChange={handleInputChange}
-                      required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      disabled
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed"
                     >
                       <option value="">-- Chọn dịch vụ --</option>
                       {services.map((service) => (
@@ -320,8 +376,8 @@ const ContractEditModal = ({ isOpen, onClose, onSuccess, contractId }) => {
                     <select
                       name="addonsId"
                       value={formData.addonsId}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      disabled
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed"
                     >
                       <option value="">-- Không chọn --</option>
                       {addons.map((addon) => (
@@ -346,9 +402,8 @@ const ContractEditModal = ({ isOpen, onClose, onSuccess, contractId }) => {
                     <select
                       name="taxId"
                       value={formData.taxId}
-                      onChange={handleInputChange}
-                      required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      disabled
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed"
                     >
                       <option value="">-- Chọn thuế --</option>
                       {taxes.map((tax) => (
@@ -366,9 +421,8 @@ const ContractEditModal = ({ isOpen, onClose, onSuccess, contractId }) => {
                     <select
                       name="status"
                       value={formData.status}
-                      onChange={handleInputChange}
-                      required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      disabled
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed"
                     >
                       <option value="Draft">Nháp</option>
                       <option value="Active">Đang hoạt động</option>
@@ -389,9 +443,8 @@ const ContractEditModal = ({ isOpen, onClose, onSuccess, contractId }) => {
                     <select
                       name="paymentMethod"
                       value={formData.paymentMethod}
-                      onChange={handleInputChange}
-                      required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      disabled
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed"
                     >
                       <option value="Chuyển khoản">Chuyển khoản</option>
                       <option value="Tiền mặt">Tiền mặt</option>
@@ -408,9 +461,8 @@ const ContractEditModal = ({ isOpen, onClose, onSuccess, contractId }) => {
                       type="datetime-local"
                       name="expiration"
                       value={formData.expiration}
-                      onChange={handleInputChange}
-                      required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      disabled
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed"
                     />
                   </div>
                 </div>
@@ -423,35 +475,118 @@ const ContractEditModal = ({ isOpen, onClose, onSuccess, contractId }) => {
                   <textarea
                     name="notes"
                     value={formData.notes}
-                    onChange={handleInputChange}
+                    disabled
                     rows="3"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed"
                     placeholder="Ghi chú thêm về hợp đồng..."
                   ></textarea>
                 </div>
 
                 {/* Form Actions */}
-                <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-200">
-                  <button
-                    type="button"
-                    onClick={handleCancel}
-                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
-                  >
-                    Hủy
-                  </button>
-                  <button
-                    type="submit"
-                    className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                  >
-                    <CheckIcon className="h-5 w-5 mr-2" />
-                    Cập nhật hợp đồng
-                  </button>
+                <div className="flex items-center justify-between pt-4 border-t border-gray-200">
+                  {/* Left side - Export Invoice & Create Ticket buttons */}
+                  <div className="flex items-center gap-3">
+                    {customerInfo?.companyName && (
+                      <button
+                        type="button"
+                        onClick={handleExportInvoice}
+                        disabled={
+                          formData.status !== "Đã cọc 50%" &&
+                          formData.status !== "Đã thanh toán"
+                        }
+                        className={`flex items-center px-4 py-2 rounded-lg transition-colors ${
+                          formData.status === "Đã cọc 50%" ||
+                          formData.status === "Đã thanh toán"
+                            ? "bg-purple-600 text-white hover:bg-purple-700"
+                            : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                        }`}
+                        title={
+                          formData.status !== "Đã cọc 50%" &&
+                          formData.status !== "Đã thanh toán"
+                            ? "Chỉ xuất hóa đơn khi đã cọc 50% hoặc đã thanh toán"
+                            : ""
+                        }
+                      >
+                        <DocumentTextIcon className="h-5 w-5 mr-2" />
+                        Xuất hóa đơn
+                      </button>
+                    )}
+
+                    {(formData.status === "Đã cọc 50%" ||
+                      formData.status === "Đã thanh toán") && (
+                      <button
+                        type="button"
+                        onClick={handleCreateTicket}
+                        className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+                      >
+                        <TicketIcon className="h-5 w-5 mr-2" />
+                        Tạo Ticket
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Right side - Action buttons */}
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={handleCancel}
+                      className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                    >
+                      Hủy
+                    </button>
+
+                    {/* Conditional buttons based on contract status */}
+                    {formData.status === "Mới" && (
+                      <button
+                        type="button"
+                        onClick={handleMarkAsSigned}
+                        className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                      >
+                        <CheckIcon className="h-5 w-5 mr-2" />
+                        Đã ký
+                      </button>
+                    )}
+
+                    {formData.status === "Đã ký" && (
+                      <button
+                        type="button"
+                        onClick={handleMapPayment}
+                        className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                      >
+                        <CheckIcon className="h-5 w-5 mr-2" />
+                        Match Payment
+                      </button>
+                    )}
+
+                    {formData.status === "Đã cọc 50%" && (
+                      <button
+                        type="button"
+                        onClick={handleMapPayment}
+                        className="flex items-center px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
+                      >
+                        <CheckIcon className="h-5 w-5 mr-2" />
+                        Thanh toán hợp đồng
+                      </button>
+                    )}
+                  </div>
                 </div>
               </form>
             )}
           </div>
         </div>
       </div>
+
+      {/* Match Payment Modal */}
+      <MapPaymentModal
+        isOpen={showMapPaymentModal}
+        onClose={() => setShowMapPaymentModal(false)}
+        contractId={contractId}
+        contractAmount={formData.totalAmount}
+        saleOrderId={formData.saleOrderId}
+        userId={formData.userId}
+        currentStatus={formData.status}
+        onSuccess={handleMapPaymentSuccess}
+      />
     </div>
   );
 };

@@ -1,5 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { XMarkIcon, DocumentTextIcon } from "@heroicons/react/24/outline";
+import {
+  XMarkIcon,
+  DocumentTextIcon,
+  UserIcon,
+  UserCircleIcon,
+  CurrencyDollarIcon,
+} from "@heroicons/react/24/outline";
+import { useNavigate } from "react-router-dom";
 import { createContract, getAllTax } from "../../Service/ApiService";
 import { showSuccess, showError } from "../../utils/sweetAlert";
 import { useAuth } from "../../Context/AuthContext";
@@ -14,6 +21,7 @@ const ContractConfirmModal = ({
   onSuccess,
 }) => {
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
     status: "Draft",
@@ -35,7 +43,7 @@ const ContractConfirmModal = ({
         expirationDate.setFullYear(expirationDate.getFullYear() + 1);
 
         setFormData({
-          status: "Draft",
+          status: "Mới",
           paymentMethod: "Chuyển khoản",
           expiration: expirationDate.toISOString().slice(0, 16),
           notes: deal.notes || "",
@@ -55,19 +63,24 @@ const ContractConfirmModal = ({
   };
 
   const getCustomerName = () => {
-    // Ưu tiên lấy từ deal.customer nếu có
+    // API mới: deal.customer là object
     if (deal && deal.customer) {
-      return deal.customer;
+      // customerType === "individual": chỉ có field name
+      // customerType === "company": chỉ có field name (là company name)
+      return deal.customer.name || "Unknown";
     }
 
-    const customer = customers.find((c) => c.id === formData.customerId);
-    if (!customer) return "N/A";
+    return "Unknown";
+  };
 
-    if (customer.customerType === "individual") {
-      return customer.name || "N/A";
-    } else {
-      return customer.companyName || customer.name || "N/A";
+  const getCreatedByName = () => {
+    // API mới: deal.createdByUser là object
+    if (deal && deal.createdByUser) {
+      return deal.createdByUser.name || "Unknown";
     }
+
+    // Fallback: Lấy từ user hiện tại nếu không có createdByUser
+    return user?.fullName || user?.username || "N/A";
   };
 
   const formatCurrency = (amount) => {
@@ -120,6 +133,9 @@ const ContractConfirmModal = ({
       }
 
       onClose();
+
+      // Navigate to contract page
+      navigate("/contract");
     } catch (error) {
       console.error("Error creating contract:", error);
       const errorMessage =
@@ -134,7 +150,7 @@ const ContractConfirmModal = ({
 
   return (
     <div className="fixed inset-0  bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[100vh] overflow-y-auto">
         {/* Header */}
         <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center">
           <div className="flex items-center">
@@ -155,32 +171,41 @@ const ContractConfirmModal = ({
         <form onSubmit={handleSubmit} className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Thông tin Sale Order */}
-            <div className="md:col-span-2 bg-blue-50 border border-blue-200 rounded-md p-4">
-              <h4 className="text-sm font-semibold text-blue-900 mb-2">
+            <div className="md:col-span-2 bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <h4 className="text-sm font-semibold text-blue-900 mb-3 flex items-center gap-2">
+                <DocumentTextIcon className="h-5 w-5" />
                 Thông tin Sale Order
               </h4>
-              <div className="grid grid-cols-2 gap-3 text-sm">
-                <div>
-                  <span className="text-gray-600">Tiêu đề:</span>
-                  <p className="font-medium text-gray-900">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div className="bg-white rounded-md p-3">
+                  <span className="text-gray-500 text-xs block mb-1">
+                    Tiêu đề:
+                  </span>
+                  <p className="font-semibold text-gray-900">
                     {deal?.title || "N/A"}
                   </p>
                 </div>
-                <div>
-                  <span className="text-gray-600">Khách hàng:</span>
-                  <p className="font-medium text-gray-900">
+                <div className="bg-white rounded-md p-3">
+                  <span className="text-gray-500 text-xs block mb-1">
+                    Khách hàng:
+                  </span>
+                  <p className="font-semibold text-gray-900">
                     {getCustomerName()}
                   </p>
                 </div>
-                <div>
-                  <span className="text-gray-600">Được tạo bởi:</span>
-                  <p className="font-medium text-gray-900">
-                    {user?.fullName || user?.username || "N/A"}
+                <div className="bg-white rounded-md p-3">
+                  <span className="text-gray-500 text-xs block mb-1">
+                    Được tạo bởi:
+                  </span>
+                  <p className="font-semibold text-gray-900">
+                    {getCreatedByName()}
                   </p>
                 </div>
-                <div>
-                  <span className="text-gray-600">Giá trị:</span>
-                  <p className="font-medium text-green-600">
+                <div className="bg-white rounded-md p-3">
+                  <span className="text-gray-500 text-xs block mb-1">
+                    Giá trị:
+                  </span>
+                  <p className="font-semibold text-green-600 text-base">
                     {formatCurrency(deal?.value || 0)}
                   </p>
                 </div>
@@ -288,8 +313,8 @@ const ContractConfirmModal = ({
                   setFormData({ ...formData, status: e.target.value })
                 }
               >
-                <option value="Draft">Draft</option>
-                <option value="Active">Active</option>
+                <option value="Mới">Mới</option>
+                <option value="Cũ">Cũ</option>
                 <option value="Expired">Expired</option>
                 <option value="Terminated">Terminated</option>
                 <option value="Cancelled">Cancelled</option>

@@ -24,7 +24,6 @@
           : [];
 
         setTickets(ticketsData);
-        console.log('Fetched tickets:', ticketsData);
         
       } catch (error) {
         console.error('Error fetching tickets:', error);

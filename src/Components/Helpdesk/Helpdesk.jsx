@@ -291,11 +291,15 @@ const Helpdesk = () => {
     switch (activeFilter) {
       case "unresolved":
         return nonArchivedTickets.filter(
-          (t) => t.status !== "closed" && t.status !== "resolved"
+          (t) =>
+            t.status?.toLowerCase() !== "closed" &&
+            t.status?.toLowerCase() !== "resolved"
         );
       case "closed":
         return nonArchivedTickets.filter(
-          (t) => t.status === "closed" || t.status === "resolved"
+          (t) =>
+            t.status?.toLowerCase() === "closed" ||
+            t.status?.toLowerCase() === "resolved"
         );
       case "all":
       default:
@@ -509,12 +513,12 @@ const Helpdesk = () => {
             </div>
           </div>
 
-          {/* Main Layout: 2 Columns */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            {/* Left Column: Phiếu Hỗ Trợ Của Tôi */}
-            <div className="lg:col-span-8">
+          {/* Main Layout: Full Width */}
+          <div className="grid grid-cols-1 gap-6">
+            {/* Phiếu Hỗ Trợ Của Tôi */}
+            <div>
               <div className="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
-                <div className="bg-gradient-to-r from-blue-500 to-indigo-600 p-6 text-white">
+                {/* <div className="bg-gradient-to-r from-blue-500 to-indigo-600 p-6 text-white">
                   <h2 className="text-xl font-bold flex items-center">
                     <TagIcon className="h-6 w-6 mr-3" />
                     Phiếu Hỗ Trợ Của Tôi
@@ -522,11 +526,39 @@ const Helpdesk = () => {
                   <p className="mt-2 text-blue-100">
                     Danh sách các phiếu hỗ trợ đang xử lý
                   </p>
-                </div>
+                </div> */}
 
                 {/* Ticket Stats Row */}
                 <div className="p-6 border-b border-slate-100">
-                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+                    {/* Tất cả */}
+                    <button
+                      onClick={() => handleFilterChange("all")}
+                      className={`bg-gradient-to-br from-blue-50 to-indigo-50 p-4 rounded-xl border transition-all duration-200 text-left hover:scale-105 cursor-pointer ${
+                        activeFilter === "all"
+                          ? "border-blue-400 shadow-lg ring-2 ring-blue-300"
+                          : "border-blue-200 hover:shadow-lg"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-blue-600 text-sm font-medium">
+                            Tất cả
+                          </p>
+                          <p className="text-2xl font-bold text-blue-700">
+                            {
+                              tickets.filter(
+                                (t) => t.status?.toLowerCase() !== "archived"
+                              ).length
+                            }
+                          </p>
+                        </div>
+                        <div className="bg-blue-100 p-2 rounded-lg">
+                          <TagIcon className="h-5 w-5 text-blue-600" />
+                        </div>
+                      </div>
+                    </button>
+
                     {/* Chưa giải quyết (Unresolved) */}
                     <button
                       onClick={() => handleFilterChange("unresolved")}
@@ -545,8 +577,9 @@ const Helpdesk = () => {
                             {
                               tickets.filter(
                                 (t) =>
-                                  t.status !== "closed" &&
-                                  t.status !== "resolved"
+                                  t.status?.toLowerCase() !== "archived" &&
+                                  t.status?.toLowerCase() !== "closed" &&
+                                  t.status?.toLowerCase() !== "resolved"
                               ).length
                             }
                           </p>
@@ -575,8 +608,9 @@ const Helpdesk = () => {
                             {
                               tickets.filter(
                                 (t) =>
-                                  t.status === "closed" ||
-                                  t.status === "resolved"
+                                  t.status?.toLowerCase() !== "archived" &&
+                                  (t.status?.toLowerCase() === "closed" ||
+                                    t.status?.toLowerCase() === "resolved")
                               ).length
                             }
                           </p>
@@ -766,152 +800,6 @@ const Helpdesk = () => {
                       </p>
                     </div>
                   )}
-                </div>
-              </div>
-            </div>
-
-            {/* Right Column: Hiệu Suất */}
-            <div className="lg:col-span-4">
-              <div className="space-y-6">
-                {/* Performance Overview */}
-                <div className="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
-                  <div className="bg-gradient-to-r from-emerald-500 to-teal-600 p-6 text-white">
-                    <h2 className="text-xl font-bold flex items-center">
-                      <ArrowTrendingUpIcon className="h-6 w-6 mr-3" />
-                      Hiệu Suất Của Tôi
-                    </h2>
-                    <p className="mt-2 text-emerald-100">
-                      Thống kê và đánh giá
-                    </p>
-                  </div>
-
-                  <div className="p-6 space-y-6">
-                    {/* Today Performance */}
-                    <div className="text-center">
-                      <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-100">
-                        <h3 className="text-lg font-semibold text-slate-700 mb-4">
-                          Hôm nay
-                        </h3>
-                        <div className="text-3xl font-bold text-blue-600 mb-2">
-                          {getTicketsResolvedToday()}
-                        </div>
-                        <p className="text-sm text-slate-600">
-                          Phiếu hỗ trợ đã đóng
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Weekly Stats */}
-                    <div>
-                      <h4 className="text-sm font-semibold text-slate-700 mb-3">
-                        Trung bình trong 7 ngày qua
-                      </h4>
-                      <div className="bg-slate-50 rounded-xl p-4">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-slate-600">
-                            Giải quyết/ngày
-                          </span>
-                          <span className="font-semibold text-slate-800">
-                            {Math.round(
-                              (getTicketsResolvedLastWeek() / 7) * 10
-                            ) / 10}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Daily Target */}
-                    <div>
-                      <h4 className="text-sm font-semibold text-slate-700 mb-3">
-                        Mục tiêu hàng ngày
-                      </h4>
-                      <div className="bg-gradient-to-r from-orange-50 to-amber-50 rounded-xl p-4 border border-orange-100">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm text-orange-700">
-                            Tiến độ
-                          </span>
-                          <span className="font-semibold text-orange-800">
-                            {Math.min(
-                              Math.round((getTicketsResolvedToday() / 5) * 100),
-                              100
-                            )}
-                            %
-                          </span>
-                        </div>
-                        <div className="w-full bg-orange-200 rounded-full h-2">
-                          <div
-                            className="bg-gradient-to-r from-orange-400 to-amber-500 h-2 rounded-full transition-all duration-300"
-                            style={{
-                              width: `${Math.min(
-                                (getTicketsResolvedToday() / 5) * 100,
-                                100
-                              )}%`,
-                            }}
-                          ></div>
-                        </div>
-                        <p className="text-xs text-orange-600 mt-2">
-                          Mục tiêu: 5 phiếu/ngày
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Customer Satisfaction */}
-                    <div>
-                      <h4 className="text-sm font-semibold text-slate-700 mb-3">
-                        Đánh giá khách hàng
-                      </h4>
-                      <div className="bg-gradient-to-br from-yellow-50 to-amber-50 rounded-xl p-4 border border-yellow-200">
-                        <div className="flex items-center justify-center mb-2">
-                          <div className="flex items-center space-x-1">
-                            {[1, 2, 3, 4, 5].map((star) => (
-                              <StarIconSolid
-                                key={star}
-                                className={`h-5 w-5 ${
-                                  star <= getAverageRating()
-                                    ? "text-yellow-400"
-                                    : "text-gray-300"
-                                }`}
-                              />
-                            ))}
-                          </div>
-                          <span className="ml-2 text-lg font-bold text-slate-700">
-                            {getAverageRating().toFixed(1)}
-                          </span>
-                        </div>
-                        <p className="text-xs text-center text-amber-700">
-                          Dựa trên {getTicketsWithRating().length} đánh giá
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Quick Actions */}
-                <div className="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
-                  <div className="bg-gradient-to-r from-violet-500 to-purple-600 p-4 text-white">
-                    <h3 className="font-bold">⚡ Thao tác nhanh</h3>
-                  </div>
-                  <div className="p-4 space-y-3">
-                    <button
-                      onClick={handleViewAllTickets}
-                      className="w-full flex items-center justify-between p-3 bg-slate-50 hover:bg-slate-100 rounded-lg transition-colors text-left"
-                    >
-                      <span className="text-sm font-medium text-slate-700">
-                        Xem tất cả phiếu
-                      </span>
-                      <EyeIcon className="h-4 w-4 text-slate-500" />
-                    </button>
-
-                    <button
-                      onClick={() => navigate("/helpdesk/create")}
-                      className="w-full flex items-center justify-between p-3 bg-slate-50 hover:bg-slate-100 rounded-lg transition-colors text-left"
-                    >
-                      <span className="text-sm font-medium text-slate-700">
-                        Tạo phiếu mới
-                      </span>
-                      <PlusIcon className="h-4 w-4 text-slate-500" />
-                    </button>
-                  </div>
                 </div>
               </div>
             </div>
@@ -1265,7 +1153,8 @@ const ArchivedTicketsModal = ({
 
   return (
     <div
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+      style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+      className="fixed inset-0 bg-opacity-50 flex items-center justify-center z-50 p-4"
       onClick={onClose}
     >
       <div

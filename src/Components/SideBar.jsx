@@ -26,6 +26,54 @@ const iconMap = {
   CogIcon,
 };
 
+// Fallback menu nếu API chưa có KPI menu tree
+const getDefaultMenuWithKPI = (apiMenu) => {
+  // KPI menu tree mới
+  const kpiMenuTree = {
+    name: "KPI",
+    icon: "ChartBarIcon",
+    children: [
+      {
+        name: "Quản lý KPI",
+        path: "/kpi/management",
+      },
+      {
+        name: "KPI Records",
+        path: "/kpi/records",
+      },
+      {
+        name: "Báo cáo KPI",
+        path: "/kpi/report",
+      },
+    ],
+  };
+
+  // Tìm index của menu KPI cũ (có thể là "KPI" hoặc path có "/kpi")
+  const kpiIndex = apiMenu.findIndex(
+    (item) =>
+      item.name?.toLowerCase() === "kpi" ||
+      item.path?.toLowerCase().includes("/kpi")
+  );
+
+  // Nếu tìm thấy menu KPI cũ
+  if (kpiIndex !== -1) {
+    const existingKPI = apiMenu[kpiIndex];
+
+    // Nếu menu KPI đã có children (đã là tree) thì giữ nguyên
+    if (existingKPI.children && existingKPI.children.length > 0) {
+      return apiMenu;
+    }
+
+    // Replace menu KPI cũ bằng tree mới
+    const newMenu = [...apiMenu];
+    newMenu[kpiIndex] = kpiMenuTree;
+    return newMenu;
+  }
+
+  // Nếu không có KPI menu, thêm vào cuối
+  return [...apiMenu, kpiMenuTree];
+};
+
 function SideBar() {
   const [isOpen, setIsOpen] = useState(false);
   const [expandedMenus, setExpandedMenus] = useState({});
@@ -43,18 +91,40 @@ function SideBar() {
         const response = await getSidebarMenu();
 
         if (response.data) {
-          setMenuItems(response.data.menu || []);
+          const apiMenu = response.data.menu || [];
+          // Thêm KPI menu nếu backend chưa có
+          const menuWithKPI = getDefaultMenuWithKPI(apiMenu);
+          setMenuItems(menuWithKPI);
           setUserRole(response.data.role);
-          console.log("Sidebar menu loaded:", {
-            role: response.data.role,
-            userId: response.data.userId,
-            menuCount: response.data.menu?.length,
-          });
         }
       } catch (error) {
         console.error("Error fetching sidebar menu:", error);
-        // Fallback to empty menu nếu API fail
-        setMenuItems([]);
+        // Fallback to KPI menu only
+        setMenuItems([
+          {
+            name: "Dashboard",
+            path: "/",
+            icon: "HomeIcon",
+          },
+          {
+            name: "KPI",
+            icon: "ChartBarIcon",
+            children: [
+              {
+                name: "Quản lý KPI",
+                path: "/kpi/management",
+              },
+              {
+                name: "KPI Records",
+                path: "/kpi/records",
+              },
+              {
+                name: "Báo cáo KPI",
+                path: "/kpi/report",
+              },
+            ],
+          },
+        ]);
       } finally {
         setLoading(false);
       }
@@ -127,7 +197,7 @@ function SideBar() {
           )}
 
           {/* Navigation */}
-          <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
+          <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto sidebar-scroll">
             {loading ? (
               <div className="flex items-center justify-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>

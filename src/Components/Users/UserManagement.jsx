@@ -1,30 +1,34 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  MagnifyingGlassIcon as SearchIcon, 
-  FunnelIcon as FilterIcon, 
-  PlusIcon, 
-  PencilIcon, 
+import React, { useState, useEffect } from "react";
+import {
+  MagnifyingGlassIcon as SearchIcon,
+  FunnelIcon as FilterIcon,
+  PlusIcon,
+  PencilIcon,
   TrashIcon,
   EyeIcon,
-  UserIcon
-} from '@heroicons/react/24/outline';
-import UserRow from './UserRow';
-import UserModal from './UserModal';
-import UserDetailModal from './UserDetailModal';
-import { showDeleteConfirm, showSuccess, showError } from '../../utils/sweetAlert';
-import { getAllUsers, deleteUser } from '../../Service/ApiService';
+  UserIcon,
+} from "@heroicons/react/24/outline";
+import UserRow from "./UserRow";
+import UserModal from "./UserModal";
+import UserDetailModal from "./UserDetailModal";
+import {
+  showDeleteConfirm,
+  showSuccess,
+  showError,
+} from "../../utils/sweetAlert";
+import { getAllUsers, deleteUser } from "../../Service/ApiService";
 
 const UserManagement = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [roleFilter, setRoleFilter] = useState('all');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [roleFilter, setRoleFilter] = useState("all");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [viewingUser, setViewingUser] = useState(null);
-  
+
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
@@ -38,36 +42,48 @@ const UserManagement = () => {
       setLoading(true);
       setError(null);
       const response = await getAllUsers();
-      console.log('Fetched users response:', response.data);
-      
+      console.log("Fetched users response:", response.data);
+
       // Handle response - API returns array directly or wrapped in data
-      const usersData = Array.isArray(response.data) ? response.data : response.data?.data || [];
+      const usersData = Array.isArray(response.data)
+        ? response.data
+        : response.data?.data || [];
       setUsers(usersData);
     } catch (err) {
-      setError('Không thể tải danh sách người dùng');
-      showError('Lỗi tải dữ liệu', 'Không thể tải danh sách người dùng. Vui lòng thử lại.');
-      console.error('Error fetching users:', err);
+      setError("Không thể tải danh sách người dùng");
+      showError(
+        "Lỗi tải dữ liệu",
+        "Không thể tải danh sách người dùng. Vui lòng thử lại."
+      );
+      console.error("Error fetching users:", err);
     } finally {
       setLoading(false);
     }
   };
 
   // Filter and search users
-  const filteredUsers = users.filter(user => {
-    const matchesSearch = user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.position?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.phoneNumber?.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesRole = roleFilter === 'all' || user.role === roleFilter;
-    
+  const filteredUsers = users.filter((user) => {
+    const matchesSearch =
+      user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.position?.positionName
+        ?.toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
+      user.phoneNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.department?.name?.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesRole = roleFilter === "all" || user.role?.name === roleFilter;
+
     return matchesSearch && matchesRole;
   });
 
   // Pagination
   const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedUsers = filteredUsers.slice(startIndex, startIndex + itemsPerPage);
+  const paginatedUsers = filteredUsers.slice(
+    startIndex,
+    startIndex + itemsPerPage
+  );
 
   // Handle CRUD operations
   const handleCreate = () => {
@@ -82,21 +98,21 @@ const UserManagement = () => {
 
   const handleDelete = async (userId) => {
     const result = await showDeleteConfirm(
-      'Xóa người dùng',
-      'Bạn có chắc chắn muốn xóa người dùng này không?'
+      "Xóa người dùng",
+      "Bạn có chắc chắn muốn xóa người dùng này không?"
     );
 
     if (result.isConfirmed) {
       try {
         await deleteUser(userId);
-        setUsers(prev => prev.filter(user => user.id !== userId));
-        showSuccess('Đã xóa!', 'Người dùng đã được xóa thành công.');
+        setUsers((prev) => prev.filter((user) => user.id !== userId));
+        showSuccess("Đã xóa!", "Người dùng đã được xóa thành công.");
       } catch (error) {
-        console.error('Error deleting user:', error);
+        console.error("Error deleting user:", error);
         if (error.response?.data?.message) {
-          showError('Lỗi', error.response.data.message);
+          showError("Lỗi", error.response.data.message);
         } else {
-          showError('Lỗi', 'Không thể xóa người dùng. Vui lòng thử lại.');
+          showError("Lỗi", "Không thể xóa người dùng. Vui lòng thử lại.");
         }
       }
     }
@@ -114,11 +130,11 @@ const UserManagement = () => {
 
   const handleModalSubmit = async () => {
     try {
-      console.log('Refreshing users list after submit');
+      console.log("Refreshing users list after submit");
       await fetchUsers();
       handleModalClose();
     } catch (error) {
-      console.error('Error refreshing users:', error);
+      console.error("Error refreshing users:", error);
       // Still close modal even if refresh fails
       handleModalClose();
     }
@@ -144,7 +160,9 @@ const UserManagement = () => {
               <UserIcon className="h-8 w-8 text-blue-600" />
               Quản lý Người dùng
             </h1>
-            <p className="text-slate-600 mt-2">Quản lý thông tin người dùng trong hệ thống</p>
+            <p className="text-slate-600 mt-2">
+              Quản lý thông tin người dùng trong hệ thống
+            </p>
           </div>
           <button
             onClick={handleCreate}
@@ -203,7 +221,9 @@ const UserManagement = () => {
 
         {/* Results info */}
         <div className="mt-4 text-sm text-slate-600">
-          Hiển thị {startIndex + 1} - {Math.min(startIndex + itemsPerPage, filteredUsers.length)} của {filteredUsers.length} người dùng
+          Hiển thị {startIndex + 1} -{" "}
+          {Math.min(startIndex + itemsPerPage, filteredUsers.length)} của{" "}
+          {filteredUsers.length} người dùng
         </div>
       </div>
 
@@ -238,12 +258,24 @@ const UserManagement = () => {
               <table className="w-full">
                 <thead className="bg-slate-50 border-b border-slate-200">
                   <tr>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Tên</th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Email</th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Vị trí</th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Vai trò</th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Số điện thoại</th>
-                    <th className="px-6 py-4 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider">Thao tác</th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                      Tên
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                      Email
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                      Vị trí
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                      Vai trò
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                      Số điện thoại
+                    </th>
+                    <th className="px-6 py-4 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                      Thao tác
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200">
@@ -273,48 +305,51 @@ const UserManagement = () => {
                     disabled={currentPage === 1}
                     className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                       currentPage === 1
-                        ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                        : 'bg-white text-slate-700 hover:bg-blue-50 hover:text-blue-600 border border-slate-300'
+                        ? "bg-slate-100 text-slate-400 cursor-not-allowed"
+                        : "bg-white text-slate-700 hover:bg-blue-50 hover:text-blue-600 border border-slate-300"
                     }`}
                   >
                     Trước
                   </button>
 
                   <div className="flex items-center space-x-1">
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
-                      const showPage = 
-                        page === 1 || 
-                        page === totalPages || 
-                        (page >= currentPage - 1 && page <= currentPage + 1);
-                      
-                      const showEllipsis = 
-                        (page === currentPage - 2 && currentPage > 3) ||
-                        (page === currentPage + 2 && currentPage < totalPages - 2);
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                      (page) => {
+                        const showPage =
+                          page === 1 ||
+                          page === totalPages ||
+                          (page >= currentPage - 1 && page <= currentPage + 1);
 
-                      if (showEllipsis) {
+                        const showEllipsis =
+                          (page === currentPage - 2 && currentPage > 3) ||
+                          (page === currentPage + 2 &&
+                            currentPage < totalPages - 2);
+
+                        if (showEllipsis) {
+                          return (
+                            <span key={page} className="px-2 text-slate-400">
+                              ...
+                            </span>
+                          );
+                        }
+
+                        if (!showPage) return null;
+
                         return (
-                          <span key={page} className="px-2 text-slate-400">
-                            ...
-                          </span>
+                          <button
+                            key={page}
+                            onClick={() => handlePageChange(page)}
+                            className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                              currentPage === page
+                                ? "bg-blue-600 text-white"
+                                : "bg-white text-slate-700 hover:bg-blue-50 hover:text-blue-600 border border-slate-300"
+                            }`}
+                          >
+                            {page}
+                          </button>
                         );
                       }
-
-                      if (!showPage) return null;
-
-                      return (
-                        <button
-                          key={page}
-                          onClick={() => handlePageChange(page)}
-                          className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                            currentPage === page
-                              ? 'bg-blue-600 text-white'
-                              : 'bg-white text-slate-700 hover:bg-blue-50 hover:text-blue-600 border border-slate-300'
-                          }`}
-                        >
-                          {page}
-                        </button>
-                      );
-                    })}
+                    )}
                   </div>
 
                   <button
@@ -322,8 +357,8 @@ const UserManagement = () => {
                     disabled={currentPage === totalPages}
                     className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                       currentPage === totalPages
-                        ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                        : 'bg-white text-slate-700 hover:bg-blue-50 hover:text-blue-600 border border-slate-300'
+                        ? "bg-slate-100 text-slate-400 cursor-not-allowed"
+                        : "bg-white text-slate-700 hover:bg-blue-50 hover:text-blue-600 border border-slate-300"
                     }`}
                   >
                     Sau

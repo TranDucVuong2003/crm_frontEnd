@@ -36,6 +36,7 @@ const DealDetailsModal = ({
   const [editAddons, setEditAddons] = useState([]);
 
   useEffect(() => {
+    console.log("deallllllllllllllllllllllllllllll", deal);
     if (deal) {
       setEditData({
         title: deal.title || "",
@@ -77,6 +78,12 @@ const DealDetailsModal = ({
   };
 
   const getCustomerDetails = () => {
+    // API mới có sẵn deal.customer object
+    if (deal.customer) {
+      return deal.customer;
+    }
+
+    // Fallback: tìm từ customers array nếu không có
     const customer = customers.find((c) => c.id === deal.customerId);
     return customer || null;
   };
@@ -349,6 +356,14 @@ const DealDetailsModal = ({
                   </div>
                   <div>
                     <span className="font-medium text-gray-600">
+                      Được tạo bởi:
+                    </span>
+                    <p className="text-gray-900 mt-0.5">
+                      {deal.createdByUser?.name || "N/A"}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="font-medium text-gray-600">
                       Giai đoạn:
                     </span>
                     <div className="mt-0.5">
@@ -489,7 +504,7 @@ const DealDetailsModal = ({
                       )}
                       <span className="font-medium text-gray-600">Tên:</span>
                       <span className="ml-2 text-gray-900">
-                        {deal.customer}
+                        {deal.customer?.name || customer.name || "Unknown"}
                       </span>
                     </div>
                     <div>

@@ -1,4 +1,9 @@
 import React, { useState, useEffect } from "react";
+// Import các component từ thư viện drag and drop
+// DragDropContext: Bao bọc toàn bộ khu vực có thể drag and drop
+// Droppable: Định nghĩa vùng có thể thả (drop zone) - mỗi cột stage
+// Draggable: Định nghĩa item có thể kéo - mỗi deal card
+import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import {
   PlusIcon,
   EllipsisVerticalIcon as DotsVerticalIcon,
@@ -24,6 +29,7 @@ import {
   getAllCustomers,
   getAllServices,
   getAllAddons,
+  updateSaleOrder,
 } from "../../Service/ApiService";
 import { showSuccess, showError, showConfirm } from "../../utils/sweetAlert";
 
@@ -58,7 +64,11 @@ const SalesPipeline = () => {
   const [selectedStage, setSelectedStage] = useState(null);
   const [viewingDeal, setViewingDeal] = useState(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
-  const [viewMode, setViewMode] = useState("pipeline"); // "pipeline" or "list"
+  // Đọc chế độ xem từ localStorage, mặc định là "pipeline" nếu chưa có
+  const [viewMode, setViewMode] = useState(() => {
+    const savedViewMode = localStorage.getItem("salesPipelineViewMode");
+    return savedViewMode || "pipeline"; // "pipeline" or "list"
+  });
   const [isStageModalOpen, setIsStageModalOpen] = useState(false);
   const [selectedStageForView, setSelectedStageForView] = useState(null);
   const [isArchiveModalOpen, setIsArchiveModalOpen] = useState(false);
@@ -68,6 +78,11 @@ const SalesPipeline = () => {
   useEffect(() => {
     fetchDeals();
   }, []);
+
+  // Lưu viewMode vào localStorage mỗi khi thay đổi
+  useEffect(() => {
+    localStorage.setItem("salesPipelineViewMode", viewMode);
+  }, [viewMode]);
 
   // Filter deals based on search term and stage
   useEffect(() => {
@@ -79,7 +94,7 @@ const SalesPipeline = () => {
       filtered = filtered.filter((deal) => {
         return (
           deal.title.toLowerCase().includes(searchLower) ||
-          deal.customer.toLowerCase().includes(searchLower) ||
+          deal.customerName?.toLowerCase().includes(searchLower) ||
           deal.notes?.toLowerCase().includes(searchLower) ||
           deal.value.toString().includes(searchLower) ||
           deal.probability.toString().includes(searchLower)
@@ -113,6 +128,10 @@ const SalesPipeline = () => {
       ]);
 
       const saleOrders = saleOrdersResponse.data || [];
+      console.log(
+        "data saleorderrrrrrrrrrrrrrrrrrrrrrrrr",
+        saleOrdersResponse.data
+      );
       const customersData = customersResponse.data || [];
       const servicesData = servicesResponse.data || [];
       const addonsData = addonsResponse.data || [];
@@ -129,9 +148,11 @@ const SalesPipeline = () => {
           id: order.id,
           title: order.title,
           customerId: order.customerId,
-          customer: order.customer
-            ? order.customer.name || "Unknown"
-            : getCustomerName(order.customerId, customersData),
+          customer: order.customer || null, // Giữ nguyên customer object từ API
+          customerName:
+            order.customer?.name ||
+            getCustomerName(order.customerId, customersData), // Thêm field để hiển thị
+          createdByUser: order.createdByUser || null, // Giữ nguyên createdByUser object
           value: order.value,
           probability: order.probability,
           notes: order.notes,
@@ -154,9 +175,11 @@ const SalesPipeline = () => {
           id: order.id,
           title: order.title,
           customerId: order.customerId,
-          customer: order.customer
-            ? order.customer.name || "Unknown"
-            : getCustomerName(order.customerId, customersData),
+          customer: order.customer || null, // Giữ nguyên customer object
+          customerName:
+            order.customer?.name ||
+            getCustomerName(order.customerId, customersData),
+          createdByUser: order.createdByUser || null, // Giữ nguyên createdByUser object
           value: order.value,
           probability: order.probability,
           notes: order.notes,
@@ -190,11 +213,8 @@ const SalesPipeline = () => {
     const customer = customersData.find((c) => c.id === customerId);
     if (!customer) return "Unknown Customer";
 
-    if (customer.customerType === "individual") {
-      return customer.name || "Individual Customer";
-    } else {
-      return customer.companyName || customer.name || "Company Customer";
-    }
+    // API mới: customer.name chứa tên (individual) hoặc tên công ty (company)
+    return customer.name || "Unknown Customer";
   };
 
   // Helper function to determine stage based on probability
@@ -207,7 +227,8 @@ const SalesPipeline = () => {
   };
 
   const getDealsByStage = (stageId) => {
-    return filteredDeals.filter((deal) => deal.stage === stageId);
+    // Sử dụng deals gốc thay vì filteredDeals để hiển thị tất cả deals trong stage
+    return deals.filter((deal) => deal.stage === stageId);
   };
 
   const handleSearchChange = (e) => {
@@ -295,6 +316,79 @@ const SalesPipeline = () => {
   const handleViewAllInStage = (stage) => {
     setSelectedStageForView(stage);
     setIsStageModalOpen(true);
+  };
+
+  // Tính toán probability (xác suất) dựa trên stage (giai đoạn)
+  // Mỗi stage có một range probability, hàm này lấy giá trị giữa của range
+  const getProbabilityByStage = (stageId) => {
+    // Tìm stage theo ID
+    const stage = stages.find((s) => s.id === stageId);
+    if (!stage) return 50; // Mặc định 50% nếu không tìm thấy
+
+    // Lấy min và max từ probabilityRange của stage
+    // Ví dụ: "Tỉ lệ thấp" có range [1, 35]
+    const [min, max] = stage.probabilityRange;
+    // Trả về giá trị giữa của range (1+35)/2 = 18
+    return Math.floor((min + max) / 2);
+  };
+
+  // Xử lý sự kiện khi kéo thả deal card giữa các cột
+  // result chứa thông tin về nguồn (source) và đích (destination) của drag
+  const handleDragEnd = async (result) => {
+    const { source, destination, draggableId } = result;
+
+    // Nếu thả bên ngoài vùng drop zone hợp lệ, không làm gì
+    if (!destination) {
+      return;
+    }
+
+    // Nếu thả vào đúng vị trí cũ (cùng cột, cùng vị trí), không làm gì
+    if (
+      source.droppableId === destination.droppableId &&
+      source.index === destination.index
+    ) {
+      return;
+    }
+
+    // Tìm deal đang được di chuyển dựa trên draggableId
+    const dealId = parseInt(draggableId);
+    const deal = deals.find((d) => d.id === dealId);
+
+    if (!deal) return; // Không tìm thấy deal thì dừng
+
+    // Lấy stage mới (ID của cột đích) và tính probability tương ứng
+    // Ví dụ: Kéo từ "low" sang "high" => newStage = "high", newProbability = 85
+    const newStage = destination.droppableId;
+    const newProbability = getProbabilityByStage(newStage);
+
+    try {
+      // Optimistic update: Cập nhật UI ngay lập tức trước khi gọi API
+      // Điều này giúp UX mượt mà hơn, người dùng thấy thay đổi ngay
+      const updatedDeals = deals.map((d) =>
+        d.id === dealId
+          ? { ...d, stage: newStage, probability: newProbability }
+          : d
+      );
+      setDeals(updatedDeals);
+
+      // Gọi API để cập nhật trên server
+      // Gửi toàn bộ thông tin deal kèm probability mới
+      await updateSaleOrder(dealId, {
+        ...deal,
+        probability: newProbability,
+      });
+
+      // Hiển thị thông báo thành công
+      showSuccess(
+        "Thành công!",
+        `Đã chuyển deal sang ${stages.find((s) => s.id === newStage)?.name}`
+      );
+    } catch (error) {
+      console.error("Error updating deal stage:", error);
+      showError("Lỗi!", "Không thể cập nhật trạng thái deal.");
+      // Nếu có lỗi, fetch lại dữ liệu từ server để revert về trạng thái đúng
+      await fetchDeals();
+    }
   };
 
   const getTotalValue = () => {
@@ -524,26 +618,30 @@ const SalesPipeline = () => {
               </button>
             </div>
           ) : viewMode === "pipeline" ? (
-            <div className="overflow-x-auto">
-              <div className="flex space-x-4" style={{ minWidth: "100%" }}>
-                {stages.map((stage) => (
-                  <PipelineColumn
-                    key={stage.id}
-                    stage={stage}
-                    deals={getDealsByStage(stage.id)}
-                    onAddDeal={handleAddDeal}
-                    onDeleteDeal={handleDeleteDeal}
-                    onEditDeal={(deal) => {
-                      setEditingDeal(deal);
-                      setIsModalOpen(true);
-                    }}
-                    onViewDeal={handleViewDeal}
-                    onViewAll={() => handleViewAllInStage(stage)}
-                    searchTerm={searchTerm}
-                  />
-                ))}
+            // DragDropContext bao bọc toàn bộ pipeline để enable drag and drop
+            // onDragEnd: callback được gọi khi người dùng thả (drop) một item
+            <DragDropContext onDragEnd={handleDragEnd}>
+              <div className="overflow-x-auto">
+                <div className="flex space-x-4" style={{ minWidth: "100%" }}>
+                  {stages.map((stage) => (
+                    <PipelineColumn
+                      key={stage.id}
+                      stage={stage}
+                      deals={getDealsByStage(stage.id)}
+                      onAddDeal={handleAddDeal}
+                      onDeleteDeal={handleDeleteDeal}
+                      onEditDeal={(deal) => {
+                        setEditingDeal(deal);
+                        setIsModalOpen(true);
+                      }}
+                      onViewDeal={handleViewDeal}
+                      onViewAll={handleViewAllInStage}
+                      formatCurrency={formatCurrency}
+                    />
+                  ))}
+                </div>
               </div>
-            </div>
+            </DragDropContext>
           ) : (
             <ListView
               deals={filteredDeals}
@@ -751,7 +849,7 @@ const ArchiveModal = ({
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm text-gray-900">
-                            {deal.customer}
+                            {deal.customerName}
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
@@ -930,7 +1028,7 @@ const ListView = ({
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="text-sm text-gray-900">
-                    {highlightText(deal.customer, searchTerm)}
+                    {highlightText(deal.customerName, searchTerm)}
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
@@ -1047,7 +1145,7 @@ const PipelineColumn = ({
 
   return (
     <div
-      className={`flex-none w-1/5 min-w-0 border rounded-lg ${getColumnColor(
+      className={`flex-none w-1/6 min-w-0 border rounded-lg ${getColumnColor(
         stage.id
       )} flex flex-col`}
       style={{
@@ -1076,7 +1174,7 @@ const PipelineColumn = ({
         </div>
         {deals.length > 0 && (
           <button
-            onClick={onViewAll}
+            onClick={() => onViewAll(stage)}
             className="mt-2 w-full flex items-center justify-center px-2 py-1.5 border border-gray-300 rounded-md text-xs text-gray-700 hover:bg-white hover:border-gray-400 transition-colors"
           >
             Xem tất cả
@@ -1084,36 +1182,54 @@ const PipelineColumn = ({
         )}
       </div>
 
-      {/* Deals List */}
-      <div
-        className={`p-2 space-y-2 flex-grow ${
-          deals.length > 3 ? "overflow-y-auto" : ""
-        }`}
-        style={{
-          maxHeight: deals.length > 3 ? "600px" : "none",
-        }}
-      >
-        {deals.map((deal) => (
-          <DealCard
-            key={deal.id}
-            deal={deal}
-            onEdit={() => onEditDeal(deal)}
-            onDelete={() => onDeleteDeal(deal.id)}
-            onView={() => onViewDeal(deal)}
-            searchTerm={searchTerm}
-          />
-        ))}
-        {deals.length === 0 && (
-          <div className="text-center text-xs text-gray-500 py-4">
-            Chưa có deal nào
+      {/* Vùng chứa các deal card - có thể thả deal vào đây */}
+      {/* Droppable tạo một drop zone với ID là stage.id (low, medium, high, ...) */}
+      <Droppable droppableId={stage.id}>
+        {/* Render props pattern: provided chứa props cần thiết, snapshot chứa trạng thái hiện tại */}
+        {(provided, snapshot) => (
+          <div
+            // Ref bắt buộc cho Droppable
+            ref={provided.innerRef}
+            // Props bắt buộc cho Droppable
+            {...provided.droppableProps}
+            // Đổi màu nền sang xanh nhạt khi đang kéo deal qua cột này
+            className={`p-2 space-y-2 flex-grow ${
+              deals.length > 3 ? "overflow-y-auto" : ""
+            } ${snapshot.isDraggingOver ? "bg-blue-100" : ""}`}
+            style={{
+              maxHeight: deals.length > 3 ? "600px" : "none",
+              minHeight: "100px", // Chiều cao tối thiểu để dễ thả vào cột rỗng
+            }}
+          >
+            {/* Render từng deal card */}
+            {deals.map((deal, index) => (
+              <DealCard
+                key={deal.id}
+                deal={deal}
+                // Index cần thiết cho Draggable để biết thứ tự trong list
+                index={index}
+                onEdit={() => onEditDeal(deal)}
+                onDelete={() => onDeleteDeal(deal.id)}
+                onView={() => onViewDeal(deal)}
+                searchTerm={searchTerm}
+              />
+            ))}
+            {/* Placeholder để giữ không gian khi kéo item ra khỏi list */}
+            {provided.placeholder}
+            {/* Hiển thị text "Chưa có deal" khi cột trống và không đang kéo qua */}
+            {deals.length === 0 && !snapshot.isDraggingOver && (
+              <div className="text-center text-xs text-gray-500 py-4">
+                Chưa có deal nào
+              </div>
+            )}
           </div>
         )}
-      </div>
+      </Droppable>
     </div>
   );
 };
 
-const DealCard = ({ deal, onEdit, onDelete, onView, searchTerm }) => {
+const DealCard = ({ deal, index, onEdit, onDelete, onView, searchTerm }) => {
   const [showDropdown, setShowDropdown] = useState(false);
 
   const highlightText = (text, searchTerm) => {
@@ -1155,100 +1271,119 @@ const DealCard = ({ deal, onEdit, onDelete, onView, searchTerm }) => {
   };
 
   return (
-    <div
-      className="bg-white p-2.5 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow cursor-pointer"
-      onClick={onView}
-    >
-      <div className="flex justify-between items-start mb-1.5">
-        <h4 className="text-xs font-medium text-gray-900 line-clamp-2 flex-1 mr-1">
-          {highlightText(deal.title, searchTerm)}
-        </h4>
-        <div className="relative flex-shrink-0">
-          <button
-            onClick={() => setShowDropdown(!showDropdown)}
-            className="text-gray-400 hover:text-gray-600"
-          >
-            <DotsVerticalIcon className="h-3 w-3" />
-          </button>
+    // Draggable wrap cho mỗi deal card để có thể kéo
+    // draggableId phải là string unique, index là vị trí trong list
+    <Draggable draggableId={String(deal.id)} index={index}>
+      {/* Render props: provided chứa props cần thiết, snapshot chứa trạng thái drag */}
+      {(provided, snapshot) => (
+        <div
+          // Ref bắt buộc cho Draggable
+          ref={provided.innerRef}
+          // Props để element có thể drag
+          {...provided.draggableProps}
+          // Props để xác định vùng có thể grab để drag (toàn bộ card)
+          {...provided.dragHandleProps}
+          // Style: opacity 50%, xoay nhẹ, shadow lớn hơn khi đang kéo
+          className={`bg-white p-2.5 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow cursor-pointer ${
+            snapshot.isDragging ? "opacity-50 rotate-2 shadow-lg" : ""
+          }`}
+          onClick={onView}
+        >
+          <div className="flex justify-between items-start mb-1.5">
+            <h4 className="text-xs font-medium text-gray-900 line-clamp-2 flex-1 mr-1">
+              {highlightText(deal.title, searchTerm)}
+            </h4>
+            <div className="relative flex-shrink-0">
+              <button
+                onClick={() => setShowDropdown(!showDropdown)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <DotsVerticalIcon className="h-3 w-3" />
+              </button>
 
-          {showDropdown && (
-            <div className="absolute right-0 top-4 w-32 bg-white rounded-md shadow-lg border border-gray-200 z-10">
-              <div className="py-1">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onEdit();
-                    setShowDropdown(false);
-                  }}
-                  className="block w-full text-left px-3 py-2 text-xs text-gray-700 hover:bg-gray-100"
+              {showDropdown && (
+                <div className="absolute right-0 top-4 w-32 bg-white rounded-md shadow-lg border border-gray-200 z-10">
+                  <div className="py-1">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onEdit();
+                        setShowDropdown(false);
+                      }}
+                      className="block w-full text-left px-3 py-2 text-xs text-gray-700 hover:bg-gray-100"
+                    >
+                      Chỉnh sửa
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDelete();
+                        setShowDropdown(false);
+                      }}
+                      className="block w-full text-left px-3 py-2 text-xs text-red-600 hover:bg-gray-100"
+                    >
+                      Xóa
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <div className="flex items-center text-xs text-gray-600">
+              <CurrencyDollarIcon className="h-3 w-3 mr-1 flex-shrink-0" />
+              <span className="font-medium truncate text-xs">
+                {highlightText(formatCurrency(deal.value), searchTerm)}
+              </span>
+            </div>
+
+            <div className="flex items-center text-xs text-gray-600">
+              <UserIcon className="h-3 w-3 mr-1 flex-shrink-0" />
+              <span className="truncate">
+                {highlightText(deal.customerName, searchTerm)}
+              </span>
+            </div>
+
+            <div className="flex items-center text-xs text-gray-600">
+              <CalendarIcon className="h-3 w-3 mr-1 flex-shrink-0" />
+              <span className="truncate">
+                {formatDate(deal.expectedCloseDate)}
+              </span>
+            </div>
+
+            {/* Status Badge */}
+            {deal.status && (
+              <div className="flex items-center">
+                <span
+                  className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full ${
+                    deal.status === "Active"
+                      ? "bg-green-100 text-green-800"
+                      : "bg-gray-100 text-gray-800"
+                  }`}
                 >
-                  Chỉnh sửa
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDelete();
-                    setShowDropdown(false);
-                  }}
-                  className="block w-full text-left px-3 py-2 text-xs text-red-600 hover:bg-gray-100"
-                >
-                  Xóa
-                </button>
+                  {deal.status}
+                </span>
+              </div>
+            )}
+
+            {/* Show service/addon info if available */}
+            {(deal.serviceId || deal.addonId) && (
+              <div className="text-xs text-blue-600 truncate">
+                {deal.serviceId && "📋 Có dịch vụ"}{" "}
+                {deal.addonId && "🔧 Có addon"}
+              </div>
+            )}
+
+            <div className="flex justify-end items-center mt-1.5">
+              <div className="text-xs text-gray-500">
+                {deal.probability}% cơ hội
               </div>
             </div>
-          )}
-        </div>
-      </div>
-
-      <div className="space-y-1">
-        <div className="flex items-center text-xs text-gray-600">
-          <CurrencyDollarIcon className="h-3 w-3 mr-1 flex-shrink-0" />
-          <span className="font-medium truncate text-xs">
-            {highlightText(formatCurrency(deal.value), searchTerm)}
-          </span>
-        </div>
-
-        <div className="flex items-center text-xs text-gray-600">
-          <UserIcon className="h-3 w-3 mr-1 flex-shrink-0" />
-          <span className="truncate">
-            {highlightText(deal.customer, searchTerm)}
-          </span>
-        </div>
-
-        <div className="flex items-center text-xs text-gray-600">
-          <CalendarIcon className="h-3 w-3 mr-1 flex-shrink-0" />
-          <span className="truncate">{formatDate(deal.expectedCloseDate)}</span>
-        </div>
-
-        {/* Status Badge */}
-        {deal.status && (
-          <div className="flex items-center">
-            <span
-              className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full ${
-                deal.status === "Active"
-                  ? "bg-green-100 text-green-800"
-                  : "bg-gray-100 text-gray-800"
-              }`}
-            >
-              {deal.status}
-            </span>
-          </div>
-        )}
-
-        {/* Show service/addon info if available */}
-        {(deal.serviceId || deal.addonId) && (
-          <div className="text-xs text-blue-600 truncate">
-            {deal.serviceId && "📋 Có dịch vụ"} {deal.addonId && "🔧 Có addon"}
-          </div>
-        )}
-
-        <div className="flex justify-end items-center mt-1.5">
-          <div className="text-xs text-gray-500">
-            {deal.probability}% cơ hội
           </div>
         </div>
-      </div>
-    </div>
+      )}
+    </Draggable>
   );
 };
 
