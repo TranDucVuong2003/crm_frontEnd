@@ -5,16 +5,13 @@ import {
   XCircleIcon,
   ArrowPathIcon,
 } from "@heroicons/react/24/outline";
-import { verifyActivationToken, login } from "../Service/ApiService";
+import { verifyActivationToken } from "../Service/ApiService";
 
 function ActiveAccount() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const [status, setStatus] = useState("initial"); // initial, verifying, login, success, error
+  const [status, setStatus] = useState("initial"); // initial, verifying, success, error
   const [message, setMessage] = useState("");
-  const [userEmail, setUserEmail] = useState("");
-  const [userName, setUserName] = useState("");
-  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [token, setToken] = useState("");
 
@@ -39,73 +36,40 @@ function ActiveAccount() {
     try {
       const response = await verifyActivationToken(token);
 
+      console.log("Verify response:", response);
+      console.log("Response data:", response.data);
+
       if (response.data) {
-        setUserEmail(response.data.user.email);
-        setUserName(response.data.user.name);
-        setStatus("login");
+        const userData = response.data.user || response.data;
+
+        setStatus("success");
         setMessage(
-          "Token hợp lệ. Vui lòng đăng nhập bằng mật khẩu tạm thời đã gửi qua email."
+          "Xác thực thành công! Bạn có thể đăng nhập bằng mật khẩu tạm thời đã gửi qua email."
         );
+
+        // Chuyển hướng về login sau 2 giây
+        setTimeout(() => {
+          navigate("/login", {
+            replace: true,
+            state: {
+              message:
+                "Tài khoản đã được kích hoạt thành công. Vui lòng đăng nhập bằng mật khẩu tạm thời đã gửi qua email.",
+              email: userData.email,
+            },
+          });
+        }, 2000);
+      } else {
+        setStatus("error");
+        setMessage("Phản hồi từ server không hợp lệ");
       }
     } catch (error) {
+      console.error("Verify error:", error);
+      console.error("Error response:", error.response);
+
       setStatus("error");
       setMessage(
         error.response?.data?.message ||
           "Link kích hoạt không hợp lệ hoặc đã hết hạn"
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setMessage("");
-
-    try {
-      const loginData = {
-        email: userEmail,
-        password: password,
-        deviceInfo: navigator.userAgent,
-      };
-
-      const response = await login(loginData);
-
-      if (response.data) {
-        // Lưu access token
-        localStorage.setItem("accessToken", response.data.accessToken);
-        localStorage.setItem("user", JSON.stringify(response.data.user));
-
-        if (response.data.firstLogin) {
-          // Nếu là lần đầu đăng nhập, chuyển đến trang đổi mật khẩu
-          setStatus("success");
-          setMessage(
-            response.data.message ||
-              "Đăng nhập thành công! Bạn cần đổi mật khẩu trước khi tiếp tục."
-          );
-
-          setTimeout(() => {
-            navigate("/change-password", {
-              state: {
-                message: response.data.message,
-                mustChangePassword: true,
-              },
-            });
-          }, 2000);
-        } else {
-          // Redirect to dashboard
-          setStatus("success");
-          setMessage("Đăng nhập thành công!");
-          setTimeout(() => {
-            navigate("/");
-          }, 2000);
-        }
-      }
-    } catch (error) {
-      setMessage(
-        error.response?.data?.message ||
-          "Đăng nhập thất bại. Vui lòng kiểm tra lại mật khẩu."
       );
     } finally {
       setLoading(false);
@@ -158,87 +122,17 @@ function ActiveAccount() {
             </>
           )}
 
-          {/* Login State */}
-          {status === "login" && (
-            <>
-              <div className="text-left">
-                <h2 className="text-2xl font-bold text-gray-900 mb-2 text-center">
-                  Kích hoạt tài khoản
-                </h2>
-                <p className="text-gray-600 mb-6 text-center">
-                  Xin chào, <strong>{userName}</strong>
-                </p>
-
-                <form onSubmit={handleLogin} className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Email
-                    </label>
-                    <input
-                      type="email"
-                      value={userEmail}
-                      disabled
-                      className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Mật khẩu tạm thời
-                    </label>
-                    <input
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                      disabled={loading}
-                      placeholder="Nhập mật khẩu từ email"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                    <p className="mt-1 text-xs text-gray-500">
-                      Mật khẩu đã được gửi qua email
-                    </p>
-                  </div>
-
-                  {message && message.includes("Token hợp lệ") && (
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                      <p className="text-sm text-blue-600">{message}</p>
-                    </div>
-                  )}
-
-                  {message && !message.includes("Token hợp lệ") && (
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                      <p className="text-sm text-red-600">{message}</p>
-                    </div>
-                  )}
-
-                  <button
-                    type="submit"
-                    disabled={loading || !password}
-                    className="w-full px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-lg hover:from-blue-600 hover:to-indigo-700 transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {loading ? "Đang xử lý..." : "Đăng nhập"}
-                  </button>
-                </form>
-
-                <div className="mt-4 text-center text-sm text-gray-600">
-                  <p>Sau khi đăng nhập, bạn sẽ được yêu cầu đổi mật khẩu</p>
-                </div>
-              </div>
-            </>
-          )}
-
           {/* Success State */}
           {status === "success" && (
             <>
               <CheckCircleIcon className="h-16 w-16 text-green-500 mx-auto mb-4" />
               <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                Thành công!
+                Xác thực thành công!
               </h2>
               <p className="text-gray-600 mb-6">{message}</p>
               <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
                 <ArrowPathIcon className="h-4 w-4 animate-spin" />
-                <span>Đang chuyển hướng...</span>
+                <span>Đang chuyển hướng đến trang đăng nhập...</span>
               </div>
             </>
           )}

@@ -157,7 +157,7 @@ const Header = ({ title }) => {
 
                 {/* Menu Items */}
                 <div className="py-1">
-                  <button
+                  {/* <button
                     onClick={() => {
                       setShowUserMenu(false);
                       // Navigate to settings page
@@ -167,7 +167,7 @@ const Header = ({ title }) => {
                   >
                     <CogIcon className="h-5 w-5 mr-3 text-gray-500" />
                     <span>Cài đặt</span>
-                  </button>
+                  </button> */}
 
                   {/* Cấu hình - chỉ hiển thị cho Admin */}
                   {user?.role?.toLowerCase() === "admin" && (

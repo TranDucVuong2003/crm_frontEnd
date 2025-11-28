@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { XMarkIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon, EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
 import {
   createUser,
   updateUser,
@@ -26,6 +26,8 @@ const UserModal = ({ isOpen, onClose, onSubmit, user }) => {
   const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
+  const [requirePasswordChange, setRequirePasswordChange] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -133,6 +135,43 @@ const UserModal = ({ isOpen, onClose, onSubmit, user }) => {
     }
   };
 
+  const generateStrongPassword = () => {
+    const length = 12;
+    const charset =
+      "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
+    let password = "";
+
+    // Ensure at least one of each type
+    password += "ABCDEFGHIJKLMNOPQRSTUVWXYZ"[Math.floor(Math.random() * 26)];
+    password += "abcdefghijklmnopqrstuvwxyz"[Math.floor(Math.random() * 26)];
+    password += "0123456789"[Math.floor(Math.random() * 10)];
+    password += "!@#$%^&*"[Math.floor(Math.random() * 8)];
+
+    // Fill the rest
+    for (let i = password.length; i < length; i++) {
+      password += charset[Math.floor(Math.random() * charset.length)];
+    }
+
+    // Shuffle the password
+    password = password
+      .split("")
+      .sort(() => Math.random() - 0.5)
+      .join("");
+
+    setFormData((prev) => ({
+      ...prev,
+      password: password,
+    }));
+
+    // Clear password error if exists
+    if (errors.password) {
+      setErrors((prev) => ({
+        ...prev,
+        password: "",
+      }));
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -152,6 +191,7 @@ const UserModal = ({ isOpen, onClose, onSubmit, user }) => {
         roleId: parseInt(formData.roleId),
         phoneNumber: formData.phoneNumber.trim(),
         address: formData.address.trim(),
+        firstLogin: requirePasswordChange,
       };
 
       // Only include password if provided
@@ -273,8 +313,8 @@ const UserModal = ({ isOpen, onClose, onSubmit, user }) => {
                 )}
               </div>
 
-              {/* Password */}
-              <div>
+              {/* Password - Full Width */}
+              <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-slate-700 mb-2">
                   Mật khẩu {!user && <span className="text-red-500">*</span>}
                   {user && (
@@ -283,17 +323,43 @@ const UserModal = ({ isOpen, onClose, onSubmit, user }) => {
                     </span>
                   )}
                 </label>
-                <input
-                  type="password"
-                  name="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  disabled={loading}
-                  className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    errors.password ? "border-red-500" : "border-slate-300"
-                  } ${loading ? "bg-gray-100 cursor-not-allowed" : "bg-white"}`}
-                  placeholder={user ? "Nhập mật khẩu mới" : "Nhập mật khẩu"}
-                />
+                <div className="flex gap-2">
+                  <div className="flex-1 relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      name="password"
+                      value={formData.password}
+                      onChange={handleChange}
+                      disabled={loading}
+                      className={`w-full px-4 py-2 pr-10 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                        errors.password ? "border-red-500" : "border-slate-300"
+                      } ${
+                        loading ? "bg-gray-100 cursor-not-allowed" : "bg-white"
+                      }`}
+                      placeholder={user ? "Nhập mật khẩu mới" : "Nhập mật khẩu"}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      disabled={loading}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 disabled:opacity-50"
+                    >
+                      {showPassword ? (
+                        <EyeSlashIcon className="h-5 w-5" />
+                      ) : (
+                        <EyeIcon className="h-5 w-5" />
+                      )}
+                    </button>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={generateStrongPassword}
+                    disabled={loading}
+                    className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Gen mật khẩu mạnh
+                  </button>
+                </div>
                 {errors.password && (
                   <p className="mt-1 text-sm text-red-500">{errors.password}</p>
                 )}
@@ -395,7 +461,6 @@ const UserModal = ({ isOpen, onClose, onSubmit, user }) => {
                   className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                     errors.phoneNumber ? "border-red-500" : "border-slate-300"
                   } ${loading ? "bg-gray-100 cursor-not-allowed" : "bg-white"}`}
-                  placeholder="0901234567"
                 />
                 {errors.phoneNumber && (
                   <p className="mt-1 text-sm text-red-500">
@@ -424,22 +489,42 @@ const UserModal = ({ isOpen, onClose, onSubmit, user }) => {
             </div>
 
             {/* Footer */}
-            <div className="mt-6 flex justify-end space-x-3">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-6 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors"
-                disabled={loading}
-              >
-                Hủy
-              </button>
-              <button
-                type="submit"
-                className="px-6 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-lg hover:from-blue-600 hover:to-indigo-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={loading}
-              >
-                {loading ? "Đang lưu..." : user ? "Cập nhật" : "Tạo mới"}
-              </button>
+            <div className="mt-6 flex justify-between items-center">
+              {/* Left side - Toggle */}
+              <div className="flex items-center gap-2">
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={requirePasswordChange}
+                    onChange={(e) => setRequirePasswordChange(e.target.checked)}
+                    disabled={loading}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                </label>
+                <span className="text-sm text-slate-700">
+                  Yêu cầu đổi mật khẩu ngay lần đầu đăng nhập
+                </span>
+              </div>
+
+              {/* Right side - Buttons */}
+              <div className="flex space-x-3">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="px-6 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors"
+                  disabled={loading}
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-lg hover:from-blue-600 hover:to-indigo-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={loading}
+                >
+                  {loading ? "Đang lưu..." : user ? "Cập nhật" : "Tạo mới"}
+                </button>
+              </div>
             </div>
           </form>
         </div>
