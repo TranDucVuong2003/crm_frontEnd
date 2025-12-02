@@ -97,19 +97,28 @@ const Quote = () => {
   };
 
   const handleDeleteQuote = async (id) => {
+    console.log("Attempting to delete quote with ID:", id);
     const result = await showDeleteConfirm(
       "Xác nhận xóa",
       "Bạn có chắc chắn muốn xóa báo giá này?"
     );
 
+    console.log("Delete confirmation result:", result);
+
     if (result.isConfirmed) {
       try {
+        console.log("Calling deleteQuote API...");
         await deleteQuote(id);
+        console.log("Delete successful");
         showSuccess("Thành công!", "Đã xóa báo giá");
         fetchQuotes(); // Reload quotes list
       } catch (error) {
         console.error("Error deleting quote:", error);
-        showError("Lỗi!", "Không thể xóa báo giá");
+        console.error("Error response:", error.response?.data);
+        showError(
+          "Lỗi!",
+          error.response?.data?.message || "Không thể xóa báo giá"
+        );
       }
     }
   };
@@ -312,7 +321,8 @@ const Quote = () => {
                       </div>
                       {quote.createdByUser?.position && (
                         <div className="text-xs text-gray-500">
-                          {quote.createdByUser.position}
+                          {quote.createdByUser.position?.positionName ||
+                            quote.createdByUser.position}
                         </div>
                       )}
                     </td>

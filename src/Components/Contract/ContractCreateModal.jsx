@@ -336,7 +336,10 @@ const ContractCreateModal = ({
                       <option value="">-- Chọn người phụ trách --</option>
                       {users.map((user) => (
                         <option key={user.id} value={user.id}>
-                          {user.name} - {user.position}
+                          {user.name} -{" "}
+                          {user.position?.positionName ||
+                            user.position ||
+                            "N/A"}
                         </option>
                       ))}
                     </select>

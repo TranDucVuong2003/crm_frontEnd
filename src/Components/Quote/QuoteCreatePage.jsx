@@ -1,6 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeftIcon, DocumentTextIcon } from "@heroicons/react/24/outline";
+import {
+  ArrowLeftIcon,
+  DocumentTextIcon,
+  Bars3Icon,
+} from "@heroicons/react/24/outline";
+import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import {
   getAllCategoryServiceAddons,
   getAllCustomers,
@@ -229,6 +234,27 @@ const QuoteCreatePage = () => {
 
   const handleFormChange = (field, value) => {
     setFormData({ ...formData, [field]: value });
+  };
+
+  // Drag and Drop handlers
+  const handleSummaryDragEnd = (result) => {
+    if (!result.destination) return;
+
+    const items = Array.from(summaryItems);
+    const [reorderedItem] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, reorderedItem);
+
+    setSummaryItems(items);
+  };
+
+  const handleDetailDragEnd = (result) => {
+    if (!result.destination) return;
+
+    const items = Array.from(detailItems);
+    const [reorderedItem] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, reorderedItem);
+
+    setDetailItems(items);
   };
 
   // Summary table handlers
@@ -791,6 +817,9 @@ const QuoteCreatePage = () => {
                     <table className="min-w-full border-collapse text-sm">
                       <thead>
                         <tr className="bg-indigo-100">
+                          <th className="border border-indigo-200 px-2 py-2 text-center text-xs font-semibold text-gray-700 w-10">
+                            <Bars3Icon className="h-4 w-4 mx-auto" />
+                          </th>
                           <th className="border border-indigo-200 px-3 py-2 text-left text-xs font-semibold text-gray-700 w-8">
                             STT
                           </th>
@@ -814,101 +843,140 @@ const QuoteCreatePage = () => {
                           </th>
                         </tr>
                       </thead>
-                      <tbody>
-                        {summaryItems.map((item, index) => (
-                          <tr key={item.id} className="hover:bg-indigo-50">
-                            <td className="border border-indigo-200 px-3 py-2 text-center text-gray-700">
-                              {index + 1}
-                            </td>
-                            <td className="border border-indigo-200 px-2 py-1.5">
-                              <select
-                                value={item.serviceId}
-                                onChange={(e) =>
-                                  handleSummaryChange(
-                                    item.id,
-                                    "serviceId",
-                                    e.target.value
-                                  )
-                                }
-                                className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                              >
-                                <option value="">
-                                  -- Chọn dịch vụ/addon --
-                                </option>
-                                {availableServicesAndAddons.map((service) => (
-                                  <option key={service.id} value={service.id}>
-                                    {service.name} -{" "}
-                                    {formatPrice(service.price)} (
-                                    {service.type === "service"
-                                      ? "Dịch vụ"
-                                      : "Addon"}
-                                    )
-                                  </option>
-                                ))}
-                              </select>
-                            </td>
-                            <td className="border border-indigo-200 px-2 py-1.5">
-                              <input
-                                type="number"
-                                value={item.unitPrice}
-                                onChange={(e) =>
-                                  handleSummaryChange(
-                                    item.id,
-                                    "unitPrice",
-                                    parseFloat(e.target.value) || 0
-                                  )
-                                }
-                                placeholder="0"
-                                className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-right"
-                              />
-                            </td>
-                            <td className="border border-indigo-200 px-2 py-1.5">
-                              <input
-                                type="number"
-                                value={item.quantity}
-                                onChange={(e) =>
-                                  handleSummaryChange(
-                                    item.id,
-                                    "quantity",
-                                    parseInt(e.target.value) || 1
-                                  )
-                                }
-                                min="1"
-                                className="w-20 px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-center"
-                              />
-                            </td>
-                            <td className="border border-indigo-200 px-2 py-1.5">
-                              <input
-                                type="number"
-                                value={item.tax || 0}
-                                onChange={(e) =>
-                                  handleSummaryChange(
-                                    item.id,
-                                    "tax",
-                                    parseFloat(e.target.value) || 0
-                                  )
-                                }
-                                min="0"
-                                max="100"
-                                placeholder="0"
-                                className="w-20 px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-right"
-                              />
-                            </td>
-                            <td className="border border-indigo-200 px-3 py-2 text-right font-medium text-gray-900">
-                              {formatPrice(item.total)}
-                            </td>
-                            <td className="border border-indigo-200 px-2 py-1.5 text-center">
-                              <button
-                                onClick={() => removeSummaryRow(item.id)}
-                                className="text-red-600 hover:text-red-800 font-medium text-lg"
-                                title="Xóa dòng"
-                              >
-                                ✕
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
+                      <DragDropContext onDragEnd={handleSummaryDragEnd}>
+                        <Droppable droppableId="summary-table">
+                          {(provided) => (
+                            <tbody
+                              {...provided.droppableProps}
+                              ref={provided.innerRef}
+                            >
+                              {summaryItems.map((item, index) => (
+                                <Draggable
+                                  key={item.id}
+                                  draggableId={`summary-${item.id}`}
+                                  index={index}
+                                >
+                                  {(provided, snapshot) => (
+                                    <tr
+                                      ref={provided.innerRef}
+                                      {...provided.draggableProps}
+                                      className={`hover:bg-indigo-50 ${
+                                        snapshot.isDragging
+                                          ? "bg-indigo-100 shadow-lg"
+                                          : ""
+                                      }`}
+                                    >
+                                      <td
+                                        className="border border-indigo-200 px-2 py-2 text-center cursor-move"
+                                        {...provided.dragHandleProps}
+                                      >
+                                        <Bars3Icon className="h-5 w-5 text-gray-400 mx-auto" />
+                                      </td>
+                                      <td className="border border-indigo-200 px-3 py-2 text-center text-gray-700">
+                                        {index + 1}
+                                      </td>
+                                      <td className="border border-indigo-200 px-2 py-1.5">
+                                        <select
+                                          value={item.serviceId}
+                                          onChange={(e) =>
+                                            handleSummaryChange(
+                                              item.id,
+                                              "serviceId",
+                                              e.target.value
+                                            )
+                                          }
+                                          className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                        >
+                                          <option value="">
+                                            -- Chọn dịch vụ/addon --
+                                          </option>
+                                          {availableServicesAndAddons.map(
+                                            (service) => (
+                                              <option
+                                                key={service.id}
+                                                value={service.id}
+                                              >
+                                                {service.name} -{" "}
+                                                {formatPrice(service.price)} (
+                                                {service.type === "service"
+                                                  ? "Dịch vụ"
+                                                  : "Addon"}
+                                                )
+                                              </option>
+                                            )
+                                          )}
+                                        </select>
+                                      </td>
+                                      <td className="border border-indigo-200 px-2 py-1.5">
+                                        <input
+                                          type="number"
+                                          value={item.unitPrice}
+                                          onChange={(e) =>
+                                            handleSummaryChange(
+                                              item.id,
+                                              "unitPrice",
+                                              parseFloat(e.target.value) || 0
+                                            )
+                                          }
+                                          placeholder="0"
+                                          className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-right"
+                                        />
+                                      </td>
+                                      <td className="border border-indigo-200 px-2 py-1.5">
+                                        <input
+                                          type="number"
+                                          value={item.quantity}
+                                          onChange={(e) =>
+                                            handleSummaryChange(
+                                              item.id,
+                                              "quantity",
+                                              parseInt(e.target.value) || 1
+                                            )
+                                          }
+                                          min="1"
+                                          className="w-20 px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-center"
+                                        />
+                                      </td>
+                                      <td className="border border-indigo-200 px-2 py-1.5">
+                                        <input
+                                          type="number"
+                                          value={item.tax || 0}
+                                          onChange={(e) =>
+                                            handleSummaryChange(
+                                              item.id,
+                                              "tax",
+                                              parseFloat(e.target.value) || 0
+                                            )
+                                          }
+                                          min="0"
+                                          max="100"
+                                          placeholder="0"
+                                          className="w-20 px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-right"
+                                        />
+                                      </td>
+                                      <td className="border border-indigo-200 px-3 py-2 text-right font-medium text-gray-900">
+                                        {formatPrice(item.total)}
+                                      </td>
+                                      <td className="border border-indigo-200 px-2 py-1.5 text-center">
+                                        <button
+                                          onClick={() =>
+                                            removeSummaryRow(item.id)
+                                          }
+                                          className="text-red-600 hover:text-red-800 font-medium text-lg"
+                                          title="Xóa dòng"
+                                        >
+                                          ✕
+                                        </button>
+                                      </td>
+                                    </tr>
+                                  )}
+                                </Draggable>
+                              ))}
+                              {provided.placeholder}
+                            </tbody>
+                          )}
+                        </Droppable>
+                      </DragDropContext>
                       <tfoot>
                         <tr className="bg-indigo-200 font-bold">
                           <td
@@ -945,6 +1013,9 @@ const QuoteCreatePage = () => {
                     <table className="min-w-full border-collapse text-sm">
                       <thead>
                         <tr className="bg-green-100">
+                          <th className="border border-green-200 px-2 py-2 text-center text-xs font-semibold text-gray-700 w-10">
+                            <Bars3Icon className="h-4 w-4 mx-auto" />
+                          </th>
                           <th className="border border-green-200 px-3 py-2 text-left text-xs font-semibold text-gray-700">
                             Tên dịch vụ
                           </th>
@@ -968,117 +1039,152 @@ const QuoteCreatePage = () => {
                           </th>
                         </tr>
                       </thead>
-                      <tbody>
-                        {detailItems.map((item, index) => (
-                          <tr key={item.id} className="hover:bg-green-50">
-                            <td className="border border-green-200 px-2 py-1.5">
-                              <input
-                                type="text"
-                                value={item.serviceName}
-                                onChange={(e) =>
-                                  handleDetailChange(
-                                    item.id,
-                                    "serviceName",
-                                    e.target.value
-                                  )
-                                }
-                                placeholder="Tên dịch vụ"
-                                className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                              />
-                            </td>
-                            <td className="border border-green-200 px-2 py-1.5">
-                              <input
-                                type="number"
-                                value={item.unitPrice}
-                                onChange={(e) =>
-                                  handleDetailChange(
-                                    item.id,
-                                    "unitPrice",
-                                    parseFloat(e.target.value) || 0
-                                  )
-                                }
-                                placeholder="0"
-                                className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-green-500 focus:border-transparent text-right"
-                              />
-                            </td>
-                            <td className="border border-green-200 px-2 py-1.5">
-                              <input
-                                type="number"
-                                value={item.quantity}
-                                onChange={(e) =>
-                                  handleDetailChange(
-                                    item.id,
-                                    "quantity",
-                                    parseInt(e.target.value) || 1
-                                  )
-                                }
-                                min="1"
-                                className="w-20 px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-green-500 focus:border-transparent text-center"
-                              />
-                            </td>
-                            <td className="border border-green-200 px-2 py-1.5">
-                              <select
-                                value={item.relatedService || ""}
-                                onChange={(e) =>
-                                  handleDetailChange(
-                                    item.id,
-                                    "relatedService",
-                                    e.target.value
-                                  )
-                                }
-                                className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                              >
-                                <option value="">
-                                  -- Chọn dịch vụ liên kết --
-                                </option>
-                                {summaryItems
-                                  .filter(
-                                    (summary) =>
-                                      summary.serviceName &&
-                                      summary.serviceName.trim() !== ""
-                                  )
-                                  .map((summary) => (
-                                    <option
-                                      key={summary.id}
-                                      value={summary.serviceName}
+                      <DragDropContext onDragEnd={handleDetailDragEnd}>
+                        <Droppable droppableId="detail-table">
+                          {(provided) => (
+                            <tbody
+                              {...provided.droppableProps}
+                              ref={provided.innerRef}
+                            >
+                              {detailItems.map((item, index) => (
+                                <Draggable
+                                  key={item.id}
+                                  draggableId={`detail-${item.id}`}
+                                  index={index}
+                                >
+                                  {(provided, snapshot) => (
+                                    <tr
+                                      ref={provided.innerRef}
+                                      {...provided.draggableProps}
+                                      className={`hover:bg-green-50 ${
+                                        snapshot.isDragging
+                                          ? "bg-green-100 shadow-lg"
+                                          : ""
+                                      }`}
                                     >
-                                      {summary.serviceName}
-                                    </option>
-                                  ))}
-                              </select>
-                            </td>
-                            <td className="border border-green-200 px-2 py-1.5">
-                              <input
-                                type="number"
-                                value={item.tax || 0}
-                                onChange={(e) =>
-                                  handleDetailChange(
-                                    item.id,
-                                    "tax",
-                                    parseFloat(e.target.value) || 0
-                                  )
-                                }
-                                min="0"
-                                max="100"
-                                placeholder="0"
-                                className="w-20 px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-green-500 focus:border-transparent text-right"
-                              />
-                            </td>
-                            <td className="border border-green-200 px-3 py-2 text-right font-medium text-gray-900">
-                              {formatPrice(item.total)}
-                            </td>
-                            <td className="border border-green-200 px-2 py-1.5 text-center">
-                              <button
-                                onClick={() => removeDetailRow(item.id)}
-                                className="text-red-600 hover:text-red-800 font-medium text-lg"
-                                title="Xóa dòng"
-                              >
-                                ✕
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
+                                      <td
+                                        className="border border-green-200 px-2 py-2 text-center cursor-move"
+                                        {...provided.dragHandleProps}
+                                      >
+                                        <Bars3Icon className="h-5 w-5 text-gray-400 mx-auto" />
+                                      </td>
+                                      <td className="border border-green-200 px-2 py-1.5">
+                                        <input
+                                          type="text"
+                                          value={item.serviceName}
+                                          onChange={(e) =>
+                                            handleDetailChange(
+                                              item.id,
+                                              "serviceName",
+                                              e.target.value
+                                            )
+                                          }
+                                          placeholder="Tên dịch vụ"
+                                          className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                        />
+                                      </td>
+                                      <td className="border border-green-200 px-2 py-1.5">
+                                        <input
+                                          type="number"
+                                          value={item.unitPrice}
+                                          onChange={(e) =>
+                                            handleDetailChange(
+                                              item.id,
+                                              "unitPrice",
+                                              parseFloat(e.target.value) || 0
+                                            )
+                                          }
+                                          placeholder="0"
+                                          className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-green-500 focus:border-transparent text-right"
+                                        />
+                                      </td>
+                                      <td className="border border-green-200 px-2 py-1.5">
+                                        <input
+                                          type="number"
+                                          value={item.quantity}
+                                          onChange={(e) =>
+                                            handleDetailChange(
+                                              item.id,
+                                              "quantity",
+                                              parseInt(e.target.value) || 1
+                                            )
+                                          }
+                                          min="1"
+                                          className="w-20 px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-green-500 focus:border-transparent text-center"
+                                        />
+                                      </td>
+                                      <td className="border border-green-200 px-2 py-1.5">
+                                        <select
+                                          value={item.relatedService || ""}
+                                          onChange={(e) =>
+                                            handleDetailChange(
+                                              item.id,
+                                              "relatedService",
+                                              e.target.value
+                                            )
+                                          }
+                                          className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                        >
+                                          <option value="">
+                                            -- Chọn dịch vụ liên kết --
+                                          </option>
+                                          {summaryItems
+                                            .filter(
+                                              (summary) =>
+                                                summary.serviceName &&
+                                                summary.serviceName.trim() !==
+                                                  ""
+                                            )
+                                            .map((summary) => (
+                                              <option
+                                                key={summary.id}
+                                                value={summary.serviceName}
+                                              >
+                                                {summary.serviceName}
+                                              </option>
+                                            ))}
+                                        </select>
+                                      </td>
+                                      <td className="border border-green-200 px-2 py-1.5">
+                                        <input
+                                          type="number"
+                                          value={item.tax || 0}
+                                          onChange={(e) =>
+                                            handleDetailChange(
+                                              item.id,
+                                              "tax",
+                                              parseFloat(e.target.value) || 0
+                                            )
+                                          }
+                                          min="0"
+                                          max="100"
+                                          placeholder="0"
+                                          className="w-20 px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-green-500 focus:border-transparent text-right"
+                                        />
+                                      </td>
+                                      <td className="border border-green-200 px-3 py-2 text-right font-medium text-gray-900">
+                                        {formatPrice(item.total)}
+                                      </td>
+                                      <td className="border border-green-200 px-2 py-1.5 text-center">
+                                        <button
+                                          onClick={() =>
+                                            removeDetailRow(item.id)
+                                          }
+                                          className="text-red-600 hover:text-red-800 font-medium text-lg"
+                                          title="Xóa dòng"
+                                        >
+                                          ✕
+                                        </button>
+                                      </td>
+                                    </tr>
+                                  )}
+                                </Draggable>
+                              ))}
+                              {provided.placeholder}
+                            </tbody>
+                          )}
+                        </Droppable>
+                      </DragDropContext>
                       <tfoot>
                         <tr className="bg-green-200 font-bold">
                           <td

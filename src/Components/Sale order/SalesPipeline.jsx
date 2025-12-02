@@ -737,14 +737,25 @@ const ArchiveModal = ({
   const formatDate = (dateString) => {
     if (!dateString) return "";
     try {
-      const date = new Date(dateString);
+      // Handle if dateString is already a Date object
+      const date =
+        typeof dateString === "string"
+          ? new Date(dateString)
+          : new Date(dateString);
+
+      // Check if date is valid
+      if (isNaN(date.getTime())) {
+        return "Ngày không hợp lệ";
+      }
+
       return date.toLocaleDateString("vi-VN", {
         day: "2-digit",
         month: "2-digit",
         year: "numeric",
       });
     } catch (error) {
-      return dateString;
+      console.error("Error formatting date:", error, dateString);
+      return "Lỗi định dạng";
     }
   };
 
@@ -910,14 +921,25 @@ const ListView = ({
   const formatDate = (dateString) => {
     if (!dateString) return "";
     try {
-      const date = new Date(dateString);
+      // Handle if dateString is already a Date object
+      const date =
+        typeof dateString === "string"
+          ? new Date(dateString)
+          : new Date(dateString);
+
+      // Check if date is valid
+      if (isNaN(date.getTime())) {
+        return "Ngày không hợp lệ";
+      }
+
       return date.toLocaleDateString("vi-VN", {
         day: "2-digit",
         month: "2-digit",
         year: "numeric",
       });
     } catch (error) {
-      return dateString;
+      console.error("Error formatting date:", error, dateString);
+      return "Lỗi định dạng";
     }
   };
 
@@ -1259,14 +1281,25 @@ const DealCard = ({ deal, index, onEdit, onDelete, onView, searchTerm }) => {
   const formatDate = (dateString) => {
     if (!dateString) return "";
     try {
-      const date = new Date(dateString);
+      // Handle if dateString is already a Date object
+      const date =
+        typeof dateString === "string"
+          ? new Date(dateString)
+          : new Date(dateString);
+
+      // Check if date is valid
+      if (isNaN(date.getTime())) {
+        return "Ngày không hợp lệ";
+      }
+
       return date.toLocaleDateString("vi-VN", {
         day: "2-digit",
         month: "2-digit",
         year: "numeric",
       });
     } catch (error) {
-      return dateString;
+      console.error("Error formatting date:", error, dateString);
+      return "Lỗi định dạng";
     }
   };
 

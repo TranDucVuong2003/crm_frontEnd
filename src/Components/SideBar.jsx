@@ -26,54 +26,6 @@ const iconMap = {
   CogIcon,
 };
 
-// Fallback menu nếu API chưa có KPI menu tree
-const getDefaultMenuWithKPI = (apiMenu) => {
-  // KPI menu tree mới
-  const kpiMenuTree = {
-    name: "KPI",
-    icon: "ChartBarIcon",
-    children: [
-      {
-        name: "Quản lý KPI",
-        path: "/kpi/management",
-      },
-      {
-        name: "KPI Records",
-        path: "/kpi/records",
-      },
-      {
-        name: "Báo cáo KPI",
-        path: "/kpi/report",
-      },
-    ],
-  };
-
-  // Tìm index của menu KPI cũ (có thể là "KPI" hoặc path có "/kpi")
-  const kpiIndex = apiMenu.findIndex(
-    (item) =>
-      item.name?.toLowerCase() === "kpi" ||
-      item.path?.toLowerCase().includes("/kpi")
-  );
-
-  // Nếu tìm thấy menu KPI cũ
-  if (kpiIndex !== -1) {
-    const existingKPI = apiMenu[kpiIndex];
-
-    // Nếu menu KPI đã có children (đã là tree) thì giữ nguyên
-    if (existingKPI.children && existingKPI.children.length > 0) {
-      return apiMenu;
-    }
-
-    // Replace menu KPI cũ bằng tree mới
-    const newMenu = [...apiMenu];
-    newMenu[kpiIndex] = kpiMenuTree;
-    return newMenu;
-  }
-
-  // Nếu không có KPI menu, thêm vào cuối
-  return [...apiMenu, kpiMenuTree];
-};
-
 function SideBar() {
   const [isOpen, setIsOpen] = useState(false);
   const [expandedMenus, setExpandedMenus] = useState({});
@@ -92,37 +44,17 @@ function SideBar() {
 
         if (response.data) {
           const apiMenu = response.data.menu || [];
-          // Thêm KPI menu nếu backend chưa có
-          const menuWithKPI = getDefaultMenuWithKPI(apiMenu);
-          setMenuItems(menuWithKPI);
+          setMenuItems(apiMenu);
           setUserRole(response.data.role);
         }
       } catch (error) {
         console.error("Error fetching sidebar menu:", error);
-        // Fallback to KPI menu only
+        // Fallback to default menu
         setMenuItems([
           {
             name: "Dashboard",
             path: "/",
             icon: "HomeIcon",
-          },
-          {
-            name: "KPI",
-            icon: "ChartBarIcon",
-            children: [
-              {
-                name: "Quản lý KPI",
-                path: "/kpi/management",
-              },
-              {
-                name: "KPI Records",
-                path: "/kpi/records",
-              },
-              {
-                name: "Báo cáo KPI",
-                path: "/kpi/report",
-              },
-            ],
           },
         ]);
       } finally {

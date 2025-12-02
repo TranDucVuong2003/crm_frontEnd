@@ -114,6 +114,11 @@ const TicketForm = ({ ticket, onSubmit, prefilledData }) => {
               avatar: generateAvatar(
                 user.name || user.username || user.fullName
               ),
+              // Normalize role, position, department to be strings for display
+              roleDisplay: user.role?.name || user.role || "N/A",
+              positionDisplay:
+                user.position?.positionName || user.position || "",
+              departmentDisplay: user.department?.name || user.department || "",
             }))
           : Array.isArray(usersResponse.data)
           ? usersResponse.data.map((user) => ({
@@ -121,6 +126,11 @@ const TicketForm = ({ ticket, onSubmit, prefilledData }) => {
               avatar: generateAvatar(
                 user.name || user.username || user.fullName
               ),
+              // Normalize role, position, department to be strings for display
+              roleDisplay: user.role?.name || user.role || "N/A",
+              positionDisplay:
+                user.position?.positionName || user.position || "",
+              departmentDisplay: user.department?.name || user.department || "",
             }))
           : [];
 
@@ -362,7 +372,15 @@ const TicketForm = ({ ticket, onSubmit, prefilledData }) => {
         (user) =>
           user.name?.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
           user.email?.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
-          user.role?.toLowerCase().includes(userSearchTerm.toLowerCase())
+          user.roleDisplay
+            ?.toLowerCase()
+            .includes(userSearchTerm.toLowerCase()) ||
+          user.positionDisplay
+            ?.toLowerCase()
+            .includes(userSearchTerm.toLowerCase()) ||
+          user.departmentDisplay
+            ?.toLowerCase()
+            .includes(userSearchTerm.toLowerCase())
       )
     : [];
 
@@ -681,7 +699,8 @@ const TicketForm = ({ ticket, onSubmit, prefilledData }) => {
                                         {user.email}
                                       </span>
                                       <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
-                                        {user.role}
+                                        {user.positionDisplay ||
+                                          user.roleDisplay}
                                       </span>
                                     </div>
                                   </div>
@@ -719,7 +738,9 @@ const TicketForm = ({ ticket, onSubmit, prefilledData }) => {
                               {selectedUser.name}
                             </p>
                             <p className="text-xs text-gray-600">
-                              {selectedUser.role} • {selectedUser.email}
+                              {selectedUser.positionDisplay ||
+                                selectedUser.roleDisplay}{" "}
+                              • {selectedUser.email}
                             </p>
                           </div>
                           <button

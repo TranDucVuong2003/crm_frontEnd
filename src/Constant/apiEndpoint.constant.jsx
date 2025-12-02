@@ -238,64 +238,6 @@ const API_ENDPOINT = {
     DELETE: (id) => `/api/Resions/${id}`,
   },
 
-  // KPI endpoints
-  KPI: {
-    GET_ALL: "/api/KPIs",
-    CREATE: "/api/KPIs",
-    GET_BY_ID: (id) => `/api/KPIs/${id}`,
-    UPDATE: (id) => `/api/KPIs/${id}`,
-    DELETE: (id) => `/api/KPIs/${id}`,
-  },
-
-  // KPI Commission Tiers endpoints
-  KPI_COMMISSION_TIERS: {
-    GET_ALL: "/api/KpiCommissionTiers",
-    GET_BY_KPI: (kpiId) => `/api/KpiCommissionTiers/kpi/${kpiId}`,
-    CREATE: "/api/KpiCommissionTiers",
-    CREATE_BULK: "/api/KpiCommissionTiers/bulk",
-    UPDATE: (id) => `/api/KpiCommissionTiers/${id}`,
-    DELETE: (id) => `/api/KpiCommissionTiers/${id}`,
-    CALCULATE: "/api/KpiCommissionTiers/calculate",
-  },
-
-  // User KPI Assignments endpoints
-  USER_KPI_ASSIGNMENTS: {
-    GET_ALL: "/api/UserKpiAssignments",
-    CREATE: "/api/UserKpiAssignments",
-    UPDATE: (id) => `/api/UserKpiAssignments/${id}`,
-    DELETE: (id) => `/api/UserKpiAssignments/${id}`,
-  },
-
-  // KPI Records endpoints
-  KPI_RECORDS: {
-    GET_ALL: "/api/KpiRecords",
-    GET_BY_ID: (id) => `/api/KpiRecords/${id}`,
-    CALCULATE: "/api/KpiRecords/calculate",
-    SUMMARY: "/api/KpiRecords/summary",
-    USER_SUMMARY: (userId) => `/api/KpiRecords/user/${userId}/summary`,
-    APPROVE: (id) => `/api/KpiRecords/${id}/approve`,
-    REJECT: (id) => `/api/KpiRecords/${id}/reject`,
-    BATCH_APPROVE: "/api/KpiRecords/batch-approve",
-  },
-
-  // Marketing Budget endpoints
-  MARKETING_BUDGET: {
-    GET_ALL: "/api/MarketingBudgets",
-    CREATE: "/api/MarketingBudgets",
-    UPDATE: (id) => `/api/MarketingBudgets/${id}`,
-    DELETE: (id) => `/api/MarketingBudgets/${id}`,
-    APPROVE: (id) => `/api/MarketingBudgets/${id}/approve`,
-  },
-
-  // Marketing Expense endpoints
-  MARKETING_EXPENSE: {
-    GET_ALL: "/api/MarketingExpenses",
-    CREATE: "/api/MarketingExpenses",
-    UPDATE: (id) => `/api/MarketingExpenses/${id}`,
-    DELETE: (id) => `/api/MarketingExpenses/${id}`,
-    APPROVE: (id) => `/api/MarketingExpenses/${id}/approve`,
-  },
-
   // Leads endpoints
   LEADS: {
     GET_ALL: "/api/Leads",

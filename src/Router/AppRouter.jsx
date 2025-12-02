@@ -30,10 +30,7 @@ import LeadDataCompany from "../Components/LeadDataCompany";
 import Configuration from "../Components/Configuration";
 import ActiveAccount from "../Pages/ActiveAccount";
 import ChangePassword from "../Pages/ChangePassword";
-import KPIs from "../Components/KPIs";
-import KPIRecords from "../Components/KPIs/KPIRecords";
-import KPIReport from "../Components/KPIs/KPIReport";
-// import TestAdminSession from "../Components/test-session";
+
 
 function AppRouter() {
   const router = createBrowserRouter([
@@ -145,16 +142,7 @@ function AppRouter() {
           path: "configuration",
           element: <Configuration />,
         },
-        {
-          path: "kpi",
-          element: <Outlet />,
-          children: [
-            { path: "", element: <KPIs /> },
-            { path: "management", element: <KPIs /> },
-            { path: "records", element: <KPIRecords /> },
-            { path: "report", element: <KPIReport /> },
-          ],
-        },
+      
       ],
     },
     {
