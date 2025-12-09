@@ -252,6 +252,51 @@ const API_ENDPOINT = {
     ADMIN: "/api/Dashboard/admin",
     USER: (userId) => `/api/Dashboard/user/${userId}`,
   },
+
+  // KPI Packages endpoints
+  KPI: {
+    GET_ALL: "/api/KpiPackages",
+    GET_BY_ID: (id) => `/api/KpiPackages/${id}`,
+    CREATE: "/api/KpiPackages",
+    UPDATE: (id) => `/api/KpiPackages/${id}`,
+    DELETE: (id) => `/api/KpiPackages/${id}`,
+    ASSIGN: "/api/KpiPackages/assign",
+    GET_ASSIGNED_USERS: (id) => `/api/KpiPackages/${id}/assigned-users`,
+    CALCULATE_ALL: "/api/KpiPackages/calculate-kpi",
+    CALCULATE_USER: (userId) => `/api/KpiPackages/calculate-kpi-user/${userId}`,
+  },
+
+  // KPI Targets endpoints
+  KPI_TARGETS: {
+    GET_ALL: "/api/SaleKpiTargets",
+    GET_BY_ID: (id) => `/api/SaleKpiTargets/${id}`,
+    GET_BY_USER: (userId) => `/api/SaleKpiTargets/by-user/${userId}`,
+    GET_BY_PERIOD: "/api/SaleKpiTargets/by-period",
+    GET_BY_USER_PERIOD: "/api/SaleKpiTargets/by-user-period",
+    CREATE: "/api/SaleKpiTargets",
+    UPDATE: (id) => `/api/SaleKpiTargets/${id}`,
+    DELETE: (id) => `/api/SaleKpiTargets/${id}`,
+  },
+
+  // Commission Rates endpoints
+  COMMISSION_RATES: {
+    GET_ALL: "/api/CommissionRates",
+    GET_BY_ID: (id) => `/api/CommissionRates/${id}`,
+    CREATE: "/api/CommissionRates",
+    UPDATE: (id) => `/api/CommissionRates/${id}`,
+    DELETE: (id) => `/api/CommissionRates/${id}`,
+  },
+
+  // KPI Records endpoints
+  KPI_RECORDS: {
+    GET_ALL: "/api/SaleKpiRecords",
+    GET_BY_ID: (id) => `/api/SaleKpiRecords/${id}`,
+    GET_BY_USER: (userId) => `/api/SaleKpiRecords/by-user/${userId}`,
+    GET_BY_PERIOD: "/api/SaleKpiRecords/by-period",
+    GET_LEADERBOARD: "/api/SaleKpiRecords/leaderboard",
+    GET_STATISTICS: "/api/SaleKpiRecords/statistics",
+    UPDATE_NOTES: (id) => `/api/SaleKpiRecords/${id}/notes`,
+  },
 };
 
 export default API_ENDPOINT;

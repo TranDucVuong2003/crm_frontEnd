@@ -30,7 +30,13 @@ import LeadDataCompany from "../Components/LeadDataCompany";
 import Configuration from "../Components/Configuration";
 import ActiveAccount from "../Pages/ActiveAccount";
 import ChangePassword from "../Pages/ChangePassword";
-
+import {
+  KpiManagement,
+  MyKpi,
+  KpiLeaderboard,
+  CommissionRates,
+  KpiDashboard,
+} from "../Components/KPI";
 
 function AppRouter() {
   const router = createBrowserRouter([
@@ -142,7 +148,44 @@ function AppRouter() {
           path: "configuration",
           element: <Configuration />,
         },
-      
+        {
+          path: "kpi",
+          element: <Outlet />,
+          children: [
+            {
+              path: "dashboard",
+              element: (
+                <ProtectedRoute allowedRoles={["admin"]}>
+                  <KpiDashboard />
+                </ProtectedRoute>
+              ),
+            },
+            {
+              path: "management",
+              element: (
+                <ProtectedRoute allowedRoles={["admin"]}>
+                  <KpiManagement />
+                </ProtectedRoute>
+              ),
+            },
+            {
+              path: "my-kpi",
+              element: <MyKpi />,
+            },
+            {
+              path: "leaderboard",
+              element: <KpiLeaderboard />,
+            },
+            {
+              path: "commission-rates",
+              element: (
+                <ProtectedRoute allowedRoles={["admin"]}>
+                  <CommissionRates />
+                </ProtectedRoute>
+              ),
+            },
+          ],
+        },
       ],
     },
     {
