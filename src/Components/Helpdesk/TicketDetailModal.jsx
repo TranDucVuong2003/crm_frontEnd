@@ -873,7 +873,8 @@ const TicketDetailModal = ({
                             {comment.type === "api" &&
                               comment.user?.position && (
                                 <span className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded">
-                                  {comment.user.position}
+                                  {comment.user.position?.positionName ||
+                                    comment.user.position}
                                 </span>
                               )}
                           </div>

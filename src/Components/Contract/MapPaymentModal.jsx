@@ -160,7 +160,7 @@ const MapPaymentModal = ({
       // Nếu đang ở trạng thái "Đã cọc 50%", chỉ cho phép thanh toán 50% còn lại
       if (currentStatus === "Đã cọc 50%") {
         if (calculateDifference(transactionAmount, halfContractAmount) < 5) {
-          newStatus = "Đã thanh toán";
+          newStatus = "Paid";
           statusMessage = "Hợp đồng đã được thanh toán đầy đủ (50% còn lại)";
         } else {
           closeLoading();
@@ -179,7 +179,7 @@ const MapPaymentModal = ({
       else {
         // Kiểm tra đã thanh toán đủ (chênh lệch < 5%)
         if (calculateDifference(transactionAmount, parsedContractAmount) < 5) {
-          newStatus = "Đã thanh toán";
+          newStatus = "Paid";
           statusMessage = "Hợp đồng đã được thanh toán đầy đủ";
         }
         // Kiểm tra đã cọc 50% (chênh lệch < 5% so với 1/2 số tiền)

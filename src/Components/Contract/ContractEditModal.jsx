@@ -337,7 +337,10 @@ const ContractEditModal = ({ isOpen, onClose, onSuccess, contractId }) => {
                       <option value="">-- Chọn người phụ trách --</option>
                       {users.map((user) => (
                         <option key={user.id} value={user.id}>
-                          {user.name} - {user.position}
+                          {user.name} -{" "}
+                          {user.position?.positionName ||
+                            user.position ||
+                            "N/A"}
                         </option>
                       ))}
                     </select>
@@ -492,17 +495,17 @@ const ContractEditModal = ({ isOpen, onClose, onSuccess, contractId }) => {
                         onClick={handleExportInvoice}
                         disabled={
                           formData.status !== "Đã cọc 50%" &&
-                          formData.status !== "Đã thanh toán"
+                          formData.status !== "Paid"
                         }
                         className={`flex items-center px-4 py-2 rounded-lg transition-colors ${
                           formData.status === "Đã cọc 50%" ||
-                          formData.status === "Đã thanh toán"
+                          formData.status === "Paid"
                             ? "bg-purple-600 text-white hover:bg-purple-700"
                             : "bg-gray-300 text-gray-500 cursor-not-allowed"
                         }`}
                         title={
                           formData.status !== "Đã cọc 50%" &&
-                          formData.status !== "Đã thanh toán"
+                          formData.status !== "Paid"
                             ? "Chỉ xuất hóa đơn khi đã cọc 50% hoặc đã thanh toán"
                             : ""
                         }
@@ -513,7 +516,7 @@ const ContractEditModal = ({ isOpen, onClose, onSuccess, contractId }) => {
                     )}
 
                     {(formData.status === "Đã cọc 50%" ||
-                      formData.status === "Đã thanh toán") && (
+                      formData.status === "Paid") && (
                       <button
                         type="button"
                         onClick={handleCreateTicket}

@@ -828,127 +828,6 @@ export const deleteResion = (id) => {
 };
 
 // =============================
-// KPI APIs
-// =============================
-export const getAllKPIs = (params) => {
-  return apiClient.get(API_ENDPOINT.KPI.GET_ALL, { params });
-};
-
-export const createKPI = (kpiData) => {
-  return apiClient.post(API_ENDPOINT.KPI.CREATE, kpiData);
-};
-
-export const getKPIById = (id) => {
-  return apiClient.get(API_ENDPOINT.KPI.GET_BY_ID(id));
-};
-
-export const updateKPI = (id, kpiData) => {
-  return apiClient.put(API_ENDPOINT.KPI.UPDATE(id), kpiData);
-};
-
-export const deleteKPI = (id) => {
-  return apiClient.delete(API_ENDPOINT.KPI.DELETE(id));
-};
-
-// =============================
-// KPI Commission Tiers APIs
-// =============================
-export const getAllKPICommissionTiers = (params) => {
-  return apiClient.get(API_ENDPOINT.KPI_COMMISSION_TIERS.GET_ALL, { params });
-};
-
-export const getKPICommissionTiersByKPI = (kpiId) => {
-  return apiClient.get(API_ENDPOINT.KPI_COMMISSION_TIERS.GET_BY_KPI(kpiId));
-};
-
-export const createKPICommissionTier = (tierData) => {
-  return apiClient.post(API_ENDPOINT.KPI_COMMISSION_TIERS.CREATE, tierData);
-};
-
-export const createKPICommissionTiersBulk = (bulkData) => {
-  return apiClient.post(
-    API_ENDPOINT.KPI_COMMISSION_TIERS.CREATE_BULK,
-    bulkData
-  );
-};
-
-export const updateKPICommissionTier = (id, tierData) => {
-  return apiClient.put(API_ENDPOINT.KPI_COMMISSION_TIERS.UPDATE(id), tierData);
-};
-
-export const deleteKPICommissionTier = (id) => {
-  return apiClient.delete(API_ENDPOINT.KPI_COMMISSION_TIERS.DELETE(id));
-};
-
-export const calculateKPICommission = (data) => {
-  return apiClient.post(API_ENDPOINT.KPI_COMMISSION_TIERS.CALCULATE, data);
-};
-
-// =============================
-// User KPI Assignments APIs
-// =============================
-export const getAllUserKPIAssignments = (params) => {
-  return apiClient.get(API_ENDPOINT.USER_KPI_ASSIGNMENTS.GET_ALL, { params });
-};
-
-export const createUserKPIAssignment = (assignmentData) => {
-  return apiClient.post(
-    API_ENDPOINT.USER_KPI_ASSIGNMENTS.CREATE,
-    assignmentData
-  );
-};
-
-export const updateUserKPIAssignment = (id, assignmentData) => {
-  return apiClient.put(
-    API_ENDPOINT.USER_KPI_ASSIGNMENTS.UPDATE(id),
-    assignmentData
-  );
-};
-
-export const deleteUserKPIAssignment = (id) => {
-  return apiClient.delete(API_ENDPOINT.USER_KPI_ASSIGNMENTS.DELETE(id));
-};
-
-// =============================
-// KPI Records APIs
-// =============================
-export const getAllKPIRecords = (params) => {
-  return apiClient.get(API_ENDPOINT.KPI_RECORDS.GET_ALL, { params });
-};
-
-export const getKPIRecordById = (id) => {
-  return apiClient.get(API_ENDPOINT.KPI_RECORDS.GET_BY_ID(id));
-};
-
-export const calculateKPIRecords = (period) => {
-  return apiClient.post(
-    `${API_ENDPOINT.KPI_RECORDS.CALCULATE}?period=${period}`
-  );
-};
-
-export const getKPIRecordsSummary = (params) => {
-  return apiClient.get(API_ENDPOINT.KPI_RECORDS.SUMMARY, { params });
-};
-
-export const getUserKPISummary = (userId, params) => {
-  return apiClient.get(API_ENDPOINT.KPI_RECORDS.USER_SUMMARY(userId), {
-    params,
-  });
-};
-
-export const approveKPIRecord = (id) => {
-  return apiClient.post(API_ENDPOINT.KPI_RECORDS.APPROVE(id));
-};
-
-export const rejectKPIRecord = (id, reason) => {
-  return apiClient.post(API_ENDPOINT.KPI_RECORDS.REJECT(id), { reason });
-};
-
-export const batchApproveKPIRecords = (ids) => {
-  return apiClient.post(API_ENDPOINT.KPI_RECORDS.BATCH_APPROVE, ids);
-};
-
-// =============================
 // Marketing Budget APIs
 // =============================
 export const getAllMarketingBudgets = (params) => {
@@ -1026,4 +905,126 @@ export const getAdminDashboard = (params) => {
 
 export const getUserDashboard = (userId, params) => {
   return apiClient.get(API_ENDPOINT.DASHBOARD.USER(userId), { params });
+};
+
+// =============================
+// KPI PACKAGES APIs
+// =============================
+export const getAllKpiPackages = (params) => {
+  return apiClient.get(API_ENDPOINT.KPI.GET_ALL, { params });
+};
+
+export const getKpiPackageById = (id) => {
+  return apiClient.get(API_ENDPOINT.KPI.GET_BY_ID(id));
+};
+
+export const createKpiPackage = (data) => {
+  return apiClient.post(API_ENDPOINT.KPI.CREATE, data);
+};
+
+export const updateKpiPackage = (id, data) => {
+  return apiClient.put(API_ENDPOINT.KPI.UPDATE(id), data);
+};
+
+export const deleteKpiPackage = (id) => {
+  return apiClient.delete(API_ENDPOINT.KPI.DELETE(id));
+};
+
+export const assignKpiPackage = (data) => {
+  return apiClient.post(API_ENDPOINT.KPI.ASSIGN, data);
+};
+
+export const getAssignedUsers = (id) => {
+  return apiClient.get(API_ENDPOINT.KPI.GET_ASSIGNED_USERS(id));
+};
+
+export const calculateAllKpi = (params) => {
+  return apiClient.post(API_ENDPOINT.KPI.CALCULATE_ALL, null, { params });
+};
+
+export const calculateUserKpi = (userId, params) => {
+  return apiClient.post(API_ENDPOINT.KPI.CALCULATE_USER(userId), null, {
+    params,
+  });
+};
+
+// =============================
+// KPI TARGETS APIs
+// =============================
+export const getAllKpiTargets = () => {
+  return apiClient.get(API_ENDPOINT.KPI_TARGETS.GET_ALL);
+};
+
+export const getKpiTargetById = (id) => {
+  return apiClient.get(API_ENDPOINT.KPI_TARGETS.GET_BY_ID(id));
+};
+
+export const getKpiTargetsByUser = (userId) => {
+  return apiClient.get(API_ENDPOINT.KPI_TARGETS.GET_BY_USER(userId));
+};
+
+export const getKpiTargetsByPeriod = (params) => {
+  return apiClient.get(API_ENDPOINT.KPI_TARGETS.GET_BY_PERIOD, { params });
+};
+
+export const createKpiTarget = (data) => {
+  return apiClient.post(API_ENDPOINT.KPI_TARGETS.CREATE, data);
+};
+
+export const updateKpiTarget = (id, data) => {
+  return apiClient.put(API_ENDPOINT.KPI_TARGETS.UPDATE(id), data);
+};
+
+export const deleteKpiTarget = (id) => {
+  return apiClient.delete(API_ENDPOINT.KPI_TARGETS.DELETE(id));
+};
+
+// =============================
+// COMMISSION RATES APIs
+// =============================
+export const getAllCommissionRates = () => {
+  return apiClient.get(API_ENDPOINT.COMMISSION_RATES.GET_ALL);
+};
+
+export const createCommissionRate = (data) => {
+  return apiClient.post(API_ENDPOINT.COMMISSION_RATES.CREATE, data);
+};
+
+export const updateCommissionRate = (id, data) => {
+  return apiClient.put(API_ENDPOINT.COMMISSION_RATES.UPDATE(id), data);
+};
+
+export const deleteCommissionRate = (id) => {
+  return apiClient.delete(API_ENDPOINT.COMMISSION_RATES.DELETE(id));
+};
+
+// =============================
+// KPI RECORDS APIs
+// =============================
+export const getAllKpiRecords = (params) => {
+  return apiClient.get(API_ENDPOINT.KPI_RECORDS.GET_ALL, { params });
+};
+
+export const getKpiRecordById = (id) => {
+  return apiClient.get(API_ENDPOINT.KPI_RECORDS.GET_BY_ID(id));
+};
+
+export const getKpiRecordsByUser = (userId) => {
+  return apiClient.get(API_ENDPOINT.KPI_RECORDS.GET_BY_USER(userId));
+};
+
+export const getKpiRecordsByPeriod = (params) => {
+  return apiClient.get(API_ENDPOINT.KPI_RECORDS.GET_BY_PERIOD, { params });
+};
+
+export const getKpiLeaderboard = (params) => {
+  return apiClient.get(API_ENDPOINT.KPI_RECORDS.GET_LEADERBOARD, { params });
+};
+
+export const getKpiStatistics = (params) => {
+  return apiClient.get(API_ENDPOINT.KPI_RECORDS.GET_STATISTICS, { params });
+};
+
+export const updateKpiRecordNotes = (id, notes) => {
+  return apiClient.put(API_ENDPOINT.KPI_RECORDS.UPDATE_NOTES(id), { notes });
 };

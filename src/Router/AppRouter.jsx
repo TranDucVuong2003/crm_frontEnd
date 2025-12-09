@@ -30,10 +30,13 @@ import LeadDataCompany from "../Components/LeadDataCompany";
 import Configuration from "../Components/Configuration";
 import ActiveAccount from "../Pages/ActiveAccount";
 import ChangePassword from "../Pages/ChangePassword";
-import KPIs from "../Components/KPIs";
-import KPIRecords from "../Components/KPIs/KPIRecords";
-import KPIReport from "../Components/KPIs/KPIReport";
-// import TestAdminSession from "../Components/test-session";
+import {
+  KpiManagement,
+  MyKpi,
+  KpiLeaderboard,
+  CommissionRates,
+  KpiDashboard,
+} from "../Components/KPI";
 
 function AppRouter() {
   const router = createBrowserRouter([
@@ -149,10 +152,38 @@ function AppRouter() {
           path: "kpi",
           element: <Outlet />,
           children: [
-            { path: "", element: <KPIs /> },
-            { path: "management", element: <KPIs /> },
-            { path: "records", element: <KPIRecords /> },
-            { path: "report", element: <KPIReport /> },
+            {
+              path: "dashboard",
+              element: (
+                <ProtectedRoute allowedRoles={["admin"]}>
+                  <KpiDashboard />
+                </ProtectedRoute>
+              ),
+            },
+            {
+              path: "management",
+              element: (
+                <ProtectedRoute allowedRoles={["admin"]}>
+                  <KpiManagement />
+                </ProtectedRoute>
+              ),
+            },
+            {
+              path: "my-kpi",
+              element: <MyKpi />,
+            },
+            {
+              path: "leaderboard",
+              element: <KpiLeaderboard />,
+            },
+            {
+              path: "commission-rates",
+              element: (
+                <ProtectedRoute allowedRoles={["admin"]}>
+                  <CommissionRates />
+                </ProtectedRoute>
+              ),
+            },
           ],
         },
       ],

@@ -870,7 +870,8 @@ function LeadDataCompany() {
                     <option value="">-- Chọn người dùng --</option>
                     {users.map((user) => (
                       <option key={user.id} value={user.id}>
-                        {user.name} - {user.email} ({user.role})
+                        {user.name} - {user.email} (
+                        {user.role?.name || user.roleName || user.role})
                       </option>
                     ))}
                   </select>

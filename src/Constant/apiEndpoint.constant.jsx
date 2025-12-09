@@ -238,64 +238,6 @@ const API_ENDPOINT = {
     DELETE: (id) => `/api/Resions/${id}`,
   },
 
-  // KPI endpoints
-  KPI: {
-    GET_ALL: "/api/KPIs",
-    CREATE: "/api/KPIs",
-    GET_BY_ID: (id) => `/api/KPIs/${id}`,
-    UPDATE: (id) => `/api/KPIs/${id}`,
-    DELETE: (id) => `/api/KPIs/${id}`,
-  },
-
-  // KPI Commission Tiers endpoints
-  KPI_COMMISSION_TIERS: {
-    GET_ALL: "/api/KpiCommissionTiers",
-    GET_BY_KPI: (kpiId) => `/api/KpiCommissionTiers/kpi/${kpiId}`,
-    CREATE: "/api/KpiCommissionTiers",
-    CREATE_BULK: "/api/KpiCommissionTiers/bulk",
-    UPDATE: (id) => `/api/KpiCommissionTiers/${id}`,
-    DELETE: (id) => `/api/KpiCommissionTiers/${id}`,
-    CALCULATE: "/api/KpiCommissionTiers/calculate",
-  },
-
-  // User KPI Assignments endpoints
-  USER_KPI_ASSIGNMENTS: {
-    GET_ALL: "/api/UserKpiAssignments",
-    CREATE: "/api/UserKpiAssignments",
-    UPDATE: (id) => `/api/UserKpiAssignments/${id}`,
-    DELETE: (id) => `/api/UserKpiAssignments/${id}`,
-  },
-
-  // KPI Records endpoints
-  KPI_RECORDS: {
-    GET_ALL: "/api/KpiRecords",
-    GET_BY_ID: (id) => `/api/KpiRecords/${id}`,
-    CALCULATE: "/api/KpiRecords/calculate",
-    SUMMARY: "/api/KpiRecords/summary",
-    USER_SUMMARY: (userId) => `/api/KpiRecords/user/${userId}/summary`,
-    APPROVE: (id) => `/api/KpiRecords/${id}/approve`,
-    REJECT: (id) => `/api/KpiRecords/${id}/reject`,
-    BATCH_APPROVE: "/api/KpiRecords/batch-approve",
-  },
-
-  // Marketing Budget endpoints
-  MARKETING_BUDGET: {
-    GET_ALL: "/api/MarketingBudgets",
-    CREATE: "/api/MarketingBudgets",
-    UPDATE: (id) => `/api/MarketingBudgets/${id}`,
-    DELETE: (id) => `/api/MarketingBudgets/${id}`,
-    APPROVE: (id) => `/api/MarketingBudgets/${id}/approve`,
-  },
-
-  // Marketing Expense endpoints
-  MARKETING_EXPENSE: {
-    GET_ALL: "/api/MarketingExpenses",
-    CREATE: "/api/MarketingExpenses",
-    UPDATE: (id) => `/api/MarketingExpenses/${id}`,
-    DELETE: (id) => `/api/MarketingExpenses/${id}`,
-    APPROVE: (id) => `/api/MarketingExpenses/${id}/approve`,
-  },
-
   // Leads endpoints
   LEADS: {
     GET_ALL: "/api/Leads",
@@ -309,6 +251,51 @@ const API_ENDPOINT = {
   DASHBOARD: {
     ADMIN: "/api/Dashboard/admin",
     USER: (userId) => `/api/Dashboard/user/${userId}`,
+  },
+
+  // KPI Packages endpoints
+  KPI: {
+    GET_ALL: "/api/KpiPackages",
+    GET_BY_ID: (id) => `/api/KpiPackages/${id}`,
+    CREATE: "/api/KpiPackages",
+    UPDATE: (id) => `/api/KpiPackages/${id}`,
+    DELETE: (id) => `/api/KpiPackages/${id}`,
+    ASSIGN: "/api/KpiPackages/assign",
+    GET_ASSIGNED_USERS: (id) => `/api/KpiPackages/${id}/assigned-users`,
+    CALCULATE_ALL: "/api/KpiPackages/calculate-kpi",
+    CALCULATE_USER: (userId) => `/api/KpiPackages/calculate-kpi-user/${userId}`,
+  },
+
+  // KPI Targets endpoints
+  KPI_TARGETS: {
+    GET_ALL: "/api/SaleKpiTargets",
+    GET_BY_ID: (id) => `/api/SaleKpiTargets/${id}`,
+    GET_BY_USER: (userId) => `/api/SaleKpiTargets/by-user/${userId}`,
+    GET_BY_PERIOD: "/api/SaleKpiTargets/by-period",
+    GET_BY_USER_PERIOD: "/api/SaleKpiTargets/by-user-period",
+    CREATE: "/api/SaleKpiTargets",
+    UPDATE: (id) => `/api/SaleKpiTargets/${id}`,
+    DELETE: (id) => `/api/SaleKpiTargets/${id}`,
+  },
+
+  // Commission Rates endpoints
+  COMMISSION_RATES: {
+    GET_ALL: "/api/CommissionRates",
+    GET_BY_ID: (id) => `/api/CommissionRates/${id}`,
+    CREATE: "/api/CommissionRates",
+    UPDATE: (id) => `/api/CommissionRates/${id}`,
+    DELETE: (id) => `/api/CommissionRates/${id}`,
+  },
+
+  // KPI Records endpoints
+  KPI_RECORDS: {
+    GET_ALL: "/api/SaleKpiRecords",
+    GET_BY_ID: (id) => `/api/SaleKpiRecords/${id}`,
+    GET_BY_USER: (userId) => `/api/SaleKpiRecords/by-user/${userId}`,
+    GET_BY_PERIOD: "/api/SaleKpiRecords/by-period",
+    GET_LEADERBOARD: "/api/SaleKpiRecords/leaderboard",
+    GET_STATISTICS: "/api/SaleKpiRecords/statistics",
+    UPDATE_NOTES: (id) => `/api/SaleKpiRecords/${id}/notes`,
   },
 };
 

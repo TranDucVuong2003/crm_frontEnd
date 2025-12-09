@@ -171,12 +171,20 @@ const CustomerManagement = () => {
   };
 
   const handleDeleteCustomer = async (customerId) => {
-    const result = await showDeleteConfirm("khách hàng này");
+    console.log("Attempting to delete customer with ID:", customerId);
+    const result = await showDeleteConfirm(
+      "Xóa khách hàng",
+      "Bạn có chắc chắn muốn xóa khách hàng này?"
+    );
+
+    console.log("Delete confirmation result:", result);
 
     if (result.isConfirmed) {
       try {
+        console.log("Calling deleteCustomer API...");
         // Gọi API xóa khách hàng
-        await deleteCustomer(customerId);
+        const response = await deleteCustomer(customerId);
+        console.log("Delete API response:", response);
 
         // Cập nhật state local sau khi xóa thành công
         setCustomers(customers.filter((c) => c.id !== customerId));
@@ -186,9 +194,11 @@ const CustomerManagement = () => {
       } catch (error) {
         // Xử lý lỗi
         console.error("Lỗi khi xóa khách hàng:", error);
+        console.error("Error response:", error.response);
         showError(
           "Lỗi!",
-          "Có lỗi xảy ra khi xóa khách hàng. Vui lòng thử lại."
+          error.response?.data?.message ||
+            "Có lỗi xảy ra khi xóa khách hàng. Vui lòng thử lại."
         );
       }
     }

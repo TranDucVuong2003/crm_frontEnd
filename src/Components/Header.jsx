@@ -91,7 +91,7 @@ const Header = ({ title }) => {
           {/* Search and Actions */}
           <div className="flex items-center space-x-4">
             {/* Search */}
-            <div className="hidden md:flex relative">
+            {/* <div className="hidden md:flex relative">
               <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
               <input
                 type="text"
@@ -102,15 +102,15 @@ const Header = ({ title }) => {
                     : "focus:ring-indigo-500"
                 }`}
               />
-            </div>
+            </div> */}
 
             {/* Notifications */}
-            <button className="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg">
+            {/* <button className="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg">
               <BellIcon className="h-6 w-6" />
               <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
                 3
               </span>
-            </button>
+            </button> */}
 
             {/* User Menu */}
             <div className="relative" ref={menuRef}>

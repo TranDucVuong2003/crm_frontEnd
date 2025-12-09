@@ -10,6 +10,21 @@ import {
   CheckCircleIcon,
 } from "@heroicons/react/24/outline";
 import {
+  AreaChart,
+  Area,
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  Cell,
+} from "recharts";
+import {
   getAllCustomers,
   getAllQuotes,
   getAllContracts,
@@ -68,6 +83,11 @@ const Dashboard = () => {
   const [recentContracts, setRecentContracts] = useState([]);
   const [topCustomers, setTopCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Chart data states
+  const [salesPipelineData, setSalesPipelineData] = useState([]);
+  const [ticketsTrendData, setTicketsTrendData] = useState([]);
+  const [revenueData, setRevenueData] = useState([]);
 
   useEffect(() => {
     fetchDashboardData();
@@ -142,6 +162,110 @@ const Dashboard = () => {
         .sort((a, b) => b.totalAmount - a.totalAmount)
         .slice(0, 5);
       setTopCustomers(topCustomersList);
+
+      // Prepare Sales Pipeline Data (Funnel)
+      const leadsCount = saleOrders.filter(
+        (order) => order.status === "lead" || order.status === "new"
+      ).length;
+      const opportunitiesCount = saleOrders.filter(
+        (order) =>
+          order.status === "opportunity" || order.status === "qualified"
+      ).length;
+      const quotesCount = quotes.filter(
+        (quote) => quote.status === "pending" || quote.status === "sent"
+      ).length;
+      const contractsCount = contracts.filter(
+        (contract) =>
+          contract.status === "active" || contract.status === "signed"
+      ).length;
+
+      setSalesPipelineData([
+        { stage: "Leads", count: leadsCount, fill: "#3b82f6" },
+        { stage: "Opportunities", count: opportunitiesCount, fill: "#8b5cf6" },
+        { stage: "Quotes", count: quotesCount, fill: "#ec4899" },
+        { stage: "Contracts", count: contractsCount, fill: "#10b981" },
+      ]);
+
+      // Prepare Tickets Trend Data (Last 7 days)
+      const last7Days = Array.from({ length: 7 }, (_, i) => {
+        const date = new Date();
+        date.setDate(date.getDate() - (6 - i));
+        return date;
+      });
+
+      const ticketsByDay = last7Days.map((date) => {
+        const dateStr = date.toISOString().split("T")[0];
+        const dayTickets = tickets.filter((ticket) => {
+          const ticketDate = new Date(ticket.createdAt)
+            .toISOString()
+            .split("T")[0];
+          return ticketDate === dateStr;
+        });
+
+        const open = dayTickets.filter((t) => t.status === "open").length;
+        const inProgress = dayTickets.filter(
+          (t) => t.status === "in_progress" || t.status === "in-progress"
+        ).length;
+        const resolved = dayTickets.filter(
+          (t) => t.status === "resolved" || t.status === "closed"
+        ).length;
+
+        return {
+          date: date.toLocaleDateString("vi-VN", {
+            day: "2-digit",
+            month: "2-digit",
+          }),
+          Mới: open,
+          "Đang xử lý": inProgress,
+          "Đã giải quyết": resolved,
+        };
+      });
+
+      setTicketsTrendData(ticketsByDay);
+
+      // Prepare Revenue Data (Last 6 months)
+      const last6Months = Array.from({ length: 6 }, (_, i) => {
+        const date = new Date();
+        date.setMonth(date.getMonth() - (5 - i));
+        return date;
+      });
+
+      const revenueByMonth = last6Months.map((date) => {
+        const month = date.getMonth();
+        const year = date.getFullYear();
+
+        const monthQuotes = quotes.filter((quote) => {
+          const quoteDate = new Date(quote.createdAt);
+          return (
+            quoteDate.getMonth() === month && quoteDate.getFullYear() === year
+          );
+        });
+
+        const monthContracts = contracts.filter((contract) => {
+          const contractDate = new Date(contract.createdAt);
+          return (
+            contractDate.getMonth() === month &&
+            contractDate.getFullYear() === year
+          );
+        });
+
+        const quotesRevenue = monthQuotes.reduce(
+          (sum, q) => sum + (parseFloat(q.amount) || 0),
+          0
+        );
+        const contractsRevenue = monthContracts.reduce(
+          (sum, c) => sum + (parseFloat(c.totalAmount) || 0),
+          0
+        );
+
+        return {
+          month: date.toLocaleDateString("vi-VN", { month: "short" }),
+          "Báo giá": quotesRevenue / 1000000, // Convert to millions
+          "Hợp đồng": contractsRevenue / 1000000,
+        };
+      });
+
+      setRevenueData(revenueByMonth);
     } catch (error) {
       console.error("Error fetching dashboard data:", error);
     } finally {
@@ -257,6 +381,96 @@ const Dashboard = () => {
         {dashboardStats.map((stat, index) => (
           <StatCard key={index} {...stat} />
         ))}
+      </div>
+
+      {/* Charts Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        {/* Sales Pipeline Chart */}
+        <div className="bg-white shadow rounded-lg p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            Quy trình bán hàng
+          </h3>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={salesPipelineData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="stage" />
+              <YAxis />
+              <Tooltip />
+              <Bar dataKey="count" name="Số lượng">
+                {salesPipelineData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.fill} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Tickets Trend Chart */}
+        <div className="bg-white shadow rounded-lg p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            Xu hướng Tickets (7 ngày)
+          </h3>
+          <ResponsiveContainer width="100%" height={300}>
+            <AreaChart data={ticketsTrendData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="date" />
+              <YAxis />
+              <Tooltip />
+              <Legend />
+              <Area
+                type="monotone"
+                dataKey="Mới"
+                stackId="1"
+                stroke="#ef4444"
+                fill="#ef4444"
+              />
+              <Area
+                type="monotone"
+                dataKey="Đang xử lý"
+                stackId="1"
+                stroke="#f59e0b"
+                fill="#f59e0b"
+              />
+              <Area
+                type="monotone"
+                dataKey="Đã giải quyết"
+                stackId="1"
+                stroke="#10b981"
+                fill="#10b981"
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* Revenue Chart - Full Width */}
+      <div className="bg-white shadow rounded-lg p-6 mb-8">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">
+          Doanh thu 6 tháng gần đây (Triệu VNĐ)
+        </h3>
+        <ResponsiveContainer width="100%" height={300}>
+          <LineChart data={revenueData}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="month" />
+            <YAxis />
+            <Tooltip formatter={(value) => `${value.toFixed(2)} triệu`} />
+            <Legend />
+            <Line
+              type="monotone"
+              dataKey="Báo giá"
+              stroke="#8b5cf6"
+              strokeWidth={2}
+              dot={{ r: 4 }}
+            />
+            <Line
+              type="monotone"
+              dataKey="Hợp đồng"
+              stroke="#10b981"
+              strokeWidth={2}
+              dot={{ r: 4 }}
+            />
+          </LineChart>
+        </ResponsiveContainer>
       </div>
 
       {/* Recent Activities */}
