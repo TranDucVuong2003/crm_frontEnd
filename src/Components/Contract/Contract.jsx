@@ -7,6 +7,7 @@ import {
   EyeIcon,
   PencilIcon,
   TrashIcon,
+  QrCodeIcon,
 } from "@heroicons/react/24/outline";
 import { getAllContracts, deleteContract } from "../../Service/ApiService";
 import {
@@ -19,6 +20,7 @@ import {
 import ContractCreateModal from "./ContractCreateModal";
 import ContractEditModal from "./ContractEditModal";
 import ContractPreviewModal from "./ContractPreviewModal";
+import QrPaymentModal from "./QrPaymentModal";
 
 const Contract = () => {
   const [contracts, setContracts] = useState([]);
@@ -28,8 +30,10 @@ const Contract = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [showQrModal, setShowQrModal] = useState(false);
   const [selectedContractId, setSelectedContractId] = useState(null);
   const [editContractId, setEditContractId] = useState(null);
+  const [selectedContractForQr, setSelectedContractForQr] = useState(null);
 
   // Fetch contracts from API
   useEffect(() => {
@@ -76,6 +80,30 @@ const Contract = () => {
   const handleCloseEditModal = () => {
     setShowEditModal(false);
     setEditContractId(null);
+  };
+
+  const handleOpenQrModal = (contract) => {
+    setSelectedContractForQr(contract);
+    setShowQrModal(true);
+  };
+
+  const handleGenerateQR = async (contractId, paymentType, amount) => {
+    try {
+      showLoading("Đang tạo mã QR...");
+      // TODO: Call API to generate QR code
+      // const response = await generateQRCode(contractId, paymentType, amount);
+
+      // Tạm thời log để test
+      console.log("Generate QR for:", { contractId, paymentType, amount });
+
+      closeLoading();
+      // showSuccess("Tạo mã QR thành công!");
+      // TODO: Hiển thị QR code trong modal mới hoặc download
+    } catch (error) {
+      closeLoading();
+      console.error("Error generating QR:", error);
+      showErrorAlert("Lỗi", "Không thể tạo mã QR");
+    }
   };
 
   const handleDeleteContract = async (contractId, contractTitle) => {
@@ -308,6 +336,22 @@ const Contract = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex items-center justify-end gap-2">
                         <button
+                          onClick={() => handleOpenQrModal(contract)}
+                          disabled={contract.status === "Paid"}
+                          className={`p-1 rounded transition-colors ${
+                            contract.status === "Paid"
+                              ? "text-gray-400 cursor-not-allowed"
+                              : "text-green-600 hover:text-green-900 hover:bg-green-50"
+                          }`}
+                          title={
+                            contract.status === "Paid"
+                              ? "Hợp đồng đã thanh toán"
+                              : "Tạo mã QR thanh toán"
+                          }
+                        >
+                          <QrCodeIcon className="h-5 w-5" />
+                        </button>
+                        <button
                           onClick={() => handlePreviewContract(contract.id)}
                           className="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50 transition-colors"
                           title="Xem trước hợp đồng"
@@ -352,6 +396,7 @@ const Contract = () => {
 
       {/* Stats */}
       <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
+        {/* Tổng hợp đồng */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
           <div className="flex items-center justify-between">
             <div>
@@ -363,37 +408,43 @@ const Contract = () => {
             <DocumentTextIcon className="h-10 w-10 text-blue-500" />
           </div>
         </div>
+
+        {/* Hợp đồng mới */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Đang hoạt động</p>
+              <p className="text-sm text-gray-600">Mới</p>
+              <p className="text-2xl font-bold text-blue-600">
+                {contracts.filter((c) => c.status === "Mới" || c.status === "New").length}
+              </p>
+            </div>
+            <DocumentTextIcon className="h-10 w-10 text-blue-500" />
+          </div>
+        </div>
+
+        {/* Đã đặt cọc 50% */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600">Đặt cọc 50%</p>
+              <p className="text-2xl font-bold text-orange-600">
+                {contracts.filter((c) => c.status === "Đặt cọc 50%" || c.status === "Deposit 50%").length}
+              </p>
+            </div>
+            <DocumentTextIcon className="h-10 w-10 text-orange-500" />
+          </div>
+        </div>
+
+        {/* Đã thanh toán toàn bộ */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600">Đã thanh toán</p>
               <p className="text-2xl font-bold text-green-600">
-                {contracts.filter((c) => c.status === "Active").length}
+                {contracts.filter((c) => c.status === "Paid" || c.status === "Đã thanh toán").length}
               </p>
             </div>
             <DocumentTextIcon className="h-10 w-10 text-green-500" />
-          </div>
-        </div>
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Nháp</p>
-              <p className="text-2xl font-bold text-gray-600">
-                {contracts.filter((c) => c.status === "Draft").length}
-              </p>
-            </div>
-            <DocumentTextIcon className="h-10 w-10 text-gray-500" />
-          </div>
-        </div>
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Hết hạn</p>
-              <p className="text-2xl font-bold text-red-600">
-                {contracts.filter((c) => c.status === "Expired").length}
-              </p>
-            </div>
-            <DocumentTextIcon className="h-10 w-10 text-red-500" />
           </div>
         </div>
       </div>
@@ -423,6 +474,17 @@ const Contract = () => {
           onClose={handleClosePreview}
         />
       )}
+
+      {/* QR Payment Modal */}
+      <QrPaymentModal
+        isOpen={showQrModal}
+        onClose={() => {
+          setShowQrModal(false);
+          setSelectedContractForQr(null);
+        }}
+        contract={selectedContractForQr}
+        onGenerateQR={handleGenerateQR}
+      />
     </div>
   );
 };

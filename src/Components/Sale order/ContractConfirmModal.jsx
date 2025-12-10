@@ -7,9 +7,14 @@ import {
   CurrencyDollarIcon,
 } from "@heroicons/react/24/outline";
 import { useNavigate } from "react-router-dom";
-import { createContract, getAllTax } from "../../Service/ApiService";
+import {
+  createContract,
+  getAllTax,
+  getContractQRCode,
+} from "../../Service/ApiService";
 import { showSuccess, showError } from "../../utils/sweetAlert";
 import { useAuth } from "../../Context/AuthContext";
+import QrCodeDisplayModal from "../Contract/QrCodeDisplayModal";
 
 const ContractConfirmModal = ({
   isOpen,
@@ -32,6 +37,8 @@ const ContractConfirmModal = ({
 
   const [taxes, setTaxes] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [showQrModal, setShowQrModal] = useState(false);
+  const [qrData, setQrData] = useState(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -124,18 +131,19 @@ const ContractConfirmModal = ({
         notes: formData.notes.trim() || "",
       };
 
-      await createContract(contractData);
+      const contractResponse = await createContract(contractData);
+      const createdContractId = contractResponse.data.id;
 
       showSuccess("Thành công!", "Tạo hợp đồng thành công");
+
+      // Gọi API để lấy QR code với thanh toán toàn bộ
+      const qrResponse = await getContractQRCode(createdContractId, "full100");
+      setQrData(qrResponse.data);
+      setShowQrModal(true);
 
       if (onSuccess) {
         onSuccess();
       }
-
-      onClose();
-
-      // Navigate to contract page
-      navigate("/contract");
     } catch (error) {
       console.error("Error creating contract:", error);
       const errorMessage =
@@ -144,6 +152,14 @@ const ContractConfirmModal = ({
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleCloseQrModal = () => {
+    setShowQrModal(false);
+    setQrData(null);
+    onClose();
+    // Navigate to contract page
+    navigate("/contract");
   };
 
   if (!isOpen || !deal) return null;
@@ -313,11 +329,9 @@ const ContractConfirmModal = ({
                   setFormData({ ...formData, status: e.target.value })
                 }
               >
-                <option value="Mới">Mới</option>
-                <option value="Cũ">Cũ</option>
-                <option value="Expired">Expired</option>
-                <option value="Terminated">Terminated</option>
-                <option value="Cancelled">Cancelled</option>
+                <option value="New">New</option>
+                <option value="Old">Old</option>
+                <option value="Paid">Paid</option>
               </select>
             </div>
 
@@ -394,6 +408,13 @@ const ContractConfirmModal = ({
           </div>
         </form>
       </div>
+
+      {/* QR Code Display Modal */}
+      <QrCodeDisplayModal
+        isOpen={showQrModal}
+        onClose={handleCloseQrModal}
+        qrData={qrData}
+      />
     </div>
   );
 };

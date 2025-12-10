@@ -435,6 +435,12 @@ export const regenerateContract = (id) => {
   });
 };
 
+export const getContractQRCode = (id, paymentType) => {
+  return apiClient.get(`${API_ENDPOINT.CONTRACTS.GET_BY_ID(id)}/qr-code`, {
+    params: { paymentType },
+  });
+};
+
 // =============================
 // TICKETS APIs
 // =============================

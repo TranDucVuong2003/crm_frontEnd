@@ -34,10 +34,12 @@ const DealDetailsModal = ({
   const [isContractModalOpen, setIsContractModalOpen] = useState(false);
   const [editServices, setEditServices] = useState([]);
   const [editAddons, setEditAddons] = useState([]);
+  const [localDeal, setLocalDeal] = useState(null);
 
   useEffect(() => {
     console.log("deallllllllllllllllllllllllllllll", deal);
     if (deal) {
+      setLocalDeal(deal);
       setEditData({
         title: deal.title || "",
         probability: deal.probability,
@@ -51,6 +53,9 @@ const DealDetailsModal = ({
   }, [deal]);
 
   if (!isOpen || !deal) return null;
+
+  // Use localDeal if available, otherwise use deal prop
+  const currentDeal = localDeal || deal;
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat("vi-VN", {
@@ -89,23 +94,26 @@ const DealDetailsModal = ({
   };
 
   const getCustomerDetails = () => {
+    const activeDeal = localDeal || deal;
     // API mới có sẵn deal.customer object
-    if (deal.customer) {
-      return deal.customer;
+    if (activeDeal.customer) {
+      return activeDeal.customer;
     }
 
     // Fallback: tìm từ customers array nếu không có
-    const customer = customers.find((c) => c.id === deal.customerId);
+    const customer = customers.find((c) => c.id === activeDeal.customerId);
     return customer || null;
   };
 
   const getServiceName = () => {
-    const service = services.find((s) => s.id === deal.serviceId);
+    const activeDeal = localDeal || deal;
+    const service = services.find((s) => s.id === activeDeal.serviceId);
     return service?.name || "Không có dịch vụ";
   };
 
   const getAddonName = () => {
-    const addon = addons.find((a) => a.id === deal.addonId);
+    const activeDeal = localDeal || deal;
+    const addon = addons.find((a) => a.id === activeDeal.addonId);
     return addon?.name || "Không có addon";
   };
 
@@ -136,16 +144,17 @@ const DealDetailsModal = ({
 
   const handleEditToggle = () => {
     if (isEditing) {
-      // Cancel editing - reset data
+      // Cancel editing - reset data from localDeal
+      const currentDeal = localDeal || deal;
       setEditData({
-        title: deal.title || "",
-        probability: deal.probability,
-        notes: deal.notes || "",
-        expectedCloseDate: deal.expectedCloseDate || "",
-        status: deal.status || "Active",
+        title: currentDeal.title || "",
+        probability: currentDeal.probability,
+        notes: currentDeal.notes || "",
+        expectedCloseDate: currentDeal.expectedCloseDate || "",
+        status: currentDeal.status || "Active",
       });
-      setEditServices(deal.saleOrderServices || []);
-      setEditAddons(deal.saleOrderAddons || []);
+      setEditServices(currentDeal.saleOrderServices || []);
+      setEditAddons(currentDeal.saleOrderAddons || []);
     }
     setIsEditing(!isEditing);
   };
@@ -178,7 +187,22 @@ const DealDetailsModal = ({
       };
 
       // Call API to update
-      await updateSaleOrder(deal.id, updateData);
+      const response = await updateSaleOrder(deal.id, updateData);
+
+      // Update local deal state with new data from API response
+      if (response.data) {
+        setLocalDeal(response.data);
+        // Update edit states with new data
+        setEditData({
+          title: response.data.title || "",
+          probability: response.data.probability,
+          notes: response.data.notes || "",
+          expectedCloseDate: response.data.expectedCloseDate || "",
+          status: response.data.status || "Active",
+        });
+        setEditServices(response.data.saleOrderServices || []);
+        setEditAddons(response.data.saleOrderAddons || []);
+      }
 
       showSuccess("Thành công!", "Đã cập nhật thông tin sale order.");
       setIsEditing(false);
@@ -231,14 +255,15 @@ const DealDetailsModal = ({
   };
 
   const handleDelete = async () => {
+    const activeDeal = localDeal || deal;
     const confirmed = await showDeleteConfirm(
       "Xóa Sale Order",
-      `Bạn có chắc chắn muốn xóa sale order "${deal.title}"? Hành động này không thể hoàn tác.`
+      `Bạn có chắc chắn muốn xóa sale order "${activeDeal.title}"? Hành động này không thể hoàn tác.`
     );
 
     if (confirmed) {
       try {
-        await deleteSaleOrder(deal.id);
+        await deleteSaleOrder(activeDeal.id);
         showSuccess("Thành công!", "Đã xóa sale order");
         onClose(); // Close modal
         if (onUpdate) {
@@ -285,7 +310,7 @@ const DealDetailsModal = ({
             {!isEditing ? (
               <>
                 {/* Chỉ hiện nút Xuất hợp đồng khi probability = 100% */}
-                {deal.probability === 100 && (
+                {currentDeal.probability === 100 && (
                   <button
                     onClick={handleExportContract}
                     className="flex items-center px-3 py-1.5 text-sm font-medium text-green-600 bg-green-50 border border-green-200 rounded-md hover:bg-green-100"
@@ -362,7 +387,9 @@ const DealDetailsModal = ({
                         placeholder="Nhập tiêu đề"
                       />
                     ) : (
-                      <p className="text-gray-900 mt-0.5">{deal.title}</p>
+                      <p className="text-gray-900 mt-0.5">
+                        {currentDeal.title}
+                      </p>
                     )}
                   </div>
                   <div>
@@ -370,7 +397,7 @@ const DealDetailsModal = ({
                       Được tạo bởi:
                     </span>
                     <p className="text-gray-900 mt-0.5">
-                      {deal.createdByUser?.name || "N/A"}
+                      {currentDeal.createdByUser?.name || "N/A"}
                     </p>
                   </div>
                   <div>
@@ -381,13 +408,17 @@ const DealDetailsModal = ({
                       <span
                         className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full ${getStageColor(
                           getStageByProbability(
-                            isEditing ? editData.probability : deal.probability
+                            isEditing
+                              ? editData.probability
+                              : currentDeal.probability
                           )
                         )}`}
                       >
                         {getStageText(
                           getStageByProbability(
-                            isEditing ? editData.probability : deal.probability
+                            isEditing
+                              ? editData.probability
+                              : currentDeal.probability
                           )
                         )}
                       </span>
@@ -412,12 +443,12 @@ const DealDetailsModal = ({
                       <div className="mt-0.5">
                         <span
                           className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full ${
-                            deal.status === "Active"
+                            currentDeal.status === "Active"
                               ? "bg-green-100 text-green-800"
                               : "bg-gray-100 text-gray-800"
                           }`}
                         >
-                          {deal.status}
+                          {currentDeal.status}
                         </span>
                       </div>
                     )}
@@ -435,7 +466,7 @@ const DealDetailsModal = ({
                     <CurrencyDollarIcon className="h-4 w-4 text-gray-500 mr-2" />
                     <span className="font-medium text-gray-600">Giá trị:</span>
                     <span className="ml-auto text-sm font-bold text-green-600">
-                      {formatCurrency(deal.value)}
+                      {formatCurrency(currentDeal.value)}
                     </span>
                   </div>
                   <div>
@@ -483,9 +514,9 @@ const DealDetailsModal = ({
                     ) : (
                       <div className="flex items-center justify-between mt-1">
                         <span className="ml-2 text-gray-900">
-                          {deal.probability}%
+                          {currentDeal.probability}%
                         </span>
-                        {deal.probability === 100 ? (
+                        {currentDeal.probability === 100 ? (
                           <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
                             ✓ Đủ điều kiện xuất hợp đồng
                           </span>
@@ -515,7 +546,9 @@ const DealDetailsModal = ({
                       )}
                       <span className="font-medium text-gray-600">Tên:</span>
                       <span className="ml-2 text-gray-900">
-                        {deal.customer?.name || customer.name || "Unknown"}
+                        {currentDeal.customer?.name ||
+                          customer.name ||
+                          "Unknown"}
                       </span>
                     </div>
                     <div>
@@ -552,90 +585,91 @@ const DealDetailsModal = ({
             {/* Middle Column - Services */}
             <div className="space-y-4">
               {/* Services Info */}
-              {(isEditing ? editServices : deal.saleOrderServices)?.length >
-                0 && (
+              {(isEditing ? editServices : currentDeal.saleOrderServices)
+                ?.length > 0 && (
                 <div className="bg-gray-50 p-3 rounded-lg">
                   <h4 className="text-sm font-semibold text-gray-900 mb-2 pb-2 border-b border-gray-200">
                     Dịch vụ (
                     {isEditing
                       ? editServices.length
-                      : deal.saleOrderServices.length}
+                      : currentDeal.saleOrderServices.length}
                     )
                   </h4>
                   <div className="space-y-2">
-                    {(isEditing ? editServices : deal.saleOrderServices).map(
-                      (service, index) => (
-                        <div
-                          key={index}
-                          className="bg-white p-2 rounded-md border border-gray-200"
-                        >
-                          <div className="flex justify-between items-start mb-1.5">
-                            <span className="text-xs font-medium text-gray-900 leading-tight flex-1">
-                              {service.serviceName}
+                    {(isEditing
+                      ? editServices
+                      : currentDeal.saleOrderServices
+                    ).map((service, index) => (
+                      <div
+                        key={index}
+                        className="bg-white p-2 rounded-md border border-gray-200"
+                      >
+                        <div className="flex justify-between items-start mb-1.5">
+                          <span className="text-xs font-medium text-gray-900 leading-tight flex-1">
+                            {service.serviceName}
+                          </span>
+                          <div className="flex items-center gap-1">
+                            <span className="text-xs font-semibold text-green-600 whitespace-nowrap">
+                              {formatCurrency(service.unitPrice)}
                             </span>
-                            <div className="flex items-center gap-1">
-                              <span className="text-xs font-semibold text-green-600 whitespace-nowrap">
-                                {formatCurrency(service.unitPrice)}
-                              </span>
-                              {isEditing && (
-                                <button
-                                  onClick={() => handleDeleteService(index)}
-                                  className="text-red-500 hover:text-red-700 ml-1"
-                                  title="Xóa dịch vụ"
-                                >
-                                  <XMarkIcon className="h-4 w-4" />
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                          <div className="space-y-0.5 text-xs text-gray-600">
-                            <div className="flex justify-between items-center">
-                              <span>Duration:</span>
-                              {isEditing ? (
-                                <input
-                                  type="number"
-                                  value={service.duration}
-                                  onChange={(e) =>
-                                    handleServiceChange(
-                                      index,
-                                      "duration",
-                                      e.target.value
-                                    )
-                                  }
-                                  className="w-20 px-1 py-0.5 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-indigo-500"
-                                  min="1"
-                                />
-                              ) : (
-                                <span className="font-medium text-gray-900">
-                                  {service.duration} tháng
-                                </span>
-                              )}
-                            </div>
-                            <div className="flex justify-between items-center">
-                              <span>Template:</span>
-                              {isEditing ? (
-                                <input
-                                  type="text"
-                                  value={service.template}
-                                  onChange={(e) =>
-                                    handleServiceChange(
-                                      index,
-                                      "template",
-                                      e.target.value
-                                    )
-                                  }
-                                  className="flex-1 ml-2 px-1 py-0.5 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-indigo-500"
-                                />
-                              ) : (
-                                <span className="font-medium text-gray-900 truncate ml-2">
-                                  {service.template}
-                                </span>
-                              )}
-                            </div>
+                            {isEditing && (
+                              <button
+                                onClick={() => handleDeleteService(index)}
+                                className="text-red-500 hover:text-red-700 ml-1"
+                                title="Xóa dịch vụ"
+                              >
+                                <XMarkIcon className="h-4 w-4" />
+                              </button>
+                            )}
                           </div>
                         </div>
-                      )
-                    )}
+                        <div className="space-y-0.5 text-xs text-gray-600">
+                          <div className="flex justify-between items-center">
+                            <span>Duration:</span>
+                            {isEditing ? (
+                              <input
+                                type="number"
+                                value={service.duration}
+                                onChange={(e) =>
+                                  handleServiceChange(
+                                    index,
+                                    "duration",
+                                    e.target.value
+                                  )
+                                }
+                                className="w-20 px-1 py-0.5 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-indigo-500"
+                                min="1"
+                              />
+                            ) : (
+                              <span className="font-medium text-gray-900">
+                                {service.duration} tháng
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span>Template:</span>
+                            {isEditing ? (
+                              <input
+                                type="text"
+                                value={service.template}
+                                onChange={(e) =>
+                                  handleServiceChange(
+                                    index,
+                                    "template",
+                                    e.target.value
+                                  )
+                                }
+                                className="flex-1 ml-2 px-1 py-0.5 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-indigo-500"
+                              />
+                            ) : (
+                              <span className="font-medium text-gray-900 truncate ml-2">
+                                {service.template}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
@@ -644,17 +678,18 @@ const DealDetailsModal = ({
             {/* Right Column - Addons & Timeline */}
             <div className="space-y-4">
               {/* Addons Info */}
-              {(isEditing ? editAddons : deal.saleOrderAddons)?.length > 0 && (
+              {(isEditing ? editAddons : currentDeal.saleOrderAddons)?.length >
+                0 && (
                 <div className="bg-gray-50 p-3 rounded-lg">
                   <h4 className="text-sm font-semibold text-gray-900 mb-2 pb-2 border-b border-gray-200">
                     Addon (
                     {isEditing
                       ? editAddons.length
-                      : deal.saleOrderAddons.length}
+                      : currentDeal.saleOrderAddons.length}
                     )
                   </h4>
                   <div className="space-y-2">
-                    {(isEditing ? editAddons : deal.saleOrderAddons).map(
+                    {(isEditing ? editAddons : currentDeal.saleOrderAddons).map(
                       (addon, index) => (
                         <div
                           key={index}
@@ -761,20 +796,20 @@ const DealDetailsModal = ({
                       />
                     ) : (
                       <span className="ml-5 text-gray-900">
-                        {formatDate(deal.expectedCloseDate)}
+                        {formatDate(currentDeal.expectedCloseDate)}
                       </span>
                     )}
                   </div>
                   <div>
                     <span className="font-medium text-gray-600">Ngày tạo:</span>
                     <span className="ml-2 text-gray-900">
-                      {formatDate(deal.createdAt)}
+                      {formatDate(currentDeal.createdAt)}
                     </span>
                   </div>
                   <div>
                     <span className="font-medium text-gray-600">Cập nhật:</span>
                     <span className="ml-2 text-gray-900">
-                      {formatDate(deal.updatedAt)}
+                      {formatDate(currentDeal.updatedAt)}
                     </span>
                   </div>
                 </div>
@@ -795,7 +830,7 @@ const DealDetailsModal = ({
                   />
                 ) : (
                   <p className="text-xs text-gray-700 whitespace-pre-wrap">
-                    {deal.notes || "Chưa có ghi chú"}
+                    {currentDeal.notes || "Chưa có ghi chú"}
                   </p>
                 )}
               </div>
@@ -826,7 +861,7 @@ const DealDetailsModal = ({
       <ContractConfirmModal
         isOpen={isContractModalOpen}
         onClose={() => setIsContractModalOpen(false)}
-        deal={deal}
+        deal={currentDeal}
         customers={customers}
         services={services}
         addons={addons}
