@@ -15,23 +15,35 @@ import {
 } from "../../Service/ApiService";
 import { showError } from "../../utils/sweetAlert";
 import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  LineElement,
+  PointElement,
+  ArcElement,
+  Title,
   Tooltip,
   Legend,
-  ResponsiveContainer,
-  LineChart,
-  Line,
-  PieChart,
-  Pie,
-  Cell,
-} from "recharts";
+} from "chart.js";
+import { Bar, Line, Doughnut } from "react-chartjs-2";
+
+// Register Chart.js components
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  LineElement,
+  PointElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend
+);
 
 const KpiDashboard = () => {
   const [statistics, setStatistics] = useState(null);
+  const [previousStatistics, setPreviousStatistics] = useState(null);
   const [leaderboard, setLeaderboard] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedPeriod, setSelectedPeriod] = useState({
@@ -46,13 +58,28 @@ const KpiDashboard = () => {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      const [statsRes, leaderboardRes] = await Promise.all([
+
+      // Calculate previous period
+      const prevMonth =
+        selectedPeriod.month === 1 ? 12 : selectedPeriod.month - 1;
+      const prevYear =
+        selectedPeriod.month === 1
+          ? selectedPeriod.year - 1
+          : selectedPeriod.year;
+      const previousPeriod = { month: prevMonth, year: prevYear };
+
+      const [statsRes, prevStatsRes, leaderboardRes] = await Promise.all([
         getKpiStatistics(selectedPeriod),
+        getKpiStatistics(previousPeriod),
         getKpiLeaderboard(selectedPeriod),
       ]);
 
       if (statsRes.data.success) {
         setStatistics(statsRes.data.data);
+      }
+
+      if (prevStatsRes.data.success) {
+        setPreviousStatistics(prevStatsRes.data.data);
       }
 
       if (leaderboardRes.data.success) {
@@ -82,34 +109,189 @@ const KpiDashboard = () => {
     }).format(amount);
   };
 
-  // Pie chart colors
-  const COLORS = ["#10b981", "#ef4444", "#f59e0b"];
+  // Calculate growth percentage
+  const calculateGrowth = (current, previous) => {
+    if (!previous || previous === 0) return null;
+    return (((current - previous) / previous) * 100).toFixed(1);
+  };
 
-  // Prepare chart data
-  const achievementData = statistics
-    ? [
-        {
-          name: "Đạt KPI",
-          value: statistics.usersAchievedKpi,
-          color: "#10b981",
-        },
-        {
-          name: "Chưa đạt",
-          value: statistics.usersNotAchievedKpi,
-          color: "#ef4444",
-        },
-      ]
-    : [];
+  // Get growth info
+  const getGrowthInfo = (current, previous) => {
+    const growth = calculateGrowth(current, previous);
+    if (growth === null) return { text: "N/A", isPositive: null };
+    const isPositive = parseFloat(growth) >= 0;
+    return {
+      text: `${isPositive ? "+" : ""}${growth}%`,
+      isPositive,
+      value: parseFloat(growth),
+    };
+  };
 
-  const revenueData = statistics
-    ? [
-        {
-          name: "Target vs Thực tế",
-          Target: statistics.totalTargetAmount,
-          "Thực tế": statistics.totalPaidAmount,
+  // Prepare Chart.js data
+  const achievementChartData = {
+    labels: ["Đạt KPI", "Chưa đạt"],
+    datasets: [
+      {
+        data: statistics
+          ? [statistics.usersAchievedKpi, statistics.usersNotAchievedKpi]
+          : [0, 0],
+        backgroundColor: ["#10b981", "#ef4444"],
+        borderColor: ["#ffffff", "#ffffff"],
+        borderWidth: 2,
+      },
+    ],
+  };
+
+  const revenueChartData = {
+    labels: ["Target vs Thực tế"],
+    datasets: [
+      {
+        label: "Target",
+        data: statistics ? [statistics.totalTargetAmount] : [0],
+        backgroundColor: "#f59e0b",
+        borderColor: "#f59e0b",
+        borderWidth: 2,
+        borderRadius: 8,
+        hoverBackgroundColor: "#d97706",
+      },
+      {
+        label: "Thực tế",
+        data: statistics ? [statistics.totalPaidAmount] : [0],
+        backgroundColor: "#10b981",
+        borderColor: "#10b981",
+        borderWidth: 2,
+        borderRadius: 8,
+        hoverBackgroundColor: "#059669",
+      },
+    ],
+  };
+
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: "bottom",
+      },
+    },
+  };
+
+  const doughnutOptions = {
+    ...chartOptions,
+    cutout: "70%",
+    plugins: {
+      ...chartOptions.plugins,
+      legend: {
+        position: "bottom",
+        labels: {
+          padding: 20,
+          font: {
+            size: 13,
+            weight: "500",
+          },
+          usePointStyle: true,
+          pointStyle: "circle",
         },
-      ]
-    : [];
+      },
+      tooltip: {
+        backgroundColor: "rgba(0, 0, 0, 0.8)",
+        padding: 12,
+        borderColor: "rgba(255, 255, 255, 0.2)",
+        borderWidth: 1,
+        titleFont: {
+          size: 14,
+          weight: "bold",
+        },
+        bodyFont: {
+          size: 13,
+        },
+        callbacks: {
+          label: function (context) {
+            const label = context.label || "";
+            const value = context.parsed || 0;
+            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+            const percentage = ((value / total) * 100).toFixed(1);
+            return `${label}: ${value} người (${percentage}%)`;
+          },
+        },
+      },
+    },
+    animation: {
+      animateRotate: true,
+      animateScale: true,
+    },
+  };
+
+  const barOptions = {
+    ...chartOptions,
+    scales: {
+      x: {
+        grid: {
+          display: false,
+        },
+        ticks: {
+          font: {
+            size: 12,
+            weight: "500",
+          },
+        },
+      },
+      y: {
+        beginAtZero: true,
+        grid: {
+          color: "rgba(0, 0, 0, 0.05)",
+        },
+        ticks: {
+          font: {
+            size: 12,
+          },
+          callback: function (value) {
+            return formatCurrency(value);
+          },
+        },
+      },
+    },
+    plugins: {
+      ...chartOptions.plugins,
+      legend: {
+        position: "bottom",
+        labels: {
+          padding: 20,
+          font: {
+            size: 13,
+            weight: "500",
+          },
+          usePointStyle: true,
+          pointStyle: "circle",
+        },
+      },
+      tooltip: {
+        backgroundColor: "rgba(0, 0, 0, 0.8)",
+        padding: 12,
+        borderColor: "rgba(255, 255, 255, 0.2)",
+        borderWidth: 1,
+        titleFont: {
+          size: 14,
+          weight: "bold",
+        },
+        bodyFont: {
+          size: 13,
+        },
+        callbacks: {
+          label: function (context) {
+            return `${context.dataset.label}: ${formatCurrencyFull(
+              context.parsed.y
+            )}`;
+          },
+        },
+      },
+    },
+    animation: {
+      duration: 1000,
+      easing: "easeInOutQuart",
+    },
+    borderRadius: 8,
+  };
 
   if (loading) {
     return (
@@ -183,7 +365,7 @@ const KpiDashboard = () => {
             {/* Total Users */}
             <div className="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow">
               <div className="flex items-center justify-between">
-                <div>
+                <div className="flex-1">
                   <p className="text-sm text-gray-600 mb-1">Tổng nhân viên</p>
                   <p className="text-3xl font-bold text-gray-900">
                     {statistics.totalUsers}
@@ -197,6 +379,41 @@ const KpiDashboard = () => {
                       {statistics.usersNotAchievedKpi} chưa
                     </span>
                   </div>
+                  {previousStatistics && (
+                    <div className="mt-2 flex items-center">
+                      {(() => {
+                        const growth = getGrowthInfo(
+                          statistics.totalUsers,
+                          previousStatistics.totalUsers
+                        );
+                        return (
+                          <>
+                            {growth.isPositive !== null && (
+                              <>
+                                {growth.isPositive ? (
+                                  <ArrowTrendingUpIcon className="h-3 w-3 text-green-600 mr-1" />
+                                ) : (
+                                  <ArrowTrendingDownIcon className="h-3 w-3 text-red-600 mr-1" />
+                                )}
+                                <span
+                                  className={`text-xs font-medium ${
+                                    growth.isPositive
+                                      ? "text-green-600"
+                                      : "text-red-600"
+                                  }`}
+                                >
+                                  {growth.text}
+                                </span>
+                              </>
+                            )}
+                            <span className="text-xs text-gray-500 ml-1">
+                              so với tháng trước
+                            </span>
+                          </>
+                        );
+                      })()}
+                    </div>
+                  )}
                 </div>
                 <div className="h-16 w-16 bg-blue-100 rounded-full flex items-center justify-center">
                   <UserGroupIcon className="h-8 w-8 text-blue-600" />
@@ -204,23 +421,93 @@ const KpiDashboard = () => {
               </div>
             </div>
 
-            {/* Achievement Rate */}
-            <div className="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow">
+            {/* Success Rate (100%) */}
+            <div className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow">
               <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600 mb-1">Tỷ lệ đạt KPI</p>
-                  <p className="text-3xl font-bold text-green-600">
-                    {statistics.achievementRate?.toFixed(1)}%
+                <div className="flex-1">
+                  <p className="text-sm text-green-100 mb-1">Tỷ lệ đạt KPI</p>
+                  <p className="text-3xl font-bold text-white">
+                    {statistics.totalUsers > 0
+                      ? (
+                          (statistics.usersAchievedKpi /
+                            statistics.totalUsers) *
+                          100
+                        ).toFixed(1)
+                      : 0}
+                    %
                   </p>
-                  <div className="w-full bg-gray-200 rounded-full h-2 mt-3">
+                  <div className="flex items-center mt-2">
+                    <span className="text-sm text-white font-medium">
+                      {statistics.usersAchievedKpi}/{statistics.totalUsers}{" "}
+                      người
+                    </span>
+                  </div>
+                  <div className="w-full bg-green-400/30 rounded-full h-2 mt-3">
                     <div
-                      className="bg-green-500 h-2 rounded-full transition-all duration-500"
-                      style={{ width: `${statistics.achievementRate || 0}%` }}
+                      className="bg-white h-2 rounded-full transition-all duration-500"
+                      style={{
+                        width: `${
+                          statistics.totalUsers > 0
+                            ? (statistics.usersAchievedKpi /
+                                statistics.totalUsers) *
+                              100
+                            : 0
+                        }%`,
+                      }}
                     ></div>
                   </div>
+                  {previousStatistics && (
+                    <div className="mt-2 flex items-center">
+                      {(() => {
+                        const currentRate =
+                          statistics.totalUsers > 0
+                            ? (statistics.usersAchievedKpi /
+                                statistics.totalUsers) *
+                              100
+                            : 0;
+                        const previousRate =
+                          previousStatistics.totalUsers > 0
+                            ? (previousStatistics.usersAchievedKpi /
+                                previousStatistics.totalUsers) *
+                              100
+                            : 0;
+                        const growth = calculateGrowth(
+                          currentRate,
+                          previousRate
+                        );
+                        const isPositive =
+                          growth !== null && parseFloat(growth) >= 0;
+
+                        return (
+                          <>
+                            {growth !== null && (
+                              <>
+                                {isPositive ? (
+                                  <ArrowTrendingUpIcon className="h-3 w-3 text-white mr-1" />
+                                ) : (
+                                  <ArrowTrendingDownIcon className="h-3 w-3 text-green-200 mr-1" />
+                                )}
+                                <span
+                                  className={`text-xs font-medium ${
+                                    isPositive ? "text-white" : "text-green-200"
+                                  }`}
+                                >
+                                  {isPositive ? "+" : ""}
+                                  {growth}%
+                                </span>
+                              </>
+                            )}
+                            <span className="text-xs text-green-100 ml-1">
+                              so với tháng trước
+                            </span>
+                          </>
+                        );
+                      })()}
+                    </div>
+                  )}
                 </div>
-                <div className="h-16 w-16 bg-green-100 rounded-full flex items-center justify-center">
-                  <TrophyIcon className="h-8 w-8 text-green-600" />
+                <div className="h-16 w-16 bg-white/20 rounded-full flex items-center justify-center">
+                  <TrophyIcon className="h-8 w-8 text-white" />
                 </div>
               </div>
             </div>
@@ -270,6 +557,41 @@ const KpiDashboard = () => {
                       </>
                     )}
                   </div>
+                  {previousStatistics && (
+                    <div className="mt-2 pt-2 border-t border-gray-100">
+                      {(() => {
+                        const growth = getGrowthInfo(
+                          statistics.totalPaidAmount,
+                          previousStatistics.totalPaidAmount
+                        );
+                        return (
+                          <div className="flex items-center">
+                            {growth.isPositive !== null && (
+                              <>
+                                {growth.isPositive ? (
+                                  <ArrowTrendingUpIcon className="h-3 w-3 text-green-600 mr-1" />
+                                ) : (
+                                  <ArrowTrendingDownIcon className="h-3 w-3 text-red-600 mr-1" />
+                                )}
+                                <span
+                                  className={`text-xs font-medium ${
+                                    growth.isPositive
+                                      ? "text-green-600"
+                                      : "text-red-600"
+                                  }`}
+                                >
+                                  {growth.text}
+                                </span>
+                              </>
+                            )}
+                            <span className="text-xs text-gray-500 ml-1">
+                              so với tháng trước
+                            </span>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  )}
                 </div>
                 <div className="h-16 w-16 bg-indigo-100 rounded-full flex items-center justify-center">
                   <ArrowTrendingUpIcon className="h-8 w-8 text-indigo-600" />
@@ -280,7 +602,7 @@ const KpiDashboard = () => {
             {/* Total Commission */}
             <div className="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow">
               <div className="flex items-center justify-between">
-                <div>
+                <div className="flex-1">
                   <p className="text-sm text-gray-600 mb-1">Tổng hoa hồng</p>
                   <p className="text-2xl font-bold text-yellow-600">
                     {formatCurrency(statistics.totalCommissionAmount)}
@@ -291,6 +613,41 @@ const KpiDashboard = () => {
                   <p className="text-xs text-gray-400">
                     TB: {statistics.averageAchievementPercentage?.toFixed(1)}%
                   </p>
+                  {previousStatistics && (
+                    <div className="mt-2 pt-2 border-t border-gray-100">
+                      {(() => {
+                        const growth = getGrowthInfo(
+                          statistics.totalCommissionAmount,
+                          previousStatistics.totalCommissionAmount
+                        );
+                        return (
+                          <div className="flex items-center">
+                            {growth.isPositive !== null && (
+                              <>
+                                {growth.isPositive ? (
+                                  <ArrowTrendingUpIcon className="h-3 w-3 text-green-600 mr-1" />
+                                ) : (
+                                  <ArrowTrendingDownIcon className="h-3 w-3 text-red-600 mr-1" />
+                                )}
+                                <span
+                                  className={`text-xs font-medium ${
+                                    growth.isPositive
+                                      ? "text-green-600"
+                                      : "text-red-600"
+                                  }`}
+                                >
+                                  {growth.text}
+                                </span>
+                              </>
+                            )}
+                            <span className="text-xs text-gray-500 ml-1">
+                              so với tháng trước
+                            </span>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  )}
                 </div>
                 <div className="h-16 w-16 bg-yellow-100 rounded-full flex items-center justify-center">
                   <CurrencyDollarIcon className="h-8 w-8 text-yellow-600" />
@@ -301,32 +658,17 @@ const KpiDashboard = () => {
 
           {/* Charts Row */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-            {/* Achievement Pie Chart */}
+            {/* Achievement Doughnut Chart */}
             <div className="bg-white rounded-lg shadow p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">
                 Phân bổ đạt KPI
               </h3>
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={achievementData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ name, percent }) =>
-                      `${name}: ${(percent * 100).toFixed(0)}%`
-                    }
-                    outerRadius={100}
-                    fill="#8884d8"
-                    dataKey="value"
-                  >
-                    {achievementData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
+              <div style={{ height: "300px" }}>
+                <Doughnut
+                  data={achievementChartData}
+                  options={doughnutOptions}
+                />
+              </div>
             </div>
 
             {/* Revenue Bar Chart */}
@@ -334,17 +676,9 @@ const KpiDashboard = () => {
               <h3 className="text-lg font-semibold text-gray-900 mb-4">
                 Target vs Thực tế
               </h3>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={revenueData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis />
-                  <Tooltip formatter={(value) => formatCurrencyFull(value)} />
-                  <Legend />
-                  <Bar dataKey="Target" fill="#f59e0b" />
-                  <Bar dataKey="Thực tế" fill="#10b981" />
-                </BarChart>
-              </ResponsiveContainer>
+              <div style={{ height: "300px" }}>
+                <Bar data={revenueChartData} options={barOptions} />
+              </div>
             </div>
           </div>
 

@@ -10,6 +10,8 @@ import {
   XMarkIcon as CancelIcon,
   DocumentArrowDownIcon,
   TrashIcon,
+  ArchiveBoxIcon,
+  ArrowUturnLeftIcon,
 } from "@heroicons/react/24/outline";
 import { updateSaleOrder, deleteSaleOrder } from "../../Service/ApiService";
 import {
@@ -254,6 +256,53 @@ const DealDetailsModal = ({
     setEditAddons(updatedAddons);
   };
 
+  const handleArchive = async () => {
+    const activeDeal = localDeal || deal;
+    try {
+      setLoading(true);
+      // Cập nhật status thành "Archived" hoặc status tương ứng
+      await updateSaleOrder(activeDeal.id, {
+        ...activeDeal,
+        status: "Archived",
+      });
+      showSuccess("Thành công!", "Đã chuyển sale order vào kho lưu trữ");
+      onClose();
+      if (onUpdate) {
+        onUpdate();
+      }
+    } catch (error) {
+      console.error("Error archiving sale order:", error);
+      showError("Lỗi!", "Không thể chuyển vào kho lưu trữ. Vui lòng thử lại.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRestore = async () => {
+    const activeDeal = localDeal || deal;
+    try {
+      setLoading(true);
+      // Cập nhật status thành "Active"
+      await updateSaleOrder(activeDeal.id, {
+        ...activeDeal,
+        status: "Active",
+      });
+      showSuccess(
+        "Thành công!",
+        "Đã khôi phục sale order về trạng thái hoạt động"
+      );
+      onClose();
+      if (onUpdate) {
+        onUpdate();
+      }
+    } catch (error) {
+      console.error("Error restoring sale order:", error);
+      showError("Lỗi!", "Không thể khôi phục sale order. Vui lòng thử lại.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleDelete = async () => {
     const activeDeal = localDeal || deal;
     const confirmed = await showDeleteConfirm(
@@ -309,15 +358,39 @@ const DealDetailsModal = ({
           <div className="flex items-center space-x-2">
             {!isEditing ? (
               <>
-                {/* Chỉ hiện nút Xuất hợp đồng khi probability = 100% */}
-                {currentDeal.probability === 100 && (
+                {/* Hiển thị nút khác nhau dựa trên status */}
+                {currentDeal.status === "Archived" ? (
+                  // Nếu đang ở trạng thái Archived, hiển thị nút Restore
                   <button
-                    onClick={handleExportContract}
-                    className="flex items-center px-3 py-1.5 text-sm font-medium text-green-600 bg-green-50 border border-green-200 rounded-md hover:bg-green-100"
+                    onClick={handleRestore}
+                    disabled={loading}
+                    className="flex items-center px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100 disabled:opacity-50"
                   >
-                    <DocumentArrowDownIcon className="h-4 w-4 mr-1" />
-                    Xuất hợp đồng
+                    <ArrowUturnLeftIcon className="h-4 w-4 mr-1" />
+                    Khôi phục về Active
                   </button>
+                ) : (
+                  // Nếu đang Active, hiển thị các nút bình thường
+                  <>
+                    {/* Chỉ hiện nút Xuất hợp đồng khi probability = 100% */}
+                    {currentDeal.probability === 100 && (
+                      <button
+                        onClick={handleExportContract}
+                        className="flex items-center px-3 py-1.5 text-sm font-medium text-green-600 bg-green-50 border border-green-200 rounded-md hover:bg-green-100"
+                      >
+                        <DocumentArrowDownIcon className="h-4 w-4 mr-1" />
+                        Xuất hợp đồng
+                      </button>
+                    )}
+                    <button
+                      onClick={handleArchive}
+                      disabled={loading}
+                      className="flex items-center px-3 py-1.5 text-sm font-medium text-amber-600 bg-amber-50 border border-amber-200 rounded-md hover:bg-amber-100 disabled:opacity-50"
+                    >
+                      <ArchiveBoxIcon className="h-4 w-4 mr-1" />
+                      Chuyển vào kho lưu trữ
+                    </button>
+                  </>
                 )}
                 <button
                   onClick={handleEditToggle}

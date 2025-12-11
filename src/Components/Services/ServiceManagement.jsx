@@ -69,7 +69,7 @@ const ServiceManagement = () => {
       const categoryList = Array.isArray(response.data)
         ? response.data
         : response.data?.data || [];
-      setCategories(categoryList.map((cat) => cat.name));
+      setCategories(categoryList);
     } catch (err) {
       console.error("Error fetching categories:", err);
       // Don't show error to user, just use empty categories
@@ -82,7 +82,9 @@ const ServiceManagement = () => {
     const matchesSearch =
       service.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       service.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      service.category?.toLowerCase().includes(searchTerm.toLowerCase());
+      service.categoryServiceAddons?.name
+        ?.toLowerCase()
+        .includes(searchTerm.toLowerCase());
 
     const matchesStatus =
       statusFilter === "all" ||
@@ -90,7 +92,8 @@ const ServiceManagement = () => {
       (statusFilter === "inactive" && !service.isActive);
 
     const matchesCategory =
-      categoryFilter === "all" || service.category === categoryFilter;
+      categoryFilter === "all" ||
+      service.categoryId === parseInt(categoryFilter);
 
     return matchesSearch && matchesStatus && matchesCategory;
   });
@@ -222,8 +225,8 @@ const ServiceManagement = () => {
             >
               <option value="all">Tất cả danh mục</option>
               {categories.map((category) => (
-                <option key={category} value={category}>
-                  {category}
+                <option key={category.id} value={category.id}>
+                  {category.name}
                 </option>
               ))}
             </select>

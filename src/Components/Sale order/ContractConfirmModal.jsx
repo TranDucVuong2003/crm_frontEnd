@@ -50,7 +50,7 @@ const ContractConfirmModal = ({
         expirationDate.setFullYear(expirationDate.getFullYear() + 1);
 
         setFormData({
-          status: "Mới",
+          status: "New",
           paymentMethod: "Chuyển khoản",
           expiration: expirationDate.toISOString().slice(0, 16),
           notes: deal.notes || "",
@@ -136,14 +136,17 @@ const ContractConfirmModal = ({
 
       showSuccess("Thành công!", "Tạo hợp đồng thành công");
 
-      // Gọi API để lấy QR code với thanh toán toàn bộ
-      const qrResponse = await getContractQRCode(createdContractId, "full100");
-      setQrData(qrResponse.data);
-      setShowQrModal(true);
+      // Đóng modal hiện tại
+      onClose();
 
       if (onSuccess) {
         onSuccess();
       }
+
+      // Navigate đến trang Contract
+      setTimeout(() => {
+        navigate("/contract");
+      }, 500);
     } catch (error) {
       console.error("Error creating contract:", error);
       const errorMessage =

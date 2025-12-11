@@ -69,7 +69,7 @@ const AddonsManagement = () => {
       const categoryList = Array.isArray(response.data)
         ? response.data
         : response.data?.data || [];
-      setCategories(categoryList.map((cat) => cat.name));
+      setCategories(categoryList);
     } catch (err) {
       console.error("Error fetching categories:", err);
       // Don't show error to user, just use empty categories
@@ -82,14 +82,17 @@ const AddonsManagement = () => {
     const matchesSearch =
       addon.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       addon.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      addon.type?.toLowerCase().includes(searchTerm.toLowerCase());
+      addon.categoryServiceAddons?.name
+        ?.toLowerCase()
+        .includes(searchTerm.toLowerCase());
 
     const matchesStatus =
       statusFilter === "all" ||
       (statusFilter === "active" && addon.isActive) ||
       (statusFilter === "inactive" && !addon.isActive);
 
-    const matchesType = typeFilter === "all" || addon.type === typeFilter;
+    const matchesType =
+      typeFilter === "all" || addon.categoryId === parseInt(typeFilter);
 
     return matchesSearch && matchesStatus && matchesType;
   });
@@ -102,8 +105,8 @@ const AddonsManagement = () => {
     startIndex + itemsPerPage
   );
 
-  // Get unique types
-  const types = [...new Set(addons.map((addon) => addon.type).filter(Boolean))];
+  // Get unique types (use categories instead)
+  const types = categories;
 
   // Handle CRUD operations
   const handleCreate = () => {
@@ -220,10 +223,10 @@ const AddonsManagement = () => {
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value)}
             >
-              <option value="all">Tất cả loại</option>
+              <option value="all">Tất cả danh mục</option>
               {types.map((type) => (
-                <option key={type} value={type}>
-                  {type}
+                <option key={type.id} value={type.id}>
+                  {type.name}
                 </option>
               ))}
             </select>
@@ -396,7 +399,7 @@ const AddonsManagement = () => {
         onClose={() => setIsModalOpen(false)}
         onSave={handleSave}
         addon={editingAddon}
-        types={[...types, ...categories]}
+        types={categories}
       />
 
       <AddonDetailModal

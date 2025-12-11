@@ -628,6 +628,7 @@ const CustomerManagement = () => {
               }
             : null
         }
+        preSelectedCustomer={selectedCustomer}
         onSave={() => {
           setIsSaleOrderModalOpen(false);
           setSelectedCustomer(null);

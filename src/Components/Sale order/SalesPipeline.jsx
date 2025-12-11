@@ -143,7 +143,9 @@ const SalesPipeline = () => {
 
       // Transform API data to match UI requirements
       const transformedDeals = saleOrders
-        .filter((order) => order.status !== "Inactive") // Only show Active orders
+        .filter(
+          (order) => order.status !== "Inactive" && order.status !== "Archived"
+        ) // Only show Active orders
         .map((order) => ({
           id: order.id,
           title: order.title,
@@ -168,9 +170,9 @@ const SalesPipeline = () => {
             .split("T")[0], // 30 days from now
         }));
 
-      // Transform Inactive deals for archive
+      // Transform Archived deals for archive
       const transformedInactiveDeals = saleOrders
-        .filter((order) => order.status === "Inactive")
+        .filter((order) => order.status === "Archived")
         .map((order) => ({
           id: order.id,
           title: order.title,
@@ -543,52 +545,249 @@ const SalesPipeline = () => {
         </div>
 
         {/* Summary Stats */}
-        <div className="mt-6 grid grid-cols-1 sm:grid-cols-5 gap-4">
-          <div className="bg-white p-4 rounded-lg shadow">
-            <div className="text-2xl font-bold text-gray-900">
-              {filteredDeals.length}
-            </div>
-            <div className="text-sm text-gray-600">
-              {searchTerm ? "Deals hiển thị" : "Tổng số deals"}
-            </div>
-            {searchTerm && deals.length !== filteredDeals.length && (
-              <div className="text-xs text-gray-500 mt-1">
-                Tổng: {deals.length} deals
+        <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          {/* Tổng số Sale Orders (bao gồm archived) */}
+          <div className="bg-white p-4 rounded-lg shadow hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-2xl font-bold text-blue-600">
+                {deals.length + inactiveDeals.length}
               </div>
-            )}
-          </div>
-          <div className="bg-white p-4 rounded-lg shadow">
-            <div className="text-xl font-bold text-green-600">
-              {formatCurrency(getTotalValue())}
+              <div className="h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
+                <svg
+                  className="h-5 w-5 text-blue-600"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                  />
+                </svg>
+              </div>
             </div>
-            <div className="text-sm text-gray-600">
-              {searchTerm ? "Giá trị hiển thị" : "Tổng giá trị"}
+            <div className="text-sm text-gray-600 mb-1">Tổng Sale Orders</div>
+            <div className="text-xs text-gray-500">
+              <span className="text-green-600 font-medium">
+                {deals.length} Active
+              </span>
+              {inactiveDeals.length > 0 && (
+                <span className="text-gray-400">
+                  {" "}
+                  • {inactiveDeals.length} Archived
+                </span>
+              )}
             </div>
           </div>
-          <div className="bg-white p-4 rounded-lg shadow">
-            <div className="text-2xl font-bold text-blue-600">
-              {getDealsByStage("closed-won").length}
+
+          {/* Tổng giá trị (không bao gồm archived) */}
+          <div className="bg-white p-4 rounded-lg shadow hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-xl font-bold text-green-600">
+                {formatCurrency(getTotalValue())}
+              </div>
+              <div className="h-10 w-10 bg-green-100 rounded-full flex items-center justify-center">
+                <svg
+                  className="h-5 w-5 text-green-600"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+              </div>
             </div>
-            <div className="text-sm text-gray-600">Deals thành công</div>
+            <div className="text-sm text-gray-600 mb-1">Tổng giá trị</div>
+            <div className="text-xs text-gray-500">Chỉ Active deals</div>
           </div>
-          <div className="bg-white p-4 rounded-lg shadow">
-            <div className="text-2xl font-bold text-orange-600">
-              {filteredDeals.length > 0
+
+          {/* Deals Active */}
+          <div className="bg-white p-4 rounded-lg shadow hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-2xl font-bold text-purple-600">
+                {deals.length}
+              </div>
+              <div className="h-10 w-10 bg-purple-100 rounded-full flex items-center justify-center">
+                <svg
+                  className="h-5 w-5 text-purple-600"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+              </div>
+            </div>
+            <div className="text-sm text-gray-600 mb-1">Deals Active</div>
+            <div className="text-xs text-gray-500">
+              {deals.length + inactiveDeals.length > 0
                 ? Math.round(
-                    (getDealsByStage("closed-won").length /
-                      filteredDeals.length) *
-                      100
+                    (deals.length / (deals.length + inactiveDeals.length)) * 100
                   )
                 : 0}
-              %
+              % tổng số
             </div>
-            <div className="text-sm text-gray-600">Tỷ lệ chốt deal</div>
           </div>
-          <div className="bg-white p-4 rounded-lg shadow">
-            <div className="text-2xl font-bold text-purple-600">
-              {filteredDeals.filter((d) => d.serviceId || d.addonId).length}
+
+          {/* Deals trong tháng */}
+          <div className="bg-white p-4 rounded-lg shadow hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-2xl font-bold text-indigo-600">
+                {
+                  deals.filter((d) => {
+                    const createdDate = new Date(d.createdAt);
+                    const now = new Date();
+                    return (
+                      createdDate.getMonth() === now.getMonth() &&
+                      createdDate.getFullYear() === now.getFullYear()
+                    );
+                  }).length
+                }
+              </div>
+              <div className="h-10 w-10 bg-indigo-100 rounded-full flex items-center justify-center">
+                <svg
+                  className="h-5 w-5 text-indigo-600"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                  />
+                </svg>
+              </div>
             </div>
-            <div className="text-sm text-gray-600">Có dịch vụ/addon</div>
+            <div className="text-sm text-gray-600 mb-1">Deals tháng này</div>
+            <div className="text-xs text-gray-500">
+              {new Date().toLocaleDateString("vi-VN", {
+                month: "long",
+                year: "numeric",
+              })}
+            </div>
+          </div>
+
+          {/* So sánh với tháng trước */}
+          <div className="bg-white p-4 rounded-lg shadow hover:shadow-md transition-shadow">
+            {(() => {
+              const now = new Date();
+              const currentMonth = now.getMonth();
+              const currentYear = now.getFullYear();
+
+              // Tháng trước
+              const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+              const lastMonthYear =
+                currentMonth === 0 ? currentYear - 1 : currentYear;
+
+              // Deals tháng này
+              const currentMonthDeals = deals.filter((d) => {
+                const createdDate = new Date(d.createdAt);
+                return (
+                  createdDate.getMonth() === currentMonth &&
+                  createdDate.getFullYear() === currentYear
+                );
+              });
+
+              // Deals tháng trước
+              const lastMonthDeals = deals.filter((d) => {
+                const createdDate = new Date(d.createdAt);
+                return (
+                  createdDate.getMonth() === lastMonth &&
+                  createdDate.getFullYear() === lastMonthYear
+                );
+              });
+
+              // Tính growth percentage
+              const currentCount = currentMonthDeals.length;
+              const lastCount = lastMonthDeals.length;
+              const growthPercentage =
+                lastCount > 0
+                  ? Math.round(((currentCount - lastCount) / lastCount) * 100)
+                  : currentCount > 0
+                  ? 100
+                  : 0;
+
+              const isPositive = growthPercentage >= 0;
+
+              return (
+                <>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center">
+                      <div
+                        className={`text-2xl font-bold ${
+                          isPositive ? "text-emerald-600" : "text-red-600"
+                        }`}
+                      >
+                        {isPositive ? "+" : ""}
+                        {growthPercentage}%
+                      </div>
+                      <div
+                        className={`ml-2 h-10 w-10 ${
+                          isPositive ? "bg-emerald-100" : "bg-red-100"
+                        } rounded-full flex items-center justify-center`}
+                      >
+                        {isPositive ? (
+                          <svg
+                            className="h-5 w-5 text-emerald-600"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
+                            />
+                          </svg>
+                        ) : (
+                          <svg
+                            className="h-5 w-5 text-red-600"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M13 17h8m0 0v-8m0 8l-8-8-4 4-6-6"
+                            />
+                          </svg>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-sm text-gray-600 mb-1">
+                    So với tháng trước
+                  </div>
+                  <div className="flex items-center justify-between text-xs text-gray-500">
+                    <span>
+                      Tháng này:{" "}
+                      <strong className="text-gray-700">{currentCount}</strong>
+                    </span>
+                    <span>
+                      Tháng trước:{" "}
+                      <strong className="text-gray-700">{lastCount}</strong>
+                    </span>
+                  </div>
+                </>
+              );
+            })()}
           </div>
         </div>
       </div>

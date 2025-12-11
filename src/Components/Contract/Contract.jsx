@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import {
   DocumentTextIcon,
   PlusIcon,
@@ -23,6 +24,7 @@ import ContractPreviewModal from "./ContractPreviewModal";
 import QrPaymentModal from "./QrPaymentModal";
 
 const Contract = () => {
+  const location = useLocation();
   const [contracts, setContracts] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
@@ -415,7 +417,11 @@ const Contract = () => {
             <div>
               <p className="text-sm text-gray-600">Mới</p>
               <p className="text-2xl font-bold text-blue-600">
-                {contracts.filter((c) => c.status === "Mới" || c.status === "New").length}
+                {
+                  contracts.filter(
+                    (c) => c.status === "Mới" || c.status === "New"
+                  ).length
+                }
               </p>
             </div>
             <DocumentTextIcon className="h-10 w-10 text-blue-500" />
@@ -428,7 +434,12 @@ const Contract = () => {
             <div>
               <p className="text-sm text-gray-600">Đặt cọc 50%</p>
               <p className="text-2xl font-bold text-orange-600">
-                {contracts.filter((c) => c.status === "Đặt cọc 50%" || c.status === "Deposit 50%").length}
+                {
+                  contracts.filter(
+                    (c) =>
+                      c.status === "Đặt cọc 50%" || c.status === "Deposit 50%"
+                  ).length
+                }
               </p>
             </div>
             <DocumentTextIcon className="h-10 w-10 text-orange-500" />
@@ -441,7 +452,11 @@ const Contract = () => {
             <div>
               <p className="text-sm text-gray-600">Đã thanh toán</p>
               <p className="text-2xl font-bold text-green-600">
-                {contracts.filter((c) => c.status === "Paid" || c.status === "Đã thanh toán").length}
+                {
+                  contracts.filter(
+                    (c) => c.status === "Paid" || c.status === "Đã thanh toán"
+                  ).length
+                }
               </p>
             </div>
             <DocumentTextIcon className="h-10 w-10 text-green-500" />
@@ -484,6 +499,7 @@ const Contract = () => {
         }}
         contract={selectedContractForQr}
         onGenerateQR={handleGenerateQR}
+        onPaymentSuccess={fetchContracts}
       />
     </div>
   );

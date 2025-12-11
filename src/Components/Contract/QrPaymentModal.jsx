@@ -11,7 +11,13 @@ import { usePaymentNotification } from "../../hooks/usePaymentNotification";
 import API_ENDPOINT from "../../Constant/apiEndpoint.constant";
 import domtoimage from "dom-to-image-more";
 
-const QrPaymentModal = ({ isOpen, onClose, contract, onGenerateQR }) => {
+const QrPaymentModal = ({
+  isOpen,
+  onClose,
+  contract,
+  onGenerateQR,
+  onPaymentSuccess,
+}) => {
   const [paymentOption, setPaymentOption] = useState("");
   const [loading, setLoading] = useState(false);
   const [qrData, setQrData] = useState(null);
@@ -44,13 +50,13 @@ const QrPaymentModal = ({ isOpen, onClose, contract, onGenerateQR }) => {
       // Đóng modal và reload data sau 3 giây
       setTimeout(() => {
         handleClose();
-        // Reload lại contract data nếu có callback
-        if (onGenerateQR) {
-          window.location.reload(); // hoặc gọi callback để refetch data
+        // Gọi callback để refetch data thay vì reload toàn bộ trang
+        if (onPaymentSuccess) {
+          onPaymentSuccess();
         }
       }, 3000);
     },
-    [onGenerateQR]
+    [onPaymentSuccess]
   );
 
   // Sử dụng custom hook để lắng nghe SignalR

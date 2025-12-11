@@ -392,7 +392,14 @@ export const exportSaleOrderContract = (id) => {
 // CONTRACTS APIs
 // =============================
 export const getAllContracts = () => {
-  return apiClient.get(API_ENDPOINT.CONTRACTS.GET_ALL);
+  return apiClient.get(API_ENDPOINT.CONTRACTS.GET_ALL, {
+    params: { _t: Date.now() },
+    headers: {
+      "Cache-Control": "no-cache",
+      Pragma: "no-cache",
+      Expires: "0",
+    },
+  });
 };
 
 export const createContract = (contractData) => {
@@ -400,7 +407,14 @@ export const createContract = (contractData) => {
 };
 
 export const getContractById = (id) => {
-  return apiClient.get(API_ENDPOINT.CONTRACTS.GET_BY_ID(id));
+  return apiClient.get(API_ENDPOINT.CONTRACTS.GET_BY_ID(id), {
+    params: { _t: Date.now() },
+    headers: {
+      "Cache-Control": "no-cache",
+      Pragma: "no-cache",
+      Expires: "0",
+    },
+  });
 };
 
 export const updateContract = (id, contractData) => {
@@ -412,7 +426,14 @@ export const deleteContract = (id) => {
 };
 
 export const getContractsByCustomer = (customerId) => {
-  return apiClient.get(API_ENDPOINT.CONTRACTS.GET_BY_CUSTOMER(customerId));
+  return apiClient.get(API_ENDPOINT.CONTRACTS.GET_BY_CUSTOMER(customerId), {
+    params: { _t: Date.now() },
+    headers: {
+      "Cache-Control": "no-cache",
+      Pragma: "no-cache",
+      Expires: "0",
+    },
+  });
 };
 
 export const previewContract = (id) => {
