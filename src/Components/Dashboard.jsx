@@ -242,10 +242,10 @@ const Dashboard = () => {
       const contractsCount = contracts.length;
 
       setSalesPipelineData([
-        { stage: "Leads", count: leadsCount, fill: "#3b82f6" },
-        { stage: "Opportunities", count: opportunitiesCount, fill: "#8b5cf6" },
-        { stage: "Quotes", count: quotesCount, fill: "#ec4899" },
-        { stage: "Contracts", count: contractsCount, fill: "#10b981" },
+        { stage: "Đơn hàng", count: leadsCount, fill: "#3b82f6" },
+        { stage: "Cơ hội", count: opportunitiesCount, fill: "#8b5cf6" },
+        { stage: "Báo giá", count: quotesCount, fill: "#ec4899" },
+        { stage: "Hợp đồng", count: contractsCount, fill: "#10b981" },
       ]);
 
       // Prepare Tickets Trend Data (Last 7 days)

@@ -108,7 +108,7 @@ function SideBar() {
           {/* Logo */}
           <div className="flex items-center justify-center h-16 flex-shrink-0 bg-slate-700">
             <h1 className="text-lg lg:text-xl font-bold text-white">
-              ERP System
+              Hệ thống ERP
             </h1>
           </div>
 

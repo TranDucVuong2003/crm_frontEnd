@@ -54,7 +54,7 @@ const Helpdesk = () => {
   const [isViewAllModalOpen, setIsViewAllModalOpen] = useState(false);
   const [isArchivedModalOpen, setIsArchivedModalOpen] = useState(false);
   // Filter state
-  const [activeFilter, setActiveFilter] = useState("all"); // 'all', 'unresolved', 'medium', 'high', 'closed'
+  const [activeFilter, setActiveFilter] = useState("all"); // 'all', 'unresolved', 'closed', 'assigned', 'created'
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(5);
@@ -301,6 +301,12 @@ const Helpdesk = () => {
             t.status?.toLowerCase() === "closed" ||
             t.status?.toLowerCase() === "resolved"
         );
+      case "assigned":
+        // Tickets được phân công cho user hiện tại
+        return nonArchivedTickets.filter((t) => t.assignedToId === user?.id);
+      case "created":
+        // Tickets do user hiện tại tạo
+        return nonArchivedTickets.filter((t) => t.createdById === user?.id);
       case "all":
       default:
         return nonArchivedTickets;
@@ -312,12 +318,12 @@ const Helpdesk = () => {
     switch (activeFilter) {
       case "unresolved":
         return "Chưa giải quyết";
-      case "medium":
-        return "Mức trung bình";
-      case "high":
-        return "Ưu tiên cao";
       case "closed":
         return "Đã đóng";
+      case "assigned":
+        return "Được phân công cho tôi";
+      case "created":
+        return "Do tôi tạo";
       case "all":
       default:
         return "Tất cả phiếu";
@@ -484,24 +490,30 @@ const Helpdesk = () => {
                 )}
               </div>
               <div className="flex items-center gap-3">
-                {/* Nút xem kho lưu trữ - chỉ Admin */}
-                {user?.role?.toLowerCase() === "admin" && (
-                  <button
-                    onClick={() => setIsArchivedModalOpen(true)}
-                    className="inline-flex items-center px-4 py-3 bg-slate-100 text-slate-700 rounded-xl hover:bg-slate-200 transition-all duration-200 shadow hover:shadow-md border border-slate-300"
-                    title="Xem kho lưu trữ"
-                  >
-                    <ArchiveBoxIcon className="h-5 w-5 mr-2" />
-                    Kho lưu trữ
-                    <span className="ml-2 px-2 py-0.5 bg-slate-200 rounded-full text-xs font-medium">
-                      {
-                        tickets.filter(
-                          (t) => t.status?.toLowerCase() === "archived"
-                        ).length
-                      }
-                    </span>
-                  </button>
-                )}
+                {/* Nút xem kho lưu trữ - Tất cả user */}
+                <button
+                  onClick={() => setIsArchivedModalOpen(true)}
+                  className="inline-flex items-center px-4 py-3 bg-slate-100 text-slate-700 rounded-xl hover:bg-slate-200 transition-all duration-200 shadow hover:shadow-md border border-slate-300"
+                  title="Xem kho lưu trữ của bạn"
+                >
+                  <ArchiveBoxIcon className="h-5 w-5 mr-2" />
+                  Kho lưu trữ
+                  <span className="ml-2 px-2 py-0.5 bg-slate-200 rounded-full text-xs font-medium">
+                    {
+                      tickets.filter((t) => {
+                        if (t.status?.toLowerCase() !== "archived")
+                          return false;
+                        // User chỉ thấy archived tickets liên quan đến mình
+                        if (user?.role?.toLowerCase() === "admin") return true;
+                        return (
+                          t.assignedToId === user?.id ||
+                          t.createdById === user?.id
+                        );
+                      }).length
+                    }
+                  </span>
+                </button>
+
                 <button
                   onClick={() => navigate("/helpdesk/create")}
                   className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl hover:from-blue-600 hover:to-indigo-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
@@ -530,7 +542,7 @@ const Helpdesk = () => {
 
                 {/* Ticket Stats Row */}
                 <div className="p-6 border-b border-slate-100">
-                  <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
                     {/* Tất cả */}
                     <button
                       onClick={() => handleFilterChange("all")}
@@ -617,6 +629,66 @@ const Helpdesk = () => {
                         </div>
                         <div className="bg-green-100 p-2 rounded-lg">
                           <CheckCircleIcon className="h-5 w-5 text-green-600" />
+                        </div>
+                      </div>
+                    </button>
+
+                    {/* Được phân công cho tôi - MỚI */}
+                    <button
+                      onClick={() => handleFilterChange("assigned")}
+                      className={`bg-gradient-to-br from-purple-50 to-violet-50 p-4 rounded-xl border transition-all duration-200 text-left hover:scale-105 cursor-pointer ${
+                        activeFilter === "assigned"
+                          ? "border-purple-400 shadow-lg ring-2 ring-purple-300"
+                          : "border-purple-200 hover:shadow-lg"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-purple-600 text-sm font-medium">
+                            Phân công cho tôi
+                          </p>
+                          <p className="text-2xl font-bold text-purple-700">
+                            {
+                              tickets.filter(
+                                (t) =>
+                                  t.status?.toLowerCase() !== "archived" &&
+                                  t.assignedToId === user?.id
+                              ).length
+                            }
+                          </p>
+                        </div>
+                        <div className="bg-purple-100 p-2 rounded-lg">
+                          <UserIcon className="h-5 w-5 text-purple-600" />
+                        </div>
+                      </div>
+                    </button>
+
+                    {/* Do tôi tạo - MỚI */}
+                    <button
+                      onClick={() => handleFilterChange("created")}
+                      className={`bg-gradient-to-br from-orange-50 to-amber-50 p-4 rounded-xl border transition-all duration-200 text-left hover:scale-105 cursor-pointer ${
+                        activeFilter === "created"
+                          ? "border-orange-400 shadow-lg ring-2 ring-orange-300"
+                          : "border-orange-200 hover:shadow-lg"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-orange-600 text-sm font-medium">
+                            Do tôi tạo
+                          </p>
+                          <p className="text-2xl font-bold text-orange-700">
+                            {
+                              tickets.filter(
+                                (t) =>
+                                  t.status?.toLowerCase() !== "archived" &&
+                                  t.createdById === user?.id
+                              ).length
+                            }
+                          </p>
+                        </div>
+                        <div className="bg-orange-100 p-2 rounded-lg">
+                          <PlusIcon className="h-5 w-5 text-orange-600" />
                         </div>
                       </div>
                     </button>
@@ -860,14 +932,19 @@ const Helpdesk = () => {
             />
           )}
 
-          {/* Modal xem kho lưu trữ - chỉ Admin */}
-          {isArchivedModalOpen && user?.role?.toLowerCase() === "admin" && (
+          {/* Modal xem kho lưu trữ - Tất cả user */}
+          {isArchivedModalOpen && (
             <ArchivedTicketsModal
               isOpen={isArchivedModalOpen}
               onClose={() => setIsArchivedModalOpen(false)}
-              tickets={tickets.filter(
-                (t) => t.status?.toLowerCase() === "archived"
-              )}
+              tickets={tickets.filter((t) => {
+                if (t.status?.toLowerCase() !== "archived") return false;
+                // Admin xem tất cả, User chỉ xem tickets liên quan đến mình
+                if (user?.role?.toLowerCase() === "admin") return true;
+                return (
+                  t.assignedToId === user?.id || t.createdById === user?.id
+                );
+              })}
               onViewTicket={handleViewTicket}
               onRefresh={fetchTickets}
             />

@@ -107,32 +107,28 @@ const TicketForm = ({ ticket, onSubmit, prefilledData }) => {
             getAllTicketCategories(),
           ]);
 
+        console.log("Raw users response:", usersResponse.data);
+
         // Process users data and add avatar
-        const usersData = Array.isArray(usersResponse.data?.data)
-          ? usersResponse.data.data.map((user) => ({
-              ...user,
-              avatar: generateAvatar(
-                user.name || user.username || user.fullName
-              ),
-              // Normalize role, position, department to be strings for display
-              roleDisplay: user.role?.name || user.role || "N/A",
-              positionDisplay:
-                user.position?.positionName || user.position || "",
-              departmentDisplay: user.department?.name || user.department || "",
-            }))
-          : Array.isArray(usersResponse.data)
-          ? usersResponse.data.map((user) => ({
-              ...user,
-              avatar: generateAvatar(
-                user.name || user.username || user.fullName
-              ),
-              // Normalize role, position, department to be strings for display
-              roleDisplay: user.role?.name || user.role || "N/A",
-              positionDisplay:
-                user.position?.positionName || user.position || "",
-              departmentDisplay: user.department?.name || user.department || "",
-            }))
-          : [];
+        // Xác định mảng users từ response
+        let rawUsers = [];
+        if (Array.isArray(usersResponse.data?.data)) {
+          rawUsers = usersResponse.data.data;
+        } else if (Array.isArray(usersResponse.data)) {
+          rawUsers = usersResponse.data;
+        }
+
+        console.log("Raw users array:", rawUsers);
+
+        // Map và filter users (chỉ lấy users có role "User" hoặc role phù hợp để assign ticket)
+        const usersData = rawUsers.map((user) => ({
+          ...user,
+          avatar: generateAvatar(user.name || user.username || user.fullName),
+          // Normalize role, position, department to be strings for display
+          roleDisplay: user.role?.name || user.role || "N/A",
+          positionDisplay: user.position?.positionName || user.position || "",
+          departmentDisplay: user.department?.name || user.department || "",
+        }));
 
         // Handle different API response structures
         const customersData = Array.isArray(customersResponse.data?.data)
@@ -151,52 +147,34 @@ const TicketForm = ({ ticket, onSubmit, prefilledData }) => {
         setCustomers(customersData);
         setTicketCategories(categoriesData);
 
-        console.log("Fetched data:", {
+        console.log("Processed data:", {
           users: usersData,
+          usersCount: usersData.length,
           customers: customersData,
           categories: categoriesData,
         });
       } catch (error) {
         console.error("Error fetching data:", error);
-        // Fallback to static data if API fails
-        setUsers([
-          {
-            id: 1,
-            name: "Trần Thị B",
-            email: "tranthib@company.com",
-            role: "Support Agent",
-            avatar: "TB",
-          },
-          {
-            id: 2,
-            name: "Phạm Văn D",
-            email: "phamvand@company.com",
-            role: "Senior Agent",
-            avatar: "PD",
-          },
-          {
-            id: 3,
-            name: "Vũ Văn F",
-            email: "vuvanf@company.com",
-            role: "Technical Lead",
-            avatar: "VF",
-          },
-        ]);
-        setCustomers([
-          {
-            id: 1,
-            name: "Nguyen Van A",
-            email: "nguyenvana@email.com",
-            phone: "0901234567",
-            company: "ABC Corp",
-          },
-        ]);
-        setTicketCategories([
-          { id: 1, name: "Thanh toán" },
-          { id: 2, name: "Tài khoản" },
-          { id: 4, name: "Nâng cấp hệ thống" },
-          { id: 5, name: "Báo cáo lỗi" },
-        ]);
+        console.error("Error details:", {
+          message: error.message,
+          response: error.response?.data,
+          status: error.response?.status,
+        });
+
+        // Vẫn set empty arrays thay vì dữ liệu mẫu để debug
+        setUsers([]);
+        setCustomers([]);
+        setTicketCategories([]);
+
+        // Hiển thị lỗi cho user
+        showError(
+          "Lỗi tải dữ liệu",
+          `Không thể tải danh sách người dùng. ${
+            error.response?.status === 403
+              ? "Bạn không có quyền truy cập."
+              : error.message
+          }`
+        );
       } finally {
         setLoading(false);
       }
@@ -263,7 +241,7 @@ const TicketForm = ({ ticket, onSubmit, prefilledData }) => {
         title: formData.title.trim(),
         description: formData.description.trim(),
         customerId: parseInt(formData.customer.id),
-        status: "Open", // String status as required
+        status: "New", // Trạng thái mặc định khi tạo mới là "Mới" (format backend)
         categoryId: parseInt(formData.category),
         urgencyLevel: formData.stars,
         assignedToId: selectedUser?.id ? parseInt(selectedUser.id) : null, // Người được phân công xử lý ticket
@@ -469,12 +447,12 @@ const TicketForm = ({ ticket, onSubmit, prefilledData }) => {
           {/* Header Section */}
           <div className="bg-gradient-to-r from-indigo-400 to-indigo-600 rounded-t-lg px-6 py-4">
             <h2 className="text-2xl font-bold text-white mb-1">
-              {ticket ? "Edit Ticket" : "Create New Ticket"}
+              {ticket ? "Chỉnh sửa Ticket" : "Tạo mới Ticket"}
             </h2>
             <p className="text-indigo-100 text-sm">
               {ticket
-                ? "Update the ticket information below"
-                : "Fill out the form below to create a new support ticket"}
+                ? "Cập nhật thông tin phiếu hỗ trợ bên dưới"
+                : "Vui lòng điền vào biểu mẫu bên dưới để tạo yêu cầu hỗ trợ mới."}
             </p>
           </div>
 
@@ -483,7 +461,7 @@ const TicketForm = ({ ticket, onSubmit, prefilledData }) => {
             <div className="p-8 text-center">
               <div className="inline-flex items-center space-x-2">
                 <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600"></div>
-                <span className="text-gray-600">Loading form data...</span>
+                <span className="text-gray-600">Đang tải dữ liệu</span>
               </div>
             </div>
           )}
@@ -495,7 +473,7 @@ const TicketForm = ({ ticket, onSubmit, prefilledData }) => {
                 {/* Ticket Title */}
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Ticket Title *
+                    Tiêu đề phiếu hỗ trợ:
                   </label>
                   <input
                     type="text"
@@ -511,7 +489,7 @@ const TicketForm = ({ ticket, onSubmit, prefilledData }) => {
                 {/* Customer Selection with Search */}
                 <div className="relative" ref={customerDropdownRef}>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Customer *
+                    Khách hàng:
                   </label>
                   <div className="relative">
                     <input
@@ -573,7 +551,7 @@ const TicketForm = ({ ticket, onSubmit, prefilledData }) => {
                           ))
                         ) : (
                           <div className="px-3 py-2 text-gray-500 text-center">
-                            No customers found
+                            Không tìm thấy người dùng
                           </div>
                         )}
                       </div>
@@ -608,7 +586,7 @@ const TicketForm = ({ ticket, onSubmit, prefilledData }) => {
                 {/* Category Selection */}
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Category *
+                    Danh mục:
                   </label>
                   <div className="relative">
                     <select
@@ -619,7 +597,7 @@ const TicketForm = ({ ticket, onSubmit, prefilledData }) => {
                       required
                       disabled={loading}
                     >
-                      <option value="">Select a category</option>
+                      <option value="">Chọn danh mục:</option>
                       {Array.isArray(ticketCategories) &&
                         ticketCategories.map((category) => (
                           <option key={category.id} value={category.id}>
@@ -634,7 +612,7 @@ const TicketForm = ({ ticket, onSubmit, prefilledData }) => {
                 {/* Assigned To */}
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Assigned To
+                    Chỉ định tới:
                   </label>
                   <div className="relative" ref={userDropdownRef}>
                     <div className="relative">
@@ -648,8 +626,8 @@ const TicketForm = ({ ticket, onSubmit, prefilledData }) => {
                         className="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
                         placeholder={
                           loading
-                            ? "Loading users..."
-                            : "Search and select user to assign..."
+                            ? "Đang tải dữ liệu người dùng..."
+                            : "Tìm kiếm và chọn người dùng để chỉ định..."
                         }
                         disabled={loading}
                       />
@@ -690,7 +668,7 @@ const TicketForm = ({ ticket, onSubmit, prefilledData }) => {
                                       </h4>
                                       {selectedUser?.id === user.id && (
                                         <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
-                                          Selected
+                                          Đã chọn
                                         </span>
                                       )}
                                     </div>
@@ -712,10 +690,10 @@ const TicketForm = ({ ticket, onSubmit, prefilledData }) => {
                           <div className="px-4 py-8 text-center">
                             <UserIcon className="mx-auto h-12 w-12 text-gray-400" />
                             <h3 className="mt-2 text-sm font-medium text-gray-900">
-                              No users found
+                              Không có người dùng nào được tìm thấy
                             </h3>
                             <p className="mt-1 text-sm text-gray-500">
-                              Try adjusting your search criteria
+                              Hãy thử điều chỉnh tiêu chí tìm kiếm của bạn.
                             </p>
                           </div>
                         )}
@@ -766,7 +744,7 @@ const TicketForm = ({ ticket, onSubmit, prefilledData }) => {
                 {/* Description with CKEditor */}
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Description *
+                    Mô tả:
                   </label>
                   <div className="border border-gray-300 rounded-md overflow-hidden focus-within:ring-2 focus-within:ring-indigo-500 focus-within:border-indigo-500">
                     <CKEditor
@@ -864,8 +842,8 @@ const TicketForm = ({ ticket, onSubmit, prefilledData }) => {
                     />
                   </div>
                   <p className="mt-1 text-xs text-gray-500">
-                    Use rich text formatting to provide detailed information
-                    about the ticket
+                    Sử dụng định dạng văn bản phong phú để cung cấp thông tin
+                    chi tiết về vé
                   </p>
                 </div>
 
@@ -883,12 +861,12 @@ const TicketForm = ({ ticket, onSubmit, prefilledData }) => {
                     {loading ? (
                       <div className="flex items-center justify-center space-x-2">
                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                        <span>Creating...</span>
+                        <span>Đang tạo...</span>
                       </div>
                     ) : ticket ? (
-                      "Update Ticket"
+                      "Chỉnh sửa phiếu hỗ trợ"
                     ) : (
-                      "Create Ticket"
+                      "Tạo mới phiếu hỗ trợ"
                     )}
                   </button>
                 </div>
@@ -1043,7 +1021,7 @@ const CustomerSearchPopup = ({
                               </h4>
                               {selectedCustomer?.id === customer.id && (
                                 <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
-                                  Selected
+                                  Đẫ chọn
                                 </span>
                               )}
                             </div>
@@ -1072,10 +1050,10 @@ const CustomerSearchPopup = ({
               <div className="p-8 text-center">
                 <UserIcon className="mx-auto h-12 w-12 text-gray-400" />
                 <h3 className="mt-2 text-sm font-medium text-gray-900">
-                  No customers found
+                  Không có khách hàng nào được tìm thấy
                 </h3>
                 <p className="mt-1 text-sm text-gray-500">
-                  Try adjusting your search criteria
+                  Hãy thử điều chỉnh tiêu chí tìm kiếm của bạn.
                 </p>
               </div>
             )}
@@ -1084,14 +1062,14 @@ const CustomerSearchPopup = ({
           {/* Footer */}
           <div className="p-4 border-t border-gray-200 bg-gray-50 flex justify-between items-center">
             <div className="text-sm text-gray-600">
-              {filteredCustomers.length} customer
+              {filteredCustomers.length} Khách hàng
               {filteredCustomers.length !== 1 ? "s" : ""} found
             </div>
             <button
               onClick={onClose}
               className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 transition duration-200"
             >
-              Close
+              Đóng
             </button>
           </div>
         </div>

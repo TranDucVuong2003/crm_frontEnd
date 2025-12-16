@@ -18,32 +18,32 @@ const Configuration = () => {
   const tabs = [
     {
       id: "personal",
-      label: "Role",
+      label: "Phân quyền",
       icon: UserIcon,
     },
     {
       id: "profile",
-      label: "Position",
+      label: "Chức vụ",
       icon: DocumentTextIcon,
     },
     {
       id: "storage",
-      label: "Department",
+      label: "Phòng ban",
       icon: FolderIcon,
     },
     {
       id: "tax",
-      label: "Tax",
+      label: "Thuế",
       icon: DocumentTextIcon,
     },
     {
       id: "resion",
-      label: "Resion",
+      label: "Khu vực",
       icon: FolderIcon,
     },
     {
       id: "category",
-      label: "Category",
+      label: "Danh mục dịch vụ",
       icon: CubeIcon,
     },
   ];
