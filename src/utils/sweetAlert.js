@@ -51,8 +51,8 @@ export const showInfo = (title, text, options = {}) => {
 };
 
 // ========== Confirmation Dialog ==========
-export const showConfirm = (title, text, options = {}) => {
-  return Swal.fire({
+export const showConfirm = async (title, text, options = {}) => {
+  const result = await Swal.fire({
     icon: "question",
     title: title,
     text: text,
@@ -64,6 +64,7 @@ export const showConfirm = (title, text, options = {}) => {
     reverseButtons: true,
     ...options,
   });
+  return result.isConfirmed;
 };
 
 // ========== Delete Confirmation ==========
@@ -87,7 +88,8 @@ export const showDeleteConfirm = async (
     },
     ...options,
   });
-  return result;
+  return result.isConfirmed;
+  // return result
 };
 
 // ========== Loading Alert ==========

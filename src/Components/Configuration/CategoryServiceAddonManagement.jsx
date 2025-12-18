@@ -156,7 +156,7 @@ const CategoryServiceAddonManagement = () => {
       "Bạn có chắc chắn muốn xóa danh mục này?"
     );
 
-    if (result.isConfirmed) {
+    if (result) {
       try {
         showLoading("Đang xóa...");
         await deleteCategoryServiceAddon(id);

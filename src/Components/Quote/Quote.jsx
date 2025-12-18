@@ -105,7 +105,7 @@ const Quote = () => {
 
     console.log("Delete confirmation result:", result);
 
-    if (result.isConfirmed) {
+    if (result) {
       try {
         console.log("Calling deleteQuote API...");
         await deleteQuote(id);

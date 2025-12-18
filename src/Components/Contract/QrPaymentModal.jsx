@@ -92,7 +92,7 @@ const QrPaymentModal = ({
   // Kiểm tra status để xác định options
   const status = contract.status;
 
-  if (status === "Mới" || status === "New") {
+  if (status === "Mới" || status === "New" || status === "Old") {
     // Chưa thanh toán gì - hiển thị 2 options
     paymentOptions.push(
       {

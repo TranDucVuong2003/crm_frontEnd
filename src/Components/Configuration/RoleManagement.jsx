@@ -130,7 +130,7 @@ const RoleManagement = () => {
       "Bạn có chắc chắn muốn xóa vai trò này?"
     );
 
-    if (result.isConfirmed) {
+    if (result) {
       try {
         showLoading("Đang xóa...");
         await deleteRole(id);

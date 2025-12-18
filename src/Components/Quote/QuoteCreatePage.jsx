@@ -623,17 +623,6 @@ const QuoteCreatePage = () => {
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {/* Custom Selection Option */}
-                  <button
-                    onClick={() => handleCategorySelect("custom")}
-                    className="w-full text-left px-4 py-3 border-2 border-indigo-200 rounded-lg hover:bg-indigo-50 hover:border-indigo-400 transition-all"
-                  >
-                    <div className="font-medium text-gray-900">Tự chọn</div>
-                    <div className="text-sm text-gray-600">
-                      Tạo báo giá tùy chỉnh với các dịch vụ riêng
-                    </div>
-                  </button>
-
                   {/* Category Options */}
                   {categories.map((category) => (
                     <button
@@ -712,7 +701,6 @@ const QuoteCreatePage = () => {
                   disabled={isLoadingCategories}
                 >
                   <option value="">-- Chọn Category --</option>
-                  <option value="custom">Tự chọn</option>
                   {categories.map((category) => (
                     <option key={category.id} value={category.id}>
                       {category.name}

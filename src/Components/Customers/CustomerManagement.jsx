@@ -179,7 +179,7 @@ const CustomerManagement = () => {
 
     console.log("Delete confirmation result:", result);
 
-    if (result.isConfirmed) {
+    if (result) {
       try {
         console.log("Calling deleteCustomer API...");
         // Gọi API xóa khách hàng

@@ -118,7 +118,7 @@ const TaxModal = ({ isOpen, onClose }) => {
   const handleDelete = async (id, taxRate) => {
     const result = await showDeleteConfirm(`cấu hình thuế ${taxRate}%`);
 
-    if (result.isConfirmed) {
+    if (result) {
       try {
         showLoading("Đang xóa...", "Vui lòng đợi");
         await deleteTax(id);

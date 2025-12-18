@@ -142,7 +142,7 @@ const TaxManagement = () => {
       "Bạn có chắc chắn muốn xóa cấu hình thuế này?"
     );
 
-    if (result.isConfirmed) {
+    if (result) {
       try {
         showLoading("Đang xóa...");
         await deleteTax(id);

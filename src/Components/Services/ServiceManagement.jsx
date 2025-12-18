@@ -123,7 +123,7 @@ const ServiceManagement = () => {
       "Bạn có chắc chắn muốn xóa dịch vụ này không?"
     );
 
-    if (result.isConfirmed) {
+    if (result) {
       try {
         await deleteService(serviceId);
         setServices((prev) =>

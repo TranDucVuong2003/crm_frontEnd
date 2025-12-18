@@ -125,7 +125,7 @@ const AddonsManagement = () => {
       "Bạn có chắc chắn muốn xóa addon này không?"
     );
 
-    if (result.isConfirmed) {
+    if (result) {
       try {
         await deleteAddon(addonId);
         setAddons((prev) => prev.filter((addon) => addon.id !== addonId));

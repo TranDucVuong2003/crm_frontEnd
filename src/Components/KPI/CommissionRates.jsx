@@ -72,7 +72,7 @@ const CommissionRates = () => {
 
     console.log("✅ Swal result:", result);
 
-    if (result.isConfirmed) {
+    if (result) {
       console.log("🚀 Calling DELETE API for id:", id);
       try {
         const response = await deleteCommissionRate(id);
