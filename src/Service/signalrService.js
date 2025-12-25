@@ -110,7 +110,7 @@ class SignalRService {
     }
 
     this.connection.on("PaymentSuccess", (data) => {
-      console.log("✅ Payment success received:", data);
+      // console.log("✅ Payment success received:", data);
       callback(data);
     });
   }

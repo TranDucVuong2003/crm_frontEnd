@@ -325,6 +325,19 @@ function Login() {
               )}
             </div>
 
+            {/* Forgot Password Link */}
+            <div className="flex items-center justify-end">
+              <div className="text-sm">
+                <button
+                  type="button"
+                  onClick={() => navigate("/forgot-password")}
+                  className="font-medium text-indigo-600 hover:text-indigo-500"
+                >
+                  Quên mật khẩu?
+                </button>
+              </div>
+            </div>
+
             {/* Login Error */}
             {error && (
               <div className="rounded-md bg-red-50 p-4">

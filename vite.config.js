@@ -21,7 +21,7 @@ export default defineConfig({
           proxy.on("proxyReq", (proxyReq) => {
             proxyReq.setHeader(
               "Authorization",
-              "Bearer H21QI9SUFKJFCOBUYEDUVD2HIJFQA68OVCS5CLPA5RTP0PGXMWWVBKOHVWRINNRN"
+              "Bearer SKKOVQSAT7KI5YVOM0TFPM2U3Z4A1IDWIUHQPZ9BHETNGXDXS643NOWYCPM1BD8C"
             );
             proxyReq.setHeader("Content-Type", "application/json");
           });

@@ -183,6 +183,18 @@ const Header = ({ title }) => {
                     </button>
                   )}
 
+                  {/* Thông tin cá nhân - hiển thị cho tất cả user */}
+                  <button
+                    onClick={() => {
+                      setShowUserMenu(false);
+                      navigate("/user-profile");
+                    }}
+                    className="w-full flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors duration-150"
+                  >
+                    <UserIcon className="h-5 w-5 mr-3 text-gray-500" />
+                    <span>Thông tin cá nhân</span>
+                  </button>
+
                   <button
                     onClick={() => {
                       setShowUserMenu(false);
