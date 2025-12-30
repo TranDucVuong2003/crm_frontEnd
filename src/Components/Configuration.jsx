@@ -4,6 +4,7 @@ import {
   DocumentTextIcon,
   FolderIcon,
   CubeIcon,
+  ShieldCheckIcon,
 } from "@heroicons/react/24/outline";
 import RoleManagement from "./Configuration/RoleManagement";
 import PositionManagement from "./Configuration/PositionManagement";
@@ -11,6 +12,7 @@ import DepartmentManagement from "./Configuration/DepartmentManagement";
 import TaxManagement from "./Configuration/TaxManagement";
 import ResionManagement from "./Configuration/ReasionManagement";
 import CategoryServiceAddonManagement from "./Configuration/CategoryServiceAddonManagement";
+import InsuranceManagement from "./Configuration/InsuranceManagement";
 
 const Configuration = () => {
   const [activeTab, setActiveTab] = useState("personal");
@@ -18,32 +20,37 @@ const Configuration = () => {
   const tabs = [
     {
       id: "personal",
-      label: "Role",
+      label: "Phân quyền",
       icon: UserIcon,
     },
     {
       id: "profile",
-      label: "Position",
+      label: "Chức vụ",
       icon: DocumentTextIcon,
     },
     {
       id: "storage",
-      label: "Department",
+      label: "Phòng ban",
       icon: FolderIcon,
     },
     {
       id: "tax",
-      label: "Tax",
+      label: "Thuế",
       icon: DocumentTextIcon,
     },
     {
+      id: "insurance",
+      label: "Bảo hiểm",
+      icon: ShieldCheckIcon,
+    },
+    {
       id: "resion",
-      label: "Resion",
+      label: "Khu vực",
       icon: FolderIcon,
     },
     {
       id: "category",
-      label: "Category",
+      label: "Danh mục dịch vụ",
       icon: CubeIcon,
     },
   ];
@@ -58,6 +65,8 @@ const Configuration = () => {
         return <DepartmentManagement />;
       case "tax":
         return <TaxManagement />;
+      case "insurance":
+        return <InsuranceManagement />;
       case "resion":
         return <ResionManagement />;
       case "category":

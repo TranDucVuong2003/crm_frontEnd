@@ -12,6 +12,7 @@ import {
   XMarkIcon as XIcon,
   ChevronDownIcon,
   ChevronRightIcon,
+  BellIcon,
 } from "@heroicons/react/24/outline";
 import { useAuth } from "../Context/AuthContext";
 import { getSidebarMenu } from "../Service/ApiService";
@@ -24,6 +25,7 @@ const iconMap = {
   LifebuoyIcon: SupportIcon,
   DocumentChartBarIcon: DocumentReportIcon,
   CogIcon,
+  BellIcon,
 };
 
 function SideBar() {
@@ -108,7 +110,7 @@ function SideBar() {
           {/* Logo */}
           <div className="flex items-center justify-center h-16 flex-shrink-0 bg-slate-700">
             <h1 className="text-lg lg:text-xl font-bold text-white">
-              ERP System
+              Hệ thống ERP
             </h1>
           </div>
 

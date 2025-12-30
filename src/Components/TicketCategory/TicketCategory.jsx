@@ -77,7 +77,7 @@ const TicketCategory = () => {
       "Bạn có chắc chắn muốn xóa danh mục này?"
     );
 
-    if (result.isConfirmed) {
+    if (result) {
       try {
         await deleteTicketCategory(id);
         showSuccess("Thành công!", "Đã xóa danh mục");

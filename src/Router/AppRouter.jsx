@@ -28,8 +28,16 @@ import PublicRoute from "./PublicRoute";
 import Test_contact from "../Components/test_contact";
 import LeadDataCompany from "../Components/LeadDataCompany";
 import Configuration from "../Components/Configuration";
+import UserProfile from "../Components/UserProfile/UserProfile";
 import ActiveAccount from "../Pages/ActiveAccount";
 import ChangePassword from "../Pages/ChangePassword";
+import ForgotPassword from "../Pages/ForgotPassword";
+import Salary from "../Components/Salary/Salary";
+import DepartmentSalary from "../Components/Salary/DepartmentSalary";
+import SalaryConfiguration from "../Components/Salary/SalaryConfiguration";
+import AttendanceManagement from "../Components/Salary/AttendanceManagement";
+import SalaryAdjustments from "../Components/Salary/SalaryAdjustments";
+import PayslipManagement from "../Components/Salary/PayslipManagement";
 import {
   KpiManagement,
   MyKpi,
@@ -37,6 +45,7 @@ import {
   CommissionRates,
   KpiDashboard,
 } from "../Components/KPI";
+import Notification from "../Components/Notification/Notification";
 
 function AppRouter() {
   const router = createBrowserRouter([
@@ -149,6 +158,48 @@ function AppRouter() {
           element: <Configuration />,
         },
         {
+          path: "user-profile",
+          element: <UserProfile />,
+        },
+        {
+          path: "notifications",
+          element: <Notification />,
+        },
+        {
+          path: "accounting",
+          element: <Outlet />,
+          children: [
+            {
+              path: "salary",
+              element: <Salary />,
+            },
+            {
+              path: "salary/configuration",
+              element: <SalaryConfiguration />,
+            },
+            {
+              path: "salary/attendance-management",
+              element: <AttendanceManagement />,
+            },
+            {
+              path: "salary/adjustments",
+              element: <SalaryAdjustments />,
+            },
+            {
+              path: "salary/payslips",
+              element: (
+                <ProtectedRoute allowedRoles={["admin"]}>
+                  <PayslipManagement />
+                </ProtectedRoute>
+              ),
+            },
+            {
+              path: "salary/department/:departmentId",
+              element: <DepartmentSalary />,
+            },
+          ],
+        },
+        {
           path: "kpi",
           element: <Outlet />,
           children: [
@@ -209,6 +260,10 @@ function AppRouter() {
     {
       path: "/change-password",
       element: <ChangePassword />,
+    },
+    {
+      path: "/forgot-password",
+      element: <ForgotPassword />,
     },
 
     {

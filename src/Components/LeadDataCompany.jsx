@@ -71,7 +71,7 @@ function LeadDataCompany() {
       cancelButtonText: "Hủy",
     });
 
-    if (result.isConfirmed) {
+    if (result) {
       try {
         await deleteCompany(id);
         Swal.fire({
@@ -105,7 +105,7 @@ function LeadDataCompany() {
       cancelButtonText: "Hủy",
     });
 
-    if (result.isConfirmed) {
+    if (result) {
       try {
         // Use batch delete API
         await batchDeleteCompanies(selectedCompanies);

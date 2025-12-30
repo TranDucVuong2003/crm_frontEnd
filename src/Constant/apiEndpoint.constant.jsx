@@ -1,5 +1,4 @@
 console.log("Environment BASE_URL:", import.meta.env.VITE_BASE_URL);
-
 const API_ENDPOINT = {
   BASE_URL: import.meta.env.VITE_BASE_URL,
 
@@ -13,6 +12,8 @@ const API_ENDPOINT = {
     VERIFY_ACTIVATION_TOKEN: (token) =>
       `/api/Auth/verify-activation-token?token=${token}`,
     CHANGE_PASSWORD_FIRST_TIME: "/api/Auth/change-password-first-time",
+    REQUEST_CHANGE_PASSWORD_OTP: "/api/Auth/request-change-password-otp",
+    VERIFY_OTP_AND_CHANGE_PASSWORD: "/api/Auth/verify-otp-and-change-password",
   },
 
   // Menu endpoints
@@ -135,6 +136,8 @@ const API_ENDPOINT = {
     GET_ALL: "/api/Users",
     CREATE: "/api/Users",
     GET_BY_ID: (id) => `/api/Users/${id}`,
+    GET_BY_DEPARTMENT: (departmentId) =>
+      `/api/Users/department/${departmentId}`,
     UPDATE: (id) => `/api/Users/${id}`,
     DELETE: (id) => `/api/Users/${id}`,
   },
@@ -193,7 +196,7 @@ const API_ENDPOINT = {
 
   // Roles endpoints
   ROLES: {
-    GET_ALL: "/api/Roles",
+    GET_ALL: "/api/roles",
     CREATE: "/api/Roles",
     GET_BY_ID: (id) => `/api/Roles/${id}`,
     UPDATE: (id) => `/api/Roles/${id}`,
@@ -296,6 +299,118 @@ const API_ENDPOINT = {
     GET_LEADERBOARD: "/api/SaleKpiRecords/leaderboard",
     GET_STATISTICS: "/api/SaleKpiRecords/statistics",
     UPDATE_NOTES: (id) => `/api/SaleKpiRecords/${id}/notes`,
+  },
+
+  // Salary endpoints
+  SALARIES: {
+    GET_ALL: "/api/Salaries",
+    CREATE: "/api/Salaries",
+    GET_BY_ID: (id) => `/api/Salaries/${id}`,
+    UPDATE: (id) => `/api/Salaries/${id}`,
+    DELETE: (id) => `/api/Salaries/${id}`,
+    GET_MY_SALARY: "/api/Salaries/my-salary",
+    APPROVE: (id) => `/api/Salaries/${id}/approve`,
+    REJECT: (id) => `/api/Salaries/${id}/reject`,
+    MARK_PAID: (id) => `/api/Salaries/${id}/mark-paid`,
+    BULK_CREATE: "/api/Salaries/bulk-create",
+    BULK_APPROVE: "/api/Salaries/bulk-approve",
+    CALCULATE_FROM_KPI: (userId) =>
+      `/api/Salaries/calculate-from-kpi/${userId}`,
+    AUTO_CALCULATE_ALL: "/api/Salaries/auto-calculate-all",
+    GET_STATISTICS: "/api/Salaries/statistics",
+    GET_STATISTICS_BY_DEPARTMENT: "/api/Salaries/statistics/by-department",
+    EXPORT: "/api/Salaries/export",
+  },
+
+  // Insurance endpoints
+  INSURANCES: {
+    GET_ALL: "/api/Insurances",
+    CREATE: "/api/Insurances",
+    GET_BY_ID: (id) => `/api/Insurances/${id}`,
+    UPDATE: (id) => `/api/Insurances/${id}`,
+    DELETE: (id) => `/api/Insurances/${id}`,
+  },
+
+  // Insurance Status endpoints
+  INSURANCE_STATUS: {
+    GET_ALL: "/api/InsuranceStatus",
+    GET_BY_ID: (id) => `/api/InsuranceStatus/${id}`,
+    UPDATE: (id) => `/api/InsuranceStatus/${id}`,
+    TOGGLE: (id) => `/api/InsuranceStatus/${id}/toggle`,
+  },
+
+  // Salary Contracts endpoints
+  SALARY_CONTRACTS: {
+    CREATE: "/api/SalaryContracts",
+  },
+
+  // Monthly Attendances endpoints
+  MONTHLY_ATTENDANCES: {
+    GET_ALL: "/api/MonthlyAttendances",
+    CREATE: "/api/MonthlyAttendances",
+    CREATE_BATCH: "/api/MonthlyAttendances/batch",
+    GET_BY_ID: (id) => `/api/MonthlyAttendances/${id}`,
+    UPDATE: (id) => `/api/MonthlyAttendances/${id}`,
+    DELETE: (id) => `/api/MonthlyAttendances/${id}`,
+    GET_BY_USER: (userId) => `/api/MonthlyAttendances/user/${userId}`,
+    GET_BY_USER_MONTH_YEAR: (userId, month, year) =>
+      `/api/MonthlyAttendances/user/${userId}/month/${month}/year/${year}`,
+    GET_BY_MONTH_YEAR: (month, year) =>
+      `/api/MonthlyAttendances/month/${month}/year/${year}`,
+  },
+
+  // Salary Components endpoints
+  SALARY_COMPONENTS: {
+    GET_ALL: "/api/SalaryComponents",
+    CREATE: "/api/SalaryComponents",
+    GET_BY_ID: (id) => `/api/SalaryComponents/${id}`,
+    UPDATE: (id) => `/api/SalaryComponents/${id}`,
+    DELETE: (id) => `/api/SalaryComponents/${id}`,
+    GET_BY_USER: (userId) => `/api/SalaryComponents/user/${userId}`,
+    GET_BY_USER_MONTH_YEAR: (userId, month, year) =>
+      `/api/SalaryComponents/user/${userId}/month/${month}/year/${year}`,
+    GET_BY_MONTH_YEAR: (month, year) =>
+      `/api/SalaryComponents/month/${month}/year/${year}`,
+  },
+
+  // Insurance Policy endpoints
+  INSURANCE_POLICY: {
+    GET_ALL: "/api/InsurancePolicy",
+  },
+
+  // Payslips endpoints
+  PAYSLIPS: {
+    GET_ALL: "/api/Payslips",
+    CREATE: "/api/Payslips",
+    GET_BY_ID: (id) => `/api/Payslips/${id}`,
+    UPDATE: (id) => `/api/Payslips/${id}`,
+    DELETE: (id) => `/api/Payslips/${id}`,
+    CALCULATE: "/api/Payslips/calculate",
+    CALCULATE_BATCH: "/api/Payslips/calculate-batch",
+    GET_BY_USER: (userId) => `/api/Payslips/user/${userId}`,
+    GET_BY_USER_MONTH_YEAR: (userId, month, year) =>
+      `/api/Payslips/user/${userId}/month/${month}/year/${year}`,
+    GET_BY_MONTH_YEAR: (month, year) =>
+      `/api/Payslips/month/${month}/year/${year}`,
+    GET_BY_STATUS: (status) => `/api/Payslips/status/${status}`,
+    MARK_PAID: (id) => `/api/Payslips/${id}/mark-paid`,
+    PREVIEW_REPORT: "/api/Payslips/preview-salary-report",
+    EXPORT_REPORT: "/api/Payslips/export-salary-report",
+  },
+
+  // Notifications endpoints
+  NOTIFICATIONS: {
+    GET_MY_NOTIFICATIONS: "/api/notifications/my-notifications",
+    GET_UNREAD_COUNT: "/api/notifications/unread-count",
+    MARK_AS_READ: "/api/notifications/mark-as-read",
+    MARK_ALL_AS_READ: "/api/notifications/mark-all-as-read",
+    DELETE: (id) => `/api/notifications/${id}`,
+    // Admin endpoints
+    CREATE: "/api/notifications",
+    GET_ALL_ADMIN: "/api/notifications/admin/all",
+    GET_RECIPIENTS: (id) => `/api/notifications/${id}/recipients`,
+    GET_READ_STATUS: (id) => `/api/notifications/${id}/read-status`,
+    UPDATE: (id) => `/api/notifications/${id}`,
   },
 };
 

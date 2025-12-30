@@ -102,7 +102,7 @@ const UserManagement = () => {
       "Bạn có chắc chắn muốn xóa người dùng này không?"
     );
 
-    if (result.isConfirmed) {
+    if (result) {
       try {
         await deleteUser(userId);
         setUsers((prev) => prev.filter((user) => user.id !== userId));

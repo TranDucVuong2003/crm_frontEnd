@@ -1,14 +1,14 @@
-import React from 'react';
-import { PencilIcon, TrashIcon, EyeIcon } from '@heroicons/react/24/outline';
+import React from "react";
+import { PencilIcon, TrashIcon, EyeIcon } from "@heroicons/react/24/outline";
 
 const AddonRow = ({ addon, onEdit, onDelete, onView, formatPrice }) => {
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('vi-VN', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit'
+    return new Date(dateString).toLocaleDateString("vi-VN", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
@@ -21,39 +21,41 @@ const AddonRow = ({ addon, onEdit, onDelete, onView, formatPrice }) => {
               {addon.name}
             </div>
             <div className="text-sm text-gray-500 truncate max-w-xs">
-              {addon.description || 'Không có mô tả'}
+              {addon.description || "Không có mô tả"}
             </div>
           </div>
         </div>
       </td>
-      
+
       <td className="px-6 py-4 whitespace-nowrap">
         <div className="text-sm text-gray-900">
           <div className="font-medium">{formatPrice(addon.price)}</div>
           <div className="text-gray-500">SL: {addon.quantity}</div>
         </div>
       </td>
-      
+
       <td className="px-6 py-4 whitespace-nowrap">
         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-          {addon.type || 'Chưa phân loại'}
+          {addon.categoryServiceAddons?.name || "Chưa phân loại"}
         </span>
       </td>
-      
+
       <td className="px-6 py-4 whitespace-nowrap">
-        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-          addon.isActive 
-            ? 'bg-green-100 text-green-800' 
-            : 'bg-red-100 text-red-800'
-        }`}>
-          {addon.isActive ? 'Đang hoạt động' : 'Không hoạt động'}
+        <span
+          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+            addon.isActive
+              ? "bg-green-100 text-green-800"
+              : "bg-red-100 text-red-800"
+          }`}
+        >
+          {addon.isActive ? "Đang hoạt động" : "Không hoạt động"}
         </span>
       </td>
-      
+
       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
         {formatDate(addon.createdAt)}
       </td>
-      
+
       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
         <div className="flex items-center justify-end space-x-2">
           <button

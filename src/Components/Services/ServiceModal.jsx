@@ -19,7 +19,6 @@ const ServiceModal = ({
     description: "",
     price: "",
     quantity: 1,
-    category: "",
     isActive: true,
     notes: "",
     taxId: "",
@@ -52,7 +51,6 @@ const ServiceModal = ({
         description: service.description || "",
         price: service.price || "",
         quantity: service.quantity || 1,
-        category: service.category || "",
         isActive: service.isActive !== undefined ? service.isActive : true,
         notes: service.notes || "",
         taxId: service.taxId || "",
@@ -64,7 +62,6 @@ const ServiceModal = ({
         description: "",
         price: "",
         quantity: 1,
-        category: "",
         isActive: true,
         notes: "",
         taxId: "",
@@ -101,10 +98,6 @@ const ServiceModal = ({
       parseInt(formData.quantity) < 1
     ) {
       newErrors.quantity = "Số lượng phải là số nguyên và lớn hơn 0";
-    }
-
-    if (formData.category && formData.category.length > 50) {
-      newErrors.category = "Danh mục không được vượt quá 50 ký tự";
     }
 
     if (formData.notes && formData.notes.length > 2000) {
@@ -306,87 +299,49 @@ const ServiceModal = ({
           {/* Category */}
           <div>
             <label
-              htmlFor="category"
+              htmlFor="categoryId"
               className="block text-sm font-medium text-gray-700 mb-1"
             >
               Danh mục
             </label>
-            <div className="flex space-x-2">
-              <select
-                id="category"
-                name="category"
-                value={formData.category}
-                onChange={handleChange}
-                className={`flex-1 px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
-                  errors.category ? "border-red-500" : "border-gray-300"
-                }`}
-              >
-                <option value="">Chọn danh mục</option>
-                {categories.map((category) => (
-                  <option key={category} value={category}>
-                    {category}
-                  </option>
-                ))}
-              </select>
-              <input
-                type="text"
-                name="category"
-                value={formData.category}
-                onChange={handleChange}
-                className={`flex-1 px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
-                  errors.category ? "border-red-500" : "border-gray-300"
-                }`}
-                placeholder="Hoặc nhập danh mục mới"
-              />
-            </div>
-            {errors.category && (
-              <p className="mt-1 text-sm text-red-600">{errors.category}</p>
-            )}
+            <select
+              id="categoryId"
+              name="categoryId"
+              value={formData.categoryId}
+              onChange={handleChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            >
+              <option value="">Chọn danh mục</option>
+              {categories.map((category) => (
+                <option key={category.id} value={category.id}>
+                  {category.name}
+                </option>
+              ))}
+            </select>
           </div>
 
-          {/* Tax and Category ID */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label
-                htmlFor="taxId"
-                className="block text-sm font-medium text-gray-700 mb-1"
-              >
-                Thuế
-              </label>
-              <select
-                id="taxId"
-                name="taxId"
-                value={formData.taxId}
-                onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              >
-                <option value="">Chọn thuế</option>
-                {taxes.map((tax) => (
-                  <option key={tax.id} value={tax.id}>
-                    {tax.rate}% - {tax.notes || "Không có ghi chú"}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label
-                htmlFor="categoryId"
-                className="block text-sm font-medium text-gray-700 mb-1"
-              >
-                Category ID
-              </label>
-              <input
-                type="number"
-                id="categoryId"
-                name="categoryId"
-                value={formData.categoryId}
-                onChange={handleChange}
-                min="1"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                placeholder="Nhập Category ID"
-              />
-            </div>
+          {/* Tax */}
+          <div>
+            <label
+              htmlFor="taxId"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
+              Thuế
+            </label>
+            <select
+              id="taxId"
+              name="taxId"
+              value={formData.taxId}
+              onChange={handleChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            >
+              <option value="">Chọn thuế</option>
+              {taxes.map((tax) => (
+                <option key={tax.id} value={tax.id}>
+                  {tax.rate}% - {tax.notes || "Không có ghi chú"}
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* Status */}

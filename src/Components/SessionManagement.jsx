@@ -83,7 +83,7 @@ const SessionManagement = () => {
       "warning"
     );
 
-    if (result.isConfirmed) {
+    if (result) {
       try {
         showLoading("Đang thu hồi phiên...", "Vui lòng đợi");
         await revokeSessionAdmin(sessionId, "Manually revoked by admin");

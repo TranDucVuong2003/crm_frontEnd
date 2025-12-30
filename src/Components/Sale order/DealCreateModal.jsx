@@ -15,6 +15,7 @@ const DealModal = ({
   deal = null,
   onSave,
   stageId = null,
+  preSelectedCustomer = null, // New prop to pass the selected customer object
 }) => {
   const [formData, setFormData] = useState(
     deal || {
@@ -62,7 +63,8 @@ const DealModal = ({
     if (isOpen) {
       loadDropdownData();
     }
-  }, [isOpen]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, preSelectedCustomer]);
 
   const loadDropdownData = async () => {
     setLoading(true);
@@ -74,17 +76,37 @@ const DealModal = ({
           getAllAddons(),
         ]);
 
-      setCustomers(customersResponse.data || []);
+      let customersList = customersResponse.data || [];
+
+      // If we have a preSelectedCustomer and it's not in the list, add it
+      if (
+        preSelectedCustomer &&
+        !customersList.find((c) => c.id === preSelectedCustomer.id)
+      ) {
+        customersList = [preSelectedCustomer, ...customersList];
+      }
+
+      setCustomers(customersList);
       setServices(servicesResponse.data || []);
       setAddons(addonsResponse.data || []);
     } catch (error) {
       console.error("Error loading dropdown data:", error);
-      // Fallback to mock data if API fails
-      setCustomers([
+
+      // If we have preSelectedCustomer, use it even if API fails
+      let fallbackCustomers = [
         { id: 1, name: "Công ty ABC" },
         { id: 2, name: "Công ty XYZ" },
         { id: 3, name: "Startup DEF" },
-      ]);
+      ];
+
+      if (
+        preSelectedCustomer &&
+        !fallbackCustomers.find((c) => c.id === preSelectedCustomer.id)
+      ) {
+        fallbackCustomers = [preSelectedCustomer, ...fallbackCustomers];
+      }
+
+      setCustomers(fallbackCustomers);
       setServices([
         { id: 1, name: "Tư vấn chiến lược" },
         { id: 2, name: "Phát triển phần mềm" },
@@ -551,28 +573,6 @@ const DealModal = ({
                 </div>
               </div>
             )}
-
-            {/* Value Input */}
-            <div className="border-t pt-6">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Giá trị (VNĐ) <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="number"
-                required
-                min="0"
-                step="1000"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                value={formData.value}
-                onChange={(e) =>
-                  setFormData({ ...formData, value: e.target.value })
-                }
-                placeholder="0"
-              />
-              <p className="mt-1 text-xs text-gray-500">
-                Giá trị được tính tự động hoặc nhập thủ công
-              </p>
-            </div>
 
             {/* Probability */}
             <div className="border-t pt-6">

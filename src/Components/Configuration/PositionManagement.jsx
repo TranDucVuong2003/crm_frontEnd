@@ -134,7 +134,7 @@ const PositionManagement = () => {
       "Bạn có chắc chắn muốn xóa chức vụ này?"
     );
 
-    if (result.isConfirmed) {
+    if (result) {
       try {
         showLoading("Đang xóa...");
         await deletePosition(id);

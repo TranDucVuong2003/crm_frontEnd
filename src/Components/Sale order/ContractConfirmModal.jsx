@@ -7,9 +7,14 @@ import {
   CurrencyDollarIcon,
 } from "@heroicons/react/24/outline";
 import { useNavigate } from "react-router-dom";
-import { createContract, getAllTax } from "../../Service/ApiService";
+import {
+  createContract,
+  getAllTax,
+  getContractQRCode,
+} from "../../Service/ApiService";
 import { showSuccess, showError } from "../../utils/sweetAlert";
 import { useAuth } from "../../Context/AuthContext";
+import QrCodeDisplayModal from "../Contract/QrCodeDisplayModal";
 
 const ContractConfirmModal = ({
   isOpen,
@@ -28,10 +33,13 @@ const ContractConfirmModal = ({
     paymentMethod: "Chuyển khoản",
     expiration: "",
     notes: "",
+    exportInvoices: false,
   });
 
   const [taxes, setTaxes] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [showQrModal, setShowQrModal] = useState(false);
+  const [qrData, setQrData] = useState(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -43,10 +51,11 @@ const ContractConfirmModal = ({
         expirationDate.setFullYear(expirationDate.getFullYear() + 1);
 
         setFormData({
-          status: "Mới",
+          status: "New",
           paymentMethod: "Chuyển khoản",
           expiration: expirationDate.toISOString().slice(0, 16),
           notes: deal.notes || "",
+          exportInvoices: false,
         });
       }
     }
@@ -122,20 +131,25 @@ const ContractConfirmModal = ({
         paymentMethod: formData.paymentMethod,
         expiration: new Date(formData.expiration).toISOString(),
         notes: formData.notes.trim() || "",
+        exportInvoices: formData.exportInvoices,
       };
 
-      await createContract(contractData);
+      const contractResponse = await createContract(contractData);
+      const createdContractId = contractResponse.data.id;
 
       showSuccess("Thành công!", "Tạo hợp đồng thành công");
+
+      // Đóng modal hiện tại
+      onClose();
 
       if (onSuccess) {
         onSuccess();
       }
 
-      onClose();
-
-      // Navigate to contract page
-      navigate("/contract");
+      // Navigate đến trang Contract
+      setTimeout(() => {
+        navigate("/contract");
+      }, 500);
     } catch (error) {
       console.error("Error creating contract:", error);
       const errorMessage =
@@ -144,6 +158,14 @@ const ContractConfirmModal = ({
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleCloseQrModal = () => {
+    setShowQrModal(false);
+    setQrData(null);
+    onClose();
+    // Navigate to contract page
+    navigate("/contract");
   };
 
   if (!isOpen || !deal) return null;
@@ -313,11 +335,9 @@ const ContractConfirmModal = ({
                   setFormData({ ...formData, status: e.target.value })
                 }
               >
-                <option value="Mới">Mới</option>
-                <option value="Cũ">Cũ</option>
-                <option value="Expired">Expired</option>
-                <option value="Terminated">Terminated</option>
-                <option value="Cancelled">Cancelled</option>
+                <option value="New">New</option>
+                <option value="Old">Old</option>
+                <option value="Paid">Paid</option>
               </select>
             </div>
 
@@ -357,6 +377,26 @@ const ContractConfirmModal = ({
               />
             </div>
 
+            {/* Xuất hóa đơn */}
+            <div className="md:col-span-2">
+              <label className="flex items-center space-x-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.exportInvoices}
+                  onChange={(e) =>
+                    setFormData({ ...formData, exportInvoices: e.target.checked })
+                  }
+                  className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                />
+                <span className="text-sm font-medium text-gray-700">
+                  Xuất hóa đơn cho hợp đồng này
+                </span>
+              </label>
+              <p className="mt-1 text-xs text-gray-500 ml-7">
+                Đánh dấu nếu cần xuất hóa đơn VAT cho hợp đồng
+              </p>
+            </div>
+
             {/* Ghi chú */}
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -394,6 +434,13 @@ const ContractConfirmModal = ({
           </div>
         </form>
       </div>
+
+      {/* QR Code Display Modal */}
+      <QrCodeDisplayModal
+        isOpen={showQrModal}
+        onClose={handleCloseQrModal}
+        qrData={qrData}
+      />
     </div>
   );
 };

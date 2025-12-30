@@ -1,42 +1,61 @@
-import React, { useState, useEffect } from 'react';
-import { XMarkIcon } from '@heroicons/react/24/outline';
-import { createAddon, updateAddon } from '../../Service/ApiService';
-import { showSuccess, showError } from '../../utils/sweetAlert';
+import React, { useState, useEffect } from "react";
+import { XMarkIcon } from "@heroicons/react/24/outline";
+import { createAddon, updateAddon, getAllTax } from "../../Service/ApiService";
+import { showSuccess, showError } from "../../utils/sweetAlert";
 
 const AddonModal = ({ isOpen, onClose, onSave, addon, types = [] }) => {
   const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    price: '',
-    quantity: 1,
-    type: '',
+    name: "",
+    description: "",
+    price: "",
+    quantity: 0,
     isActive: true,
-    notes: ''
+    notes: "",
+    taxId: "",
+    categoryId: "",
   });
-  
+
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
+  const [taxes, setTaxes] = useState([]);
+
+  // Fetch taxes on component mount
+  useEffect(() => {
+    const fetchTaxes = async () => {
+      try {
+        const response = await getAllTax();
+        setTaxes(response.data || []);
+      } catch (error) {
+        console.error("Error fetching taxes:", error);
+      }
+    };
+    if (isOpen) {
+      fetchTaxes();
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     if (addon) {
       setFormData({
-        name: addon.name || '',
-        description: addon.description || '',
-        price: addon.price || '',
-        quantity: addon.quantity || 1,
-        type: addon.type || '',
+        name: addon.name || "",
+        description: addon.description || "",
+        price: addon.price || "",
+        quantity: addon.quantity || 0,
         isActive: addon.isActive !== undefined ? addon.isActive : true,
-        notes: addon.notes || ''
+        notes: addon.notes || "",
+        taxId: addon.taxId || "",
+        categoryId: addon.categoryId || "",
       });
     } else {
       setFormData({
-        name: '',
-        description: '',
-        price: '',
-        quantity: 1,
-        type: '',
+        name: "",
+        description: "",
+        price: "",
+        quantity: 0,
         isActive: true,
-        notes: ''
+        notes: "",
+        taxId: "",
+        categoryId: "",
       });
     }
     setErrors({});
@@ -46,29 +65,32 @@ const AddonModal = ({ isOpen, onClose, onSave, addon, types = [] }) => {
     const newErrors = {};
 
     if (!formData.name.trim()) {
-      newErrors.name = 'Tên addon là bắt buộc';
+      newErrors.name = "Tên addon là bắt buộc";
     } else if (formData.name.length > 200) {
-      newErrors.name = 'Tên addon không được vượt quá 200 ký tự';
+      newErrors.name = "Tên addon không được vượt quá 200 ký tự";
     }
 
     if (formData.description && formData.description.length > 1000) {
-      newErrors.description = 'Mô tả không được vượt quá 1000 ký tự';
+      newErrors.description = "Mô tả không được vượt quá 1000 ký tự";
     }
 
-    if (!formData.price || isNaN(formData.price) || parseFloat(formData.price) < 0) {
-      newErrors.price = 'Giá phải là số và lớn hơn hoặc bằng 0';
+    if (
+      !formData.price ||
+      isNaN(formData.price) ||
+      parseFloat(formData.price) < 0
+    ) {
+      newErrors.price = "Giá phải là số và lớn hơn hoặc bằng 0";
     }
 
-    if (!formData.quantity || isNaN(formData.quantity) || parseInt(formData.quantity) < 1) {
-      newErrors.quantity = 'Số lượng phải là số nguyên và lớn hơn 0';
-    }
-
-    if (formData.type && formData.type.length > 50) {
-      newErrors.type = 'Loại không được vượt quá 50 ký tự';
+    if (
+      formData.quantity &&
+      (isNaN(formData.quantity) || parseInt(formData.quantity) < 0)
+    ) {
+      newErrors.quantity = "Số lượng phải là số nguyên và lớn hơn hoặc bằng 0";
     }
 
     if (formData.notes && formData.notes.length > 2000) {
-      newErrors.notes = 'Ghi chú không được vượt quá 2000 ký tự';
+      newErrors.notes = "Ghi chú không được vượt quá 2000 ký tự";
     }
 
     setErrors(newErrors);
@@ -77,43 +99,48 @@ const AddonModal = ({ isOpen, onClose, onSave, addon, types = [] }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (validateForm()) {
       const addonData = {
         ...formData,
         price: parseFloat(formData.price),
-        quantity: parseInt(formData.quantity)
+        quantity: formData.quantity ? parseInt(formData.quantity) : 0,
+        taxId: formData.taxId ? parseInt(formData.taxId) : null,
+        categoryId: formData.categoryId ? parseInt(formData.categoryId) : null,
       };
 
       setLoading(true);
-      
+
       try {
         if (addon) {
           // Update existing addon
           await updateAddon(addon.id, addonData);
-          showSuccess('Cập nhật thành công!', 'Addon đã được cập nhật.');
+          showSuccess("Cập nhật thành công!", "Addon đã được cập nhật.");
         } else {
           // Create new addon
           await createAddon(addonData);
-          showSuccess('Tạo thành công!', 'Addon mới đã được tạo.');
+          showSuccess("Tạo thành công!", "Addon mới đã được tạo.");
         }
-        
+
         onSave(addonData); // Refresh the list
         onClose();
       } catch (error) {
-        console.error('Error saving addon:', error);
-        
+        console.error("Error saving addon:", error);
+
         // Handle specific error messages from API
         if (error.response?.data?.message) {
-          showError('Lỗi!', error.response.data.message);
+          showError("Lỗi!", error.response.data.message);
         } else if (error.response?.status === 400) {
-          showError('Lỗi!', 'Dữ liệu không hợp lệ. Vui lòng kiểm tra lại thông tin.');
+          showError(
+            "Lỗi!",
+            "Dữ liệu không hợp lệ. Vui lòng kiểm tra lại thông tin."
+          );
         } else if (error.response?.status === 401) {
-          showError('Lỗi!', 'Bạn không có quyền thực hiện thao tác này.');
+          showError("Lỗi!", "Bạn không có quyền thực hiện thao tác này.");
         } else if (error.response?.status === 500) {
-          showError('Lỗi!', 'Lỗi máy chủ. Vui lòng thử lại sau.');
+          showError("Lỗi!", "Lỗi máy chủ. Vui lòng thử lại sau.");
         } else {
-          showError('Lỗi!', 'Không thể lưu addon. Vui lòng thử lại.');
+          showError("Lỗi!", "Không thể lưu addon. Vui lòng thử lại.");
         }
       } finally {
         setLoading(false);
@@ -123,16 +150,16 @@ const AddonModal = ({ isOpen, onClose, onSave, addon, types = [] }) => {
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: type === "checkbox" ? checked : value,
     }));
-    
+
     // Clear error when user starts typing
     if (errors[name]) {
-      setErrors(prev => ({
+      setErrors((prev) => ({
         ...prev,
-        [name]: ''
+        [name]: "",
       }));
     }
   };
@@ -140,11 +167,14 @@ const AddonModal = ({ isOpen, onClose, onSave, addon, types = [] }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-opacity-50 overflow-y-auto h-full w-full z-50" style={{backgroundColor: 'rgba(0,0,0,0.5)'}}>
+    <div
+      className="fixed inset-0 bg-opacity-50 overflow-y-auto h-full w-full z-50"
+      style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+    >
       <div className="relative top-20 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-medium text-gray-900">
-            {addon ? 'Chỉnh sửa addon' : 'Thêm addon mới'}
+            {addon ? "Chỉnh sửa addon" : "Thêm addon mới"}
           </h3>
           <button
             onClick={onClose}
@@ -157,7 +187,10 @@ const AddonModal = ({ isOpen, onClose, onSave, addon, types = [] }) => {
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Name */}
           <div>
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+            <label
+              htmlFor="name"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
               Tên addon <span className="text-red-500">*</span>
             </label>
             <input
@@ -167,16 +200,21 @@ const AddonModal = ({ isOpen, onClose, onSave, addon, types = [] }) => {
               value={formData.name}
               onChange={handleChange}
               className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
-                errors.name ? 'border-red-500' : 'border-gray-300'
+                errors.name ? "border-red-500" : "border-gray-300"
               }`}
               placeholder="Nhập tên addon"
             />
-            {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name}</p>}
+            {errors.name && (
+              <p className="mt-1 text-sm text-red-600">{errors.name}</p>
+            )}
           </div>
 
           {/* Description */}
           <div>
-            <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
+            <label
+              htmlFor="description"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
               Mô tả
             </label>
             <textarea
@@ -186,17 +224,22 @@ const AddonModal = ({ isOpen, onClose, onSave, addon, types = [] }) => {
               onChange={handleChange}
               rows={3}
               className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
-                errors.description ? 'border-red-500' : 'border-gray-300'
+                errors.description ? "border-red-500" : "border-gray-300"
               }`}
               placeholder="Nhập mô tả addon"
             />
-            {errors.description && <p className="mt-1 text-sm text-red-600">{errors.description}</p>}
+            {errors.description && (
+              <p className="mt-1 text-sm text-red-600">{errors.description}</p>
+            )}
           </div>
 
           {/* Price and Quantity */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="price"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
                 Giá (VNĐ) <span className="text-red-500">*</span>
               </label>
               <input
@@ -208,16 +251,21 @@ const AddonModal = ({ isOpen, onClose, onSave, addon, types = [] }) => {
                 min="0"
                 step="0.01"
                 className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
-                  errors.price ? 'border-red-500' : 'border-gray-300'
+                  errors.price ? "border-red-500" : "border-gray-300"
                 }`}
                 placeholder="0"
               />
-              {errors.price && <p className="mt-1 text-sm text-red-600">{errors.price}</p>}
+              {errors.price && (
+                <p className="mt-1 text-sm text-red-600">{errors.price}</p>
+              )}
             </div>
 
             <div>
-              <label htmlFor="quantity" className="block text-sm font-medium text-gray-700 mb-1">
-                Số lượng <span className="text-red-500">*</span>
+              <label
+                htmlFor="quantity"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                Số lượng
               </label>
               <input
                 type="number"
@@ -225,48 +273,64 @@ const AddonModal = ({ isOpen, onClose, onSave, addon, types = [] }) => {
                 name="quantity"
                 value={formData.quantity}
                 onChange={handleChange}
-                min="1"
+                min="0"
                 className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
-                  errors.quantity ? 'border-red-500' : 'border-gray-300'
+                  errors.quantity ? "border-red-500" : "border-gray-300"
                 }`}
-                placeholder="1"
+                placeholder="0"
               />
-              {errors.quantity && <p className="mt-1 text-sm text-red-600">{errors.quantity}</p>}
+              {errors.quantity && (
+                <p className="mt-1 text-sm text-red-600">{errors.quantity}</p>
+              )}
             </div>
           </div>
 
-          {/* Type */}
+          {/* Category */}
           <div>
-            <label htmlFor="type" className="block text-sm font-medium text-gray-700 mb-1">
-              Loại addon
+            <label
+              htmlFor="categoryId"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
+              Danh mục
             </label>
-            <div className="flex space-x-2">
-              <select
-                id="type"
-                name="type"
-                value={formData.type}
-                onChange={handleChange}
-                className={`flex-1 px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
-                  errors.type ? 'border-red-500' : 'border-gray-300'
-                }`}
-              >
-                <option value="">Chọn loại</option>
-                {types.map(type => (
-                  <option key={type} value={type}>{type}</option>
-                ))}
-              </select>
-              <input
-                type="text"
-                name="type"
-                value={formData.type}
-                onChange={handleChange}
-                className={`flex-1 px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
-                  errors.type ? 'border-red-500' : 'border-gray-300'
-                }`}
-                placeholder="Hoặc nhập loại mới"
-              />
-            </div>
-            {errors.type && <p className="mt-1 text-sm text-red-600">{errors.type}</p>}
+            <select
+              id="categoryId"
+              name="categoryId"
+              value={formData.categoryId}
+              onChange={handleChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            >
+              <option value="">Chọn danh mục</option>
+              {types.map((category) => (
+                <option key={category.id} value={category.id}>
+                  {category.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Tax */}
+          <div>
+            <label
+              htmlFor="taxId"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
+              Thuế
+            </label>
+            <select
+              id="taxId"
+              name="taxId"
+              value={formData.taxId}
+              onChange={handleChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            >
+              <option value="">Chọn thuế</option>
+              {taxes.map((tax) => (
+                <option key={tax.id} value={tax.id}>
+                  {tax.rate}% - {tax.notes || "Không có ghi chú"}
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* Status */}
@@ -279,14 +343,20 @@ const AddonModal = ({ isOpen, onClose, onSave, addon, types = [] }) => {
               onChange={handleChange}
               className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
             />
-            <label htmlFor="isActive" className="ml-2 block text-sm text-gray-900">
+            <label
+              htmlFor="isActive"
+              className="ml-2 block text-sm text-gray-900"
+            >
               Đang hoạt động
             </label>
           </div>
 
           {/* Notes */}
           <div>
-            <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
+            <label
+              htmlFor="notes"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
               Ghi chú
             </label>
             <textarea
@@ -296,11 +366,13 @@ const AddonModal = ({ isOpen, onClose, onSave, addon, types = [] }) => {
               onChange={handleChange}
               rows={3}
               className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
-                errors.notes ? 'border-red-500' : 'border-gray-300'
+                errors.notes ? "border-red-500" : "border-gray-300"
               }`}
               placeholder="Nhập ghi chú thêm"
             />
-            {errors.notes && <p className="mt-1 text-sm text-red-600">{errors.notes}</p>}
+            {errors.notes && (
+              <p className="mt-1 text-sm text-red-600">{errors.notes}</p>
+            )}
           </div>
 
           {/* Buttons */}
@@ -310,9 +382,9 @@ const AddonModal = ({ isOpen, onClose, onSave, addon, types = [] }) => {
               onClick={onClose}
               disabled={loading}
               className={`px-4 py-2 border border-gray-300 rounded-md text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${
-                loading 
-                  ? 'text-gray-400 cursor-not-allowed' 
-                  : 'text-gray-700 hover:bg-gray-50'
+                loading
+                  ? "text-gray-400 cursor-not-allowed"
+                  : "text-gray-700 hover:bg-gray-50"
               }`}
             >
               Hủy
@@ -321,21 +393,39 @@ const AddonModal = ({ isOpen, onClose, onSave, addon, types = [] }) => {
               type="submit"
               disabled={loading}
               className={`px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${
-                loading 
-                  ? 'bg-indigo-400 cursor-not-allowed' 
-                  : 'bg-indigo-600 hover:bg-indigo-700'
+                loading
+                  ? "bg-indigo-400 cursor-not-allowed"
+                  : "bg-indigo-600 hover:bg-indigo-700"
               }`}
             >
               {loading ? (
                 <div className="flex items-center">
-                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  <svg
+                    className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
                   </svg>
-                  {addon ? 'Đang cập nhật...' : 'Đang tạo...'}
+                  {addon ? "Đang cập nhật..." : "Đang tạo..."}
                 </div>
+              ) : addon ? (
+                "Cập nhật"
               ) : (
-                addon ? 'Cập nhật' : 'Tạo mới'
+                "Tạo mới"
               )}
             </button>
           </div>

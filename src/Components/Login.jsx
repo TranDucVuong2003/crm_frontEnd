@@ -186,12 +186,21 @@ function Login() {
       if (err.response) {
         // Server responded with error status
         if (err.response.status === 401) {
-          setError(err.response.data.message ? "Email hoặc mật khẩu không đúng": "");
+          setError(
+            err.response.data.message ? "Email hoặc mật khẩu không đúng" : ""
+          );
         } else if (err.response.status === 400) {
-          console.log("looooooooooooooooooooooooooooo", err.response.data.message)
+          console.log(
+            "looooooooooooooooooooooooooooo",
+            err.response.data.message
+          );
           setError(err.response.data.message);
         } else {
-          setError(err.response.data.message ? "Có lỗi xảy ra từ server. Vui lòng thử lại." : "");
+          setError(
+            err.response.data.message
+              ? "Có lỗi xảy ra từ server. Vui lòng thử lại."
+              : ""
+          );
         }
       } else if (err.request) {
         // Network error
@@ -215,7 +224,7 @@ function Login() {
           </div>
         </div>
         <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900">
-          ERP System
+          Hệ thống ERP
         </h2>
         <p className="mt-2 text-center text-sm text-gray-600">
           Đăng nhập để tiếp tục
@@ -316,6 +325,19 @@ function Login() {
               )}
             </div>
 
+            {/* Forgot Password Link */}
+            <div className="flex items-center justify-end">
+              <div className="text-sm">
+                <button
+                  type="button"
+                  onClick={() => navigate("/forgot-password")}
+                  className="font-medium text-indigo-600 hover:text-indigo-500"
+                >
+                  Quên mật khẩu?
+                </button>
+              </div>
+            </div>
+
             {/* Login Error */}
             {error && (
               <div className="rounded-md bg-red-50 p-4">
@@ -380,7 +402,7 @@ function Login() {
 
         {/* Footer */}
         <div className="mt-8 text-center text-xs text-gray-500">
-          <p>© 2025 ERP System. Bảo mật thông tin với JWT & RBAC.</p>
+          <p>© 2025 Hệ thống ERP. Bảo mật thông tin với JWT & RBAC.</p>
         </div>
       </div>
     </div>

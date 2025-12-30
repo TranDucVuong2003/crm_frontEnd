@@ -86,7 +86,7 @@ const KpiManagement = () => {
       cancelButtonText: "Hủy",
     });
 
-    if (result.isConfirmed) {
+    if (result) {
       try {
         await deleteKpiPackage(id);
         showSuccess("Đã xóa gói KPI thành công");
@@ -114,7 +114,7 @@ const KpiManagement = () => {
       cancelButtonText: "Hủy",
     });
 
-    if (result.isConfirmed) {
+    if (result) {
       try {
         setLoading(true);
         const response = await calculateAllKpi(filters);

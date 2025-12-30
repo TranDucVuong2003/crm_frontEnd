@@ -1,5 +1,6 @@
 import axios from "axios";
 import API_ENDPOINT from "../Constant/apiEndpoint.constant";
+
 import { AuthCookies } from "../utils/cookieUtils";
 
 // Token management utilities using cookies
@@ -188,6 +189,16 @@ export const changePasswordFirstTime = (passwordData) => {
     API_ENDPOINT.AUTH.CHANGE_PASSWORD_FIRST_TIME,
     passwordData
   );
+};
+
+export const requestChangePasswordOTP = (email) => {
+  return apiClient.post(API_ENDPOINT.AUTH.REQUEST_CHANGE_PASSWORD_OTP, {
+    email,
+  });
+};
+
+export const verifyOTPAndChangePassword = (data) => {
+  return apiClient.post(API_ENDPOINT.AUTH.VERIFY_OTP_AND_CHANGE_PASSWORD, data);
 };
 
 // =============================
@@ -392,7 +403,14 @@ export const exportSaleOrderContract = (id) => {
 // CONTRACTS APIs
 // =============================
 export const getAllContracts = () => {
-  return apiClient.get(API_ENDPOINT.CONTRACTS.GET_ALL);
+  return apiClient.get(API_ENDPOINT.CONTRACTS.GET_ALL, {
+    params: { _t: Date.now() },
+    headers: {
+      "Cache-Control": "no-cache",
+      Pragma: "no-cache",
+      Expires: "0",
+    },
+  });
 };
 
 export const createContract = (contractData) => {
@@ -400,7 +418,14 @@ export const createContract = (contractData) => {
 };
 
 export const getContractById = (id) => {
-  return apiClient.get(API_ENDPOINT.CONTRACTS.GET_BY_ID(id));
+  return apiClient.get(API_ENDPOINT.CONTRACTS.GET_BY_ID(id), {
+    params: { _t: Date.now() },
+    headers: {
+      "Cache-Control": "no-cache",
+      Pragma: "no-cache",
+      Expires: "0",
+    },
+  });
 };
 
 export const updateContract = (id, contractData) => {
@@ -412,7 +437,14 @@ export const deleteContract = (id) => {
 };
 
 export const getContractsByCustomer = (customerId) => {
-  return apiClient.get(API_ENDPOINT.CONTRACTS.GET_BY_CUSTOMER(customerId));
+  return apiClient.get(API_ENDPOINT.CONTRACTS.GET_BY_CUSTOMER(customerId), {
+    params: { _t: Date.now() },
+    headers: {
+      "Cache-Control": "no-cache",
+      Pragma: "no-cache",
+      Expires: "0",
+    },
+  });
 };
 
 export const previewContract = (id) => {
@@ -432,6 +464,12 @@ export const exportContract = (id) => {
 export const regenerateContract = (id) => {
   return apiClient.post(API_ENDPOINT.CONTRACTS.REGENERATE(id), null, {
     responseType: "blob",
+  });
+};
+
+export const getContractQRCode = (id, paymentType) => {
+  return apiClient.get(`${API_ENDPOINT.CONTRACTS.GET_BY_ID(id)}/qr-code`, {
+    params: { paymentType },
   });
 };
 
@@ -562,6 +600,10 @@ export const createUser = (userData) => {
 
 export const getUserById = (id) => {
   return apiClient.get(API_ENDPOINT.USERS.GET_BY_ID(id));
+};
+
+export const getUsersByDepartment = (departmentId) => {
+  return apiClient.get(API_ENDPOINT.USERS.GET_BY_DEPARTMENT(departmentId));
 };
 
 export const updateUser = (id, userData) => {
@@ -1027,4 +1069,339 @@ export const getKpiStatistics = (params) => {
 
 export const updateKpiRecordNotes = (id, notes) => {
   return apiClient.put(API_ENDPOINT.KPI_RECORDS.UPDATE_NOTES(id), { notes });
+};
+
+// =============================
+// SALARY APIs
+// =============================
+
+export const getAllSalaries = (params) => {
+  return apiClient.get(API_ENDPOINT.SALARIES.GET_ALL, { params });
+};
+
+export const createSalary = (data) => {
+  return apiClient.post(API_ENDPOINT.SALARIES.CREATE, data);
+};
+
+export const getSalaryById = (id) => {
+  return apiClient.get(API_ENDPOINT.SALARIES.GET_BY_ID(id));
+};
+
+export const updateSalary = (id, data) => {
+  return apiClient.put(API_ENDPOINT.SALARIES.UPDATE(id), data);
+};
+
+export const deleteSalary = (id) => {
+  return apiClient.delete(API_ENDPOINT.SALARIES.DELETE(id));
+};
+
+export const getMySalary = (params) => {
+  return apiClient.get(API_ENDPOINT.SALARIES.GET_MY_SALARY, { params });
+};
+
+export const approveSalary = (id, data) => {
+  return apiClient.post(API_ENDPOINT.SALARIES.APPROVE(id), data);
+};
+
+export const rejectSalary = (id, data) => {
+  return apiClient.post(API_ENDPOINT.SALARIES.REJECT(id), data);
+};
+
+export const markSalaryAsPaid = (id) => {
+  return apiClient.post(API_ENDPOINT.SALARIES.MARK_PAID(id));
+};
+
+export const bulkCreateSalaries = (data) => {
+  return apiClient.post(API_ENDPOINT.SALARIES.BULK_CREATE, data);
+};
+
+export const bulkApproveSalaries = (data) => {
+  return apiClient.post(API_ENDPOINT.SALARIES.BULK_APPROVE, data);
+};
+
+export const calculateSalaryFromKpi = (userId, params) => {
+  return apiClient.post(
+    API_ENDPOINT.SALARIES.CALCULATE_FROM_KPI(userId),
+    null,
+    { params }
+  );
+};
+
+export const autoCalculateAllSalaries = (data) => {
+  return apiClient.post(API_ENDPOINT.SALARIES.AUTO_CALCULATE_ALL, data);
+};
+
+export const getSalaryStatistics = (params) => {
+  return apiClient.get(API_ENDPOINT.SALARIES.GET_STATISTICS, { params });
+};
+
+export const getSalaryStatisticsByDepartment = (params) => {
+  return apiClient.get(API_ENDPOINT.SALARIES.GET_STATISTICS_BY_DEPARTMENT, {
+    params,
+  });
+};
+
+export const exportSalaries = (params) => {
+  return apiClient.get(API_ENDPOINT.SALARIES.EXPORT, { params });
+};
+
+// =============================
+// INSURANCES
+// =============================
+export const getAllInsurances = () => {
+  return apiClient.get(API_ENDPOINT.INSURANCES.GET_ALL);
+};
+
+export const getInsuranceById = (id) => {
+  return apiClient.get(API_ENDPOINT.INSURANCES.GET_BY_ID(id));
+};
+
+export const createInsurance = (data) => {
+  return apiClient.post(API_ENDPOINT.INSURANCES.CREATE, data);
+};
+
+export const updateInsurance = (id, data) => {
+  return apiClient.put(API_ENDPOINT.INSURANCES.UPDATE(id), data);
+};
+
+export const deleteInsurance = (id) => {
+  return apiClient.delete(API_ENDPOINT.INSURANCES.DELETE(id));
+};
+
+// =============================
+// INSURANCE STATUS
+// =============================
+export const getAllInsuranceStatus = () => {
+  return apiClient.get(API_ENDPOINT.INSURANCE_STATUS.GET_ALL);
+};
+
+export const getInsuranceStatusById = (id) => {
+  return apiClient.get(API_ENDPOINT.INSURANCE_STATUS.GET_BY_ID(id));
+};
+
+export const updateInsuranceStatus = (id, data) => {
+  return apiClient.put(API_ENDPOINT.INSURANCE_STATUS.UPDATE(id), data);
+};
+
+export const toggleInsuranceStatus = (id) => {
+  return apiClient.patch(API_ENDPOINT.INSURANCE_STATUS.TOGGLE(id));
+};
+
+// =============================
+// SALARY CONTRACTS
+// =============================
+export const createSalaryContract = (contractData) => {
+  return apiClient.post(API_ENDPOINT.SALARY_CONTRACTS.CREATE, contractData);
+};
+
+// =============================
+// MONTHLY ATTENDANCES
+// =============================
+export const getAllMonthlyAttendances = (params) => {
+  return apiClient.get(API_ENDPOINT.MONTHLY_ATTENDANCES.GET_ALL, { params });
+};
+
+export const createMonthlyAttendance = (data) => {
+  return apiClient.post(API_ENDPOINT.MONTHLY_ATTENDANCES.CREATE, data);
+};
+
+export const createBatchMonthlyAttendances = (data) => {
+  return apiClient.post(API_ENDPOINT.MONTHLY_ATTENDANCES.CREATE_BATCH, data);
+};
+
+export const getMonthlyAttendanceById = (id) => {
+  return apiClient.get(API_ENDPOINT.MONTHLY_ATTENDANCES.GET_BY_ID(id));
+};
+
+export const updateMonthlyAttendance = (id, data) => {
+  return apiClient.put(API_ENDPOINT.MONTHLY_ATTENDANCES.UPDATE(id), data);
+};
+
+export const deleteMonthlyAttendance = (id) => {
+  return apiClient.delete(API_ENDPOINT.MONTHLY_ATTENDANCES.DELETE(id));
+};
+
+export const getMonthlyAttendanceByUser = (userId) => {
+  return apiClient.get(API_ENDPOINT.MONTHLY_ATTENDANCES.GET_BY_USER(userId));
+};
+
+export const getMonthlyAttendanceByUserMonthYear = (userId, month, year) => {
+  return apiClient.get(
+    API_ENDPOINT.MONTHLY_ATTENDANCES.GET_BY_USER_MONTH_YEAR(userId, month, year)
+  );
+};
+
+export const getMonthlyAttendancesByMonthYear = (month, year) => {
+  return apiClient.get(
+    API_ENDPOINT.MONTHLY_ATTENDANCES.GET_BY_MONTH_YEAR(month, year)
+  );
+};
+
+// =============================
+// SALARY COMPONENTS
+// =============================
+export const getAllSalaryComponents = (params) => {
+  return apiClient.get(API_ENDPOINT.SALARY_COMPONENTS.GET_ALL, { params });
+};
+
+export const createSalaryComponent = (data) => {
+  return apiClient.post(API_ENDPOINT.SALARY_COMPONENTS.CREATE, data);
+};
+
+export const getSalaryComponentById = (id) => {
+  return apiClient.get(API_ENDPOINT.SALARY_COMPONENTS.GET_BY_ID(id));
+};
+
+export const updateSalaryComponent = (id, data) => {
+  return apiClient.put(API_ENDPOINT.SALARY_COMPONENTS.UPDATE(id), data);
+};
+
+export const deleteSalaryComponent = (id) => {
+  return apiClient.delete(API_ENDPOINT.SALARY_COMPONENTS.DELETE(id));
+};
+
+export const getSalaryComponentsByUser = (userId) => {
+  return apiClient.get(API_ENDPOINT.SALARY_COMPONENTS.GET_BY_USER(userId));
+};
+
+export const getSalaryComponentsByUserMonthYear = (userId, month, year) => {
+  return apiClient.get(
+    API_ENDPOINT.SALARY_COMPONENTS.GET_BY_USER_MONTH_YEAR(userId, month, year)
+  );
+};
+
+export const getSalaryComponentsByMonthYear = (month, year) => {
+  return apiClient.get(
+    API_ENDPOINT.SALARY_COMPONENTS.GET_BY_MONTH_YEAR(month, year)
+  );
+};
+
+// =============================
+// INSURANCE POLICY
+// =============================
+export const getAllInsurancePolicy = () => {
+  return apiClient.get(API_ENDPOINT.INSURANCE_POLICY.GET_ALL);
+};
+
+// =============================
+// PAYSLIPS
+// =============================
+export const getAllPayslips = () => {
+  return apiClient.get(API_ENDPOINT.PAYSLIPS.GET_ALL);
+};
+
+export const getPayslipById = (id) => {
+  return apiClient.get(API_ENDPOINT.PAYSLIPS.GET_BY_ID(id));
+};
+
+export const createPayslip = (data) => {
+  return apiClient.post(API_ENDPOINT.PAYSLIPS.CREATE, data);
+};
+
+export const updatePayslip = (id, data) => {
+  return apiClient.put(API_ENDPOINT.PAYSLIPS.UPDATE(id), data);
+};
+
+export const deletePayslip = (id) => {
+  return apiClient.delete(API_ENDPOINT.PAYSLIPS.DELETE(id));
+};
+
+export const calculatePayslip = (data) => {
+  return apiClient.post(API_ENDPOINT.PAYSLIPS.CALCULATE, data);
+};
+
+export const calculateBatchPayslips = (data) => {
+  return apiClient.post(API_ENDPOINT.PAYSLIPS.CALCULATE_BATCH, data);
+};
+
+export const getPayslipsByUserId = (userId) => {
+  return apiClient.get(API_ENDPOINT.PAYSLIPS.GET_BY_USER(userId));
+};
+
+export const getPayslipByUserMonthYear = (userId, month, year) => {
+  return apiClient.get(
+    API_ENDPOINT.PAYSLIPS.GET_BY_USER_MONTH_YEAR(userId, month, year)
+  );
+};
+
+export const getPayslipsByMonthYear = (month, year) => {
+  return apiClient.get(API_ENDPOINT.PAYSLIPS.GET_BY_MONTH_YEAR(month, year));
+};
+
+export const getPayslipsByStatus = (status) => {
+  return apiClient.get(API_ENDPOINT.PAYSLIPS.GET_BY_STATUS(status));
+};
+
+export const markPayslipAsPaid = (id) => {
+  return apiClient.put(API_ENDPOINT.PAYSLIPS.MARK_PAID(id));
+};
+
+export const previewSalaryReport = (params) => {
+  return apiClient.post(API_ENDPOINT.PAYSLIPS.PREVIEW_REPORT, params, {
+    headers: {
+      Accept: "text/html",
+    },
+  });
+};
+
+export const exportSalaryReport = (params) => {
+  return apiClient.post(API_ENDPOINT.PAYSLIPS.EXPORT_REPORT, params, {
+    responseType: "blob",
+  });
+};
+
+// =============================
+// NOTIFICATIONS
+// =============================
+export const getMyNotifications = (params) => {
+  return apiClient.get(API_ENDPOINT.NOTIFICATIONS.GET_MY_NOTIFICATIONS, {
+    params,
+  });
+};
+
+export const getUnreadNotificationCount = () => {
+  return apiClient.get(API_ENDPOINT.NOTIFICATIONS.GET_UNREAD_COUNT);
+};
+
+export const markNotificationAsRead = (notificationId) => {
+  return apiClient.post(API_ENDPOINT.NOTIFICATIONS.MARK_AS_READ, {
+    notificationId,
+  });
+};
+
+export const markAllNotificationsAsRead = () => {
+  return apiClient.post(API_ENDPOINT.NOTIFICATIONS.MARK_ALL_AS_READ);
+};
+
+export const deleteNotification = (id) => {
+  return apiClient.delete(API_ENDPOINT.NOTIFICATIONS.DELETE(id));
+};
+
+// Admin - Create and send notification
+export const createNotification = (data) => {
+  return apiClient.post(API_ENDPOINT.NOTIFICATIONS.CREATE, data);
+};
+
+// Admin - Get all notifications
+export const getAllNotificationsAdmin = (params) => {
+  return apiClient.get(API_ENDPOINT.NOTIFICATIONS.GET_ALL_ADMIN, { params });
+};
+
+// Admin - Get notification recipients
+export const getNotificationRecipients = (notificationId) => {
+  return apiClient.get(
+    API_ENDPOINT.NOTIFICATIONS.GET_RECIPIENTS(notificationId)
+  );
+};
+
+// Admin - Get notification read status
+export const getNotificationReadStatus = (notificationId) => {
+  return apiClient.get(
+    API_ENDPOINT.NOTIFICATIONS.GET_READ_STATUS(notificationId)
+  );
+};
+
+// Admin - Update notification
+export const updateNotification = (id, data) => {
+  return apiClient.put(API_ENDPOINT.NOTIFICATIONS.UPDATE(id), data);
 };

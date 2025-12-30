@@ -10,20 +10,32 @@ import {
   CheckCircleIcon,
 } from "@heroicons/react/24/outline";
 import {
-  AreaChart,
-  Area,
-  BarChart,
-  Bar,
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  LineElement,
+  PointElement,
+  ArcElement,
+  Title,
   Tooltip,
   Legend,
-  ResponsiveContainer,
-  Cell,
-} from "recharts";
+  Filler,
+} from "chart.js";
+import { Bar, Line } from "react-chartjs-2";
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  LineElement,
+  PointElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler
+);
 import {
   getAllCustomers,
   getAllQuotes,
@@ -31,6 +43,7 @@ import {
   getAllTickets,
   getAllSaleOrders,
 } from "../Service/ApiService";
+import { useAuth } from "../Context/AuthContext";
 
 const StatCard = ({ title, value, change, icon: Icon, color }) => {
   return (
@@ -70,6 +83,7 @@ const StatCard = ({ title, value, change, icon: Icon, color }) => {
 };
 
 const Dashboard = () => {
+  const { user } = useAuth();
   const [stats, setStats] = useState({
     totalCustomers: 0,
     totalQuotes: 0,
@@ -110,14 +124,65 @@ const Dashboard = () => {
       const customers = customersRes.data || [];
       const quotes = quotesRes.data || [];
       const contracts = contractsRes.data || [];
-      const tickets = ticketsRes.data || [];
+      let tickets = ticketsRes.data || [];
       const saleOrders = saleOrdersRes.data || [];
 
-      // Calculate stats
-      const totalRevenue = quotes.reduce(
-        (sum, quote) => sum + (parseFloat(quote.amount) || 0),
-        0
+      // Filter tickets based on user role
+      // Admin sees all tickets, User only sees tickets created by them or assigned to them
+      const isAdmin = user?.role?.toLowerCase() === "admin";
+      if (!isAdmin && user?.id) {
+        tickets = tickets.filter(
+          (ticket) =>
+            ticket.createdBy?.id === user.id ||
+            ticket.assignedTo?.id === user.id
+        );
+      }
+
+      // Debug: Log tickets data to check status values
+      console.log("Dashboard - Tickets data:", tickets);
+      console.log(
+        "Dashboard - Tickets statuses:",
+        tickets.map((t) => t.status)
       );
+      console.log("Dashboard - Contracts data:", contracts);
+      console.log(
+        "Dashboard - Contract details:",
+        contracts.map((c) => ({
+          id: c.id,
+          status: c.status,
+          paidAmount: c.paidAmount,
+          totalAmount: c.totalAmount,
+          saleOrderValue: c.saleOrder?.totalValue,
+        }))
+      );
+
+      // Calculate stats - Tổng doanh thu = tổng paidAmount từ tất cả hợp đồng (bao gồm đặt cọc)
+      // Nếu paidAmount = 0, tính từ totalAmount hoặc saleOrder.totalValue cho các hợp đồng đã thanh toán/đặt cọc
+      const totalRevenue = contracts.reduce((sum, contract) => {
+        let paid = parseFloat(contract.paidAmount) || 0;
+
+        // Nếu paidAmount = 0 nhưng status cho thấy đã thanh toán, lấy từ totalAmount
+        const status = (contract.status || "").toLowerCase();
+        if (
+          paid === 0 &&
+          (status.includes("paid") ||
+            status.includes("cọc") ||
+            status.includes("deposit"))
+        ) {
+          // Lấy giá trị từ totalAmount hoặc saleOrder
+          const total =
+            parseFloat(contract.totalAmount) ||
+            parseFloat(contract.saleOrder?.totalValue) ||
+            0;
+          if (status.includes("50%") || status.includes("cọc")) {
+            paid = total * 0.5; // Đặt cọc 50%
+          } else {
+            paid = total; // Thanh toán full
+          }
+        }
+
+        return sum + paid;
+      }, 0);
       const openTickets = tickets.filter(
         (t) => t.status !== "closed" && t.status !== "resolved"
       ).length;
@@ -164,29 +229,27 @@ const Dashboard = () => {
       setTopCustomers(topCustomersList);
 
       // Prepare Sales Pipeline Data (Funnel)
-      const leadsCount = saleOrders.filter(
-        (order) => order.status === "lead" || order.status === "new"
-      ).length;
+      // Count all items regardless of status to show actual data
+      const leadsCount = saleOrders.length;
       const opportunitiesCount = saleOrders.filter(
         (order) =>
-          order.status === "opportunity" || order.status === "qualified"
+          order.status === "opportunity" ||
+          order.status === "qualified" ||
+          order.status === "Active" ||
+          order.status === "Inactive"
       ).length;
-      const quotesCount = quotes.filter(
-        (quote) => quote.status === "pending" || quote.status === "sent"
-      ).length;
-      const contractsCount = contracts.filter(
-        (contract) =>
-          contract.status === "active" || contract.status === "signed"
-      ).length;
+      const quotesCount = quotes.length;
+      const contractsCount = contracts.length;
 
       setSalesPipelineData([
-        { stage: "Leads", count: leadsCount, fill: "#3b82f6" },
-        { stage: "Opportunities", count: opportunitiesCount, fill: "#8b5cf6" },
-        { stage: "Quotes", count: quotesCount, fill: "#ec4899" },
-        { stage: "Contracts", count: contractsCount, fill: "#10b981" },
+        { stage: "Đơn hàng", count: leadsCount, fill: "#3b82f6" },
+        { stage: "Cơ hội", count: opportunitiesCount, fill: "#8b5cf6" },
+        { stage: "Báo giá", count: quotesCount, fill: "#ec4899" },
+        { stage: "Hợp đồng", count: contractsCount, fill: "#10b981" },
       ]);
 
       // Prepare Tickets Trend Data (Last 7 days)
+      // Show tickets by their current status, filtered by last update or creation date
       const last7Days = Array.from({ length: 7 }, (_, i) => {
         const date = new Date();
         date.setDate(date.getDate() - (6 - i));
@@ -195,19 +258,37 @@ const Dashboard = () => {
 
       const ticketsByDay = last7Days.map((date) => {
         const dateStr = date.toISOString().split("T")[0];
+
+        // Filter tickets that were created OR updated on this date
         const dayTickets = tickets.filter((ticket) => {
-          const ticketDate = new Date(ticket.createdAt)
+          const createdDate = new Date(ticket.createdAt)
             .toISOString()
             .split("T")[0];
-          return ticketDate === dateStr;
+          const updatedDate = ticket.updatedAt
+            ? new Date(ticket.updatedAt).toISOString().split("T")[0]
+            : createdDate;
+          return createdDate === dateStr || updatedDate === dateStr;
         });
 
-        const open = dayTickets.filter((t) => t.status === "open").length;
+        // Count tickets by actual status from API
+        const statusLower = (status) => (status || "").toLowerCase();
+        const open = dayTickets.filter(
+          (t) =>
+            statusLower(t.status) === "new" ||
+            statusLower(t.status) === "open" ||
+            statusLower(t.status) === "pending"
+        ).length;
         const inProgress = dayTickets.filter(
-          (t) => t.status === "in_progress" || t.status === "in-progress"
+          (t) =>
+            statusLower(t.status) === "in_progress" ||
+            statusLower(t.status) === "in-progress" ||
+            statusLower(t.status) === "processing"
         ).length;
         const resolved = dayTickets.filter(
-          (t) => t.status === "resolved" || t.status === "closed"
+          (t) =>
+            statusLower(t.status) === "resolved" ||
+            statusLower(t.status) === "closed" ||
+            statusLower(t.status) === "completed"
         ).length;
 
         return {
@@ -271,6 +352,305 @@ const Dashboard = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Chart.js options
+  const barChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: false,
+      },
+      tooltip: {
+        backgroundColor: "rgba(0, 0, 0, 0.8)",
+        padding: 12,
+        borderColor: "rgba(255, 255, 255, 0.2)",
+        borderWidth: 1,
+        titleFont: {
+          size: 14,
+          weight: "bold",
+        },
+        bodyFont: {
+          size: 13,
+        },
+        callbacks: {
+          label: function (context) {
+            return `${context.label}: ${context.parsed.y} mục`;
+          },
+        },
+      },
+    },
+    scales: {
+      x: {
+        grid: {
+          display: false,
+        },
+        ticks: {
+          font: {
+            size: 12,
+            weight: "500",
+          },
+        },
+      },
+      y: {
+        beginAtZero: true,
+        grid: {
+          color: "rgba(0, 0, 0, 0.05)",
+        },
+        ticks: {
+          font: {
+            size: 12,
+          },
+        },
+      },
+    },
+    animation: {
+      duration: 1000,
+      easing: "easeInOutQuart",
+    },
+    borderRadius: 8,
+  };
+
+  const areaChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: "bottom",
+        labels: {
+          padding: 20,
+          font: {
+            size: 13,
+            weight: "500",
+          },
+          usePointStyle: true,
+          pointStyle: "circle",
+        },
+      },
+      tooltip: {
+        backgroundColor: "rgba(0, 0, 0, 0.8)",
+        padding: 12,
+        borderColor: "rgba(255, 255, 255, 0.2)",
+        borderWidth: 1,
+        titleFont: {
+          size: 14,
+          weight: "bold",
+        },
+        bodyFont: {
+          size: 13,
+        },
+        callbacks: {
+          label: function (context) {
+            return `${context.dataset.label}: ${context.parsed.y} tickets`;
+          },
+        },
+      },
+    },
+    scales: {
+      x: {
+        grid: {
+          display: false,
+        },
+        ticks: {
+          font: {
+            size: 12,
+            weight: "500",
+          },
+        },
+      },
+      y: {
+        beginAtZero: true,
+        grid: {
+          color: "rgba(0, 0, 0, 0.05)",
+        },
+        ticks: {
+          font: {
+            size: 12,
+          },
+          stepSize: 1,
+        },
+      },
+    },
+    animation: {
+      duration: 1000,
+      easing: "easeInOutQuart",
+    },
+    interaction: {
+      intersect: false,
+      mode: "index",
+    },
+  };
+
+  const lineChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: "bottom",
+        labels: {
+          padding: 20,
+          font: {
+            size: 13,
+            weight: "500",
+          },
+          usePointStyle: true,
+          pointStyle: "circle",
+        },
+      },
+      tooltip: {
+        backgroundColor: "rgba(0, 0, 0, 0.8)",
+        padding: 12,
+        borderColor: "rgba(255, 255, 255, 0.2)",
+        borderWidth: 1,
+        titleFont: {
+          size: 14,
+          weight: "bold",
+        },
+        bodyFont: {
+          size: 13,
+        },
+        callbacks: {
+          label: function (context) {
+            return `${context.dataset.label}: ${context.parsed.y.toFixed(
+              2
+            )} triệu`;
+          },
+        },
+      },
+    },
+    scales: {
+      x: {
+        grid: {
+          display: false,
+        },
+        ticks: {
+          font: {
+            size: 12,
+            weight: "500",
+          },
+        },
+      },
+      y: {
+        beginAtZero: true,
+        grid: {
+          color: "rgba(0, 0, 0, 0.05)",
+        },
+        ticks: {
+          font: {
+            size: 12,
+          },
+        },
+      },
+    },
+    animation: {
+      duration: 1000,
+      easing: "easeInOutQuart",
+    },
+    interaction: {
+      intersect: false,
+      mode: "index",
+    },
+  };
+
+  // Prepare Chart.js data
+  const salesPipelineChartData = {
+    labels: salesPipelineData.map((d) => d.stage),
+    datasets: [
+      {
+        label: "Số lượng",
+        data: salesPipelineData.map((d) => d.count),
+        backgroundColor: salesPipelineData.map((d) => d.fill),
+        borderColor: salesPipelineData.map((d) => d.fill),
+        borderWidth: 2,
+        borderRadius: 8,
+        hoverBackgroundColor: ["#2563eb", "#7c3aed", "#db2777", "#059669"],
+      },
+    ],
+  };
+
+  const ticketsTrendChartData = {
+    labels: ticketsTrendData.map((d) => d.date),
+    datasets: [
+      {
+        label: "Mới",
+        data: ticketsTrendData.map((d) => d["Mới"]),
+        backgroundColor: "rgba(239, 68, 68, 0.2)",
+        borderColor: "#ef4444",
+        borderWidth: 2,
+        fill: true,
+        tension: 0.4,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        pointBackgroundColor: "#ef4444",
+        pointBorderColor: "#fff",
+        pointBorderWidth: 2,
+      },
+      {
+        label: "Đang xử lý",
+        data: ticketsTrendData.map((d) => d["Đang xử lý"]),
+        backgroundColor: "rgba(245, 158, 11, 0.2)",
+        borderColor: "#f59e0b",
+        borderWidth: 2,
+        fill: true,
+        tension: 0.4,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        pointBackgroundColor: "#f59e0b",
+        pointBorderColor: "#fff",
+        pointBorderWidth: 2,
+      },
+      {
+        label: "Đã giải quyết",
+        data: ticketsTrendData.map((d) => d["Đã giải quyết"]),
+        backgroundColor: "rgba(16, 185, 129, 0.2)",
+        borderColor: "#10b981",
+        borderWidth: 2,
+        fill: true,
+        tension: 0.4,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        pointBackgroundColor: "#10b981",
+        pointBorderColor: "#fff",
+        pointBorderWidth: 2,
+      },
+    ],
+  };
+
+  const revenueChartData = {
+    labels: revenueData.map((d) => d.month),
+    datasets: [
+      {
+        label: "Báo giá",
+        data: revenueData.map((d) => d["Báo giá"]),
+        borderColor: "#8b5cf6",
+        backgroundColor: "#8b5cf6",
+        borderWidth: 3,
+        tension: 0.4,
+        pointRadius: 5,
+        pointHoverRadius: 7,
+        pointBackgroundColor: "#8b5cf6",
+        pointBorderColor: "#fff",
+        pointBorderWidth: 2,
+        pointHoverBackgroundColor: "#7c3aed",
+        pointHoverBorderColor: "#fff",
+      },
+      {
+        label: "Hợp đồng",
+        data: revenueData.map((d) => d["Hợp đồng"]),
+        borderColor: "#10b981",
+        backgroundColor: "#10b981",
+        borderWidth: 3,
+        tension: 0.4,
+        pointRadius: 5,
+        pointHoverRadius: 7,
+        pointBackgroundColor: "#10b981",
+        pointBorderColor: "#fff",
+        pointBorderWidth: 2,
+        pointHoverBackgroundColor: "#059669",
+        pointHoverBorderColor: "#fff",
+      },
+    ],
   };
 
   const formatPrice = (price) => {
@@ -338,7 +718,7 @@ const Dashboard = () => {
       color: "text-blue-600",
     },
     {
-      title: "Tổng doanh thu (Quotes)",
+      title: "Tổng doanh thu (Hợp đồng)",
       value: formatPrice(stats.totalRevenue),
       change: 0,
       icon: CurrencyDollarIcon,
@@ -390,19 +770,9 @@ const Dashboard = () => {
           <h3 className="text-lg font-semibold text-gray-900 mb-4">
             Quy trình bán hàng
           </h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={salesPipelineData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="stage" />
-              <YAxis />
-              <Tooltip />
-              <Bar dataKey="count" name="Số lượng">
-                {salesPipelineData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.fill} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
+          <div style={{ height: "300px" }}>
+            <Bar data={salesPipelineChartData} options={barChartOptions} />
+          </div>
         </div>
 
         {/* Tickets Trend Chart */}
@@ -410,36 +780,9 @@ const Dashboard = () => {
           <h3 className="text-lg font-semibold text-gray-900 mb-4">
             Xu hướng Tickets (7 ngày)
           </h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <AreaChart data={ticketsTrendData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="date" />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              <Area
-                type="monotone"
-                dataKey="Mới"
-                stackId="1"
-                stroke="#ef4444"
-                fill="#ef4444"
-              />
-              <Area
-                type="monotone"
-                dataKey="Đang xử lý"
-                stackId="1"
-                stroke="#f59e0b"
-                fill="#f59e0b"
-              />
-              <Area
-                type="monotone"
-                dataKey="Đã giải quyết"
-                stackId="1"
-                stroke="#10b981"
-                fill="#10b981"
-              />
-            </AreaChart>
-          </ResponsiveContainer>
+          <div style={{ height: "300px" }}>
+            <Line data={ticketsTrendChartData} options={areaChartOptions} />
+          </div>
         </div>
       </div>
 
@@ -448,29 +791,9 @@ const Dashboard = () => {
         <h3 className="text-lg font-semibold text-gray-900 mb-4">
           Doanh thu 6 tháng gần đây (Triệu VNĐ)
         </h3>
-        <ResponsiveContainer width="100%" height={300}>
-          <LineChart data={revenueData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="month" />
-            <YAxis />
-            <Tooltip formatter={(value) => `${value.toFixed(2)} triệu`} />
-            <Legend />
-            <Line
-              type="monotone"
-              dataKey="Báo giá"
-              stroke="#8b5cf6"
-              strokeWidth={2}
-              dot={{ r: 4 }}
-            />
-            <Line
-              type="monotone"
-              dataKey="Hợp đồng"
-              stroke="#10b981"
-              strokeWidth={2}
-              dot={{ r: 4 }}
-            />
-          </LineChart>
-        </ResponsiveContainer>
+        <div style={{ height: "300px" }}>
+          <Line data={revenueChartData} options={lineChartOptions} />
+        </div>
       </div>
 
       {/* Recent Activities */}
@@ -571,114 +894,6 @@ const Dashboard = () => {
                   Chưa có hợp đồng nào
                 </p>
               )}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Top Customers */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div className="bg-white shadow rounded-lg">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h3 className="text-lg font-medium text-gray-900">
-              Top khách hàng theo doanh thu
-            </h3>
-          </div>
-          <div className="p-6">
-            <div className="space-y-4">
-              {topCustomers.length > 0 ? (
-                topCustomers.map((customerData, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center justify-between"
-                  >
-                    <div className="flex items-center">
-                      <div className="flex-shrink-0 w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center">
-                        <span className="text-sm font-semibold text-indigo-600">
-                          #{index + 1}
-                        </span>
-                      </div>
-                      <div className="ml-3">
-                        <p className="text-sm font-medium text-gray-900">
-                          {customerData.customer?.name ||
-                            customerData.customer?.companyName ||
-                            "N/A"}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          {customerData.quoteCount} báo giá
-                        </p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-semibold text-green-600">
-                        {formatPrice(customerData.totalAmount)}
-                      </p>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <p className="text-sm text-gray-500 text-center py-4">
-                  Chưa có dữ liệu
-                </p>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Summary Stats */}
-        <div className="bg-white shadow rounded-lg">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h3 className="text-lg font-medium text-gray-900">
-              Thống kê tổng quan
-            </h3>
-          </div>
-          <div className="p-6">
-            <div className="space-y-4">
-              <div className="flex items-center justify-between py-3 border-b">
-                <div className="flex items-center">
-                  <DocumentTextIcon className="h-5 w-5 text-purple-600 mr-3" />
-                  <span className="text-sm text-gray-700">Tổng báo giá</span>
-                </div>
-                <span className="text-lg font-semibold text-gray-900">
-                  {stats.totalQuotes}
-                </span>
-              </div>
-              <div className="flex items-center justify-between py-3 border-b">
-                <div className="flex items-center">
-                  <CheckCircleIcon className="h-5 w-5 text-indigo-600 mr-3" />
-                  <span className="text-sm text-gray-700">Tổng hợp đồng</span>
-                </div>
-                <span className="text-lg font-semibold text-gray-900">
-                  {stats.totalContracts}
-                </span>
-              </div>
-              <div className="flex items-center justify-between py-3 border-b">
-                <div className="flex items-center">
-                  <UsersIcon className="h-5 w-5 text-blue-600 mr-3" />
-                  <span className="text-sm text-gray-700">Tổng khách hàng</span>
-                </div>
-                <span className="text-lg font-semibold text-gray-900">
-                  {stats.totalCustomers}
-                </span>
-              </div>
-              <div className="flex items-center justify-between py-3 border-b">
-                <div className="flex items-center">
-                  <SupportIcon className="h-5 w-5 text-red-600 mr-3" />
-                  <span className="text-sm text-gray-700">Ticket đang mở</span>
-                </div>
-                <span className="text-lg font-semibold text-red-600">
-                  {stats.openTickets}
-                </span>
-              </div>
-              <div className="flex items-center justify-between py-3">
-                <div className="flex items-center">
-                  <CurrencyDollarIcon className="h-5 w-5 text-green-600 mr-3" />
-                  <span className="text-sm text-gray-700">Tổng doanh thu</span>
-                </div>
-                <span className="text-sm font-semibold text-green-600">
-                  {formatPrice(stats.totalRevenue)}
-                </span>
-              </div>
             </div>
           </div>
         </div>
