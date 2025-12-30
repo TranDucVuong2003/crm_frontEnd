@@ -1335,3 +1335,73 @@ export const getPayslipsByStatus = (status) => {
 export const markPayslipAsPaid = (id) => {
   return apiClient.put(API_ENDPOINT.PAYSLIPS.MARK_PAID(id));
 };
+
+export const previewSalaryReport = (params) => {
+  return apiClient.post(API_ENDPOINT.PAYSLIPS.PREVIEW_REPORT, params, {
+    headers: {
+      Accept: "text/html",
+    },
+  });
+};
+
+export const exportSalaryReport = (params) => {
+  return apiClient.post(API_ENDPOINT.PAYSLIPS.EXPORT_REPORT, params, {
+    responseType: "blob",
+  });
+};
+
+// =============================
+// NOTIFICATIONS
+// =============================
+export const getMyNotifications = (params) => {
+  return apiClient.get(API_ENDPOINT.NOTIFICATIONS.GET_MY_NOTIFICATIONS, {
+    params,
+  });
+};
+
+export const getUnreadNotificationCount = () => {
+  return apiClient.get(API_ENDPOINT.NOTIFICATIONS.GET_UNREAD_COUNT);
+};
+
+export const markNotificationAsRead = (notificationId) => {
+  return apiClient.post(API_ENDPOINT.NOTIFICATIONS.MARK_AS_READ, {
+    notificationId,
+  });
+};
+
+export const markAllNotificationsAsRead = () => {
+  return apiClient.post(API_ENDPOINT.NOTIFICATIONS.MARK_ALL_AS_READ);
+};
+
+export const deleteNotification = (id) => {
+  return apiClient.delete(API_ENDPOINT.NOTIFICATIONS.DELETE(id));
+};
+
+// Admin - Create and send notification
+export const createNotification = (data) => {
+  return apiClient.post(API_ENDPOINT.NOTIFICATIONS.CREATE, data);
+};
+
+// Admin - Get all notifications
+export const getAllNotificationsAdmin = (params) => {
+  return apiClient.get(API_ENDPOINT.NOTIFICATIONS.GET_ALL_ADMIN, { params });
+};
+
+// Admin - Get notification recipients
+export const getNotificationRecipients = (notificationId) => {
+  return apiClient.get(
+    API_ENDPOINT.NOTIFICATIONS.GET_RECIPIENTS(notificationId)
+  );
+};
+
+// Admin - Get notification read status
+export const getNotificationReadStatus = (notificationId) => {
+  return apiClient.get(
+    API_ENDPOINT.NOTIFICATIONS.GET_READ_STATUS(notificationId)
+  );
+};
+
+// Admin - Update notification
+export const updateNotification = (id, data) => {
+  return apiClient.put(API_ENDPOINT.NOTIFICATIONS.UPDATE(id), data);
+};

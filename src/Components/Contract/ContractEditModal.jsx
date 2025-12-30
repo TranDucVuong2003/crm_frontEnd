@@ -47,6 +47,7 @@ const ContractEditModal = ({ isOpen, onClose, onSuccess, contractId }) => {
     expiration: "",
     notes: "",
     totalAmount: 0,
+    exportInvoices: false,
   });
 
   // Fetch all data when modal opens
@@ -128,6 +129,7 @@ const ContractEditModal = ({ isOpen, onClose, onSuccess, contractId }) => {
         expiration: formattedExpiration,
         notes: contract.notes || "",
         totalAmount: contract.totalAmount || 0,
+        exportInvoices: contract.exportInvoices || false,
       };
 
       console.log("Form data filled:", formDataToSet);
@@ -468,6 +470,24 @@ const ContractEditModal = ({ isOpen, onClose, onSuccess, contractId }) => {
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed"
                     />
                   </div>
+                </div>
+
+                {/* Xuất hóa đơn */}
+                <div>
+                  <label className="flex items-center space-x-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.exportInvoices}
+                      disabled
+                      className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500 cursor-not-allowed"
+                    />
+                    <span className="text-sm font-medium text-gray-700">
+                      Xuất hóa đơn cho hợp đồng này
+                    </span>
+                  </label>
+                  <p className="mt-1 text-xs text-gray-500 ml-7">
+                    Đánh dấu nếu cần xuất hóa đơn VAT cho hợp đồng
+                  </p>
                 </div>
 
                 {/* Notes */}

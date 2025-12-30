@@ -33,6 +33,7 @@ const ContractConfirmModal = ({
     paymentMethod: "Chuyển khoản",
     expiration: "",
     notes: "",
+    exportInvoices: false,
   });
 
   const [taxes, setTaxes] = useState([]);
@@ -54,6 +55,7 @@ const ContractConfirmModal = ({
           paymentMethod: "Chuyển khoản",
           expiration: expirationDate.toISOString().slice(0, 16),
           notes: deal.notes || "",
+          exportInvoices: false,
         });
       }
     }
@@ -129,6 +131,7 @@ const ContractConfirmModal = ({
         paymentMethod: formData.paymentMethod,
         expiration: new Date(formData.expiration).toISOString(),
         notes: formData.notes.trim() || "",
+        exportInvoices: formData.exportInvoices,
       };
 
       const contractResponse = await createContract(contractData);
@@ -372,6 +375,26 @@ const ContractConfirmModal = ({
                   setFormData({ ...formData, expiration: e.target.value })
                 }
               />
+            </div>
+
+            {/* Xuất hóa đơn */}
+            <div className="md:col-span-2">
+              <label className="flex items-center space-x-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.exportInvoices}
+                  onChange={(e) =>
+                    setFormData({ ...formData, exportInvoices: e.target.checked })
+                  }
+                  className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                />
+                <span className="text-sm font-medium text-gray-700">
+                  Xuất hóa đơn cho hợp đồng này
+                </span>
+              </label>
+              <p className="mt-1 text-xs text-gray-500 ml-7">
+                Đánh dấu nếu cần xuất hóa đơn VAT cho hợp đồng
+              </p>
             </div>
 
             {/* Ghi chú */}

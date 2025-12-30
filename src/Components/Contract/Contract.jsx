@@ -226,6 +226,9 @@ const Contract = () => {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Trạng thái
                 </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Xuất hóa đơn
+                </th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Thao tác
                 </th>
@@ -234,7 +237,7 @@ const Contract = () => {
             <tbody className="bg-white divide-y divide-gray-200">
               {isLoading ? (
                 <tr>
-                  <td colSpan="8" className="px-6 py-12 text-center">
+                  <td colSpan="9" className="px-6 py-12 text-center">
                     <div className="flex justify-center items-center">
                       <svg
                         className="animate-spin h-8 w-8 text-blue-600"
@@ -334,6 +337,19 @@ const Contract = () => {
                       {contract.status}
                     </td>
 
+                    {/* Extract Invoices */}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {contract.extractInvoices ? (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                          Có
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                          Không
+                        </span>
+                      )}
+                    </td>
+
                     {/* Actions */}
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex items-center justify-end gap-2">
@@ -385,7 +401,7 @@ const Contract = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="8" className="px-6 py-12 text-center">
+                  <td colSpan="9" className="px-6 py-12 text-center">
                     <DocumentTextIcon className="h-12 w-12 text-gray-400 mx-auto mb-2" />
                     <p className="text-gray-500">Không tìm thấy hợp đồng nào</p>
                   </td>

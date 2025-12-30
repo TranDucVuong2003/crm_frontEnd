@@ -196,7 +196,7 @@ const API_ENDPOINT = {
 
   // Roles endpoints
   ROLES: {
-    GET_ALL: "/api/Roles",
+    GET_ALL: "/api/roles",
     CREATE: "/api/Roles",
     GET_BY_ID: (id) => `/api/Roles/${id}`,
     UPDATE: (id) => `/api/Roles/${id}`,
@@ -394,6 +394,23 @@ const API_ENDPOINT = {
       `/api/Payslips/month/${month}/year/${year}`,
     GET_BY_STATUS: (status) => `/api/Payslips/status/${status}`,
     MARK_PAID: (id) => `/api/Payslips/${id}/mark-paid`,
+    PREVIEW_REPORT: "/api/Payslips/preview-salary-report",
+    EXPORT_REPORT: "/api/Payslips/export-salary-report",
+  },
+
+  // Notifications endpoints
+  NOTIFICATIONS: {
+    GET_MY_NOTIFICATIONS: "/api/notifications/my-notifications",
+    GET_UNREAD_COUNT: "/api/notifications/unread-count",
+    MARK_AS_READ: "/api/notifications/mark-as-read",
+    MARK_ALL_AS_READ: "/api/notifications/mark-all-as-read",
+    DELETE: (id) => `/api/notifications/${id}`,
+    // Admin endpoints
+    CREATE: "/api/notifications",
+    GET_ALL_ADMIN: "/api/notifications/admin/all",
+    GET_RECIPIENTS: (id) => `/api/notifications/${id}/recipients`,
+    GET_READ_STATUS: (id) => `/api/notifications/${id}/read-status`,
+    UPDATE: (id) => `/api/notifications/${id}`,
   },
 };
 

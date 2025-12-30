@@ -45,6 +45,7 @@ import {
   CommissionRates,
   KpiDashboard,
 } from "../Components/KPI";
+import Notification from "../Components/Notification/Notification";
 
 function AppRouter() {
   const router = createBrowserRouter([
@@ -159,6 +160,10 @@ function AppRouter() {
         {
           path: "user-profile",
           element: <UserProfile />,
+        },
+        {
+          path: "notifications",
+          element: <Notification />,
         },
         {
           path: "accounting",

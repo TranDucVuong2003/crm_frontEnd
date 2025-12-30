@@ -13,16 +13,31 @@ import {
 import { useNavigate } from "react-router-dom";
 import { getAllDepartments } from "../../Service/ApiService";
 import { showErrorAlert } from "../../utils/sweetAlert";
+import { useAuth } from "../../Context/AuthContext";
+import SalaryReportPreviewModal from "./SalaryReportPreviewModal";
+import SalaryReportFilterModal from "./SalaryReportFilterModal";
 
 const Salary = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [departments, setDepartments] = useState([]);
+  const [showFilterModal, setShowFilterModal] = useState(false);
+  const [showReportPreview, setShowReportPreview] = useState(false);
   const [statistics, setStatistics] = useState({
     totalSalary: 0,
     averageSalary: 0,
     totalEmployees: 0,
     growth: 0,
+  });
+
+  // Get current month and year for report filter
+  const currentDate = new Date();
+  const [reportFilter, setReportFilter] = useState({
+    month: currentDate.getMonth() + 1,
+    year: currentDate.getFullYear(),
+    departmentId: null,
+    createdByName: user?.fullname || "Admin",
   });
 
   useEffect(() => {
@@ -82,6 +97,19 @@ const Salary = () => {
   const handleDepartmentClick = (department) => {
     // Navigate to department detail page
     navigate(`/accounting/salary/department/${department.id}`);
+  };
+
+  const handleFilterSubmit = (filterData) => {
+    // Update report filter with selected month/year and current user
+    setReportFilter({
+      month: filterData.month,
+      year: filterData.year,
+      departmentId: null,
+      createdByName: user?.fullname || "Admin",
+    });
+    // Close filter modal and open preview modal
+    setShowFilterModal(false);
+    setShowReportPreview(true);
   };
 
   const StatCard = ({ icon: Icon, title, value, subtitle, trend }) => (
@@ -235,7 +263,10 @@ const Salary = () => {
             <CurrencyDollarIcon className="h-5 w-5" />
             Cấu hình lương
           </button>
-          <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center gap-2">
+          <button
+            onClick={() => setShowFilterModal(true)}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center gap-2"
+          >
             <ChartBarIcon className="h-5 w-5" />
             Báo cáo chi tiết
           </button>
@@ -322,6 +353,24 @@ const Salary = () => {
           </p>
         </div>
       )}
+
+      {/* Salary Report Filter Modal */}
+      <SalaryReportFilterModal
+        isOpen={showFilterModal}
+        onClose={() => setShowFilterModal(false)}
+        onSubmit={handleFilterSubmit}
+        defaultValues={{
+          month: reportFilter.month,
+          year: reportFilter.year,
+        }}
+      />
+
+      {/* Salary Report Preview Modal */}
+      <SalaryReportPreviewModal
+        isOpen={showReportPreview}
+        onClose={() => setShowReportPreview(false)}
+        filterParams={reportFilter}
+      />
     </div>
   );
 };

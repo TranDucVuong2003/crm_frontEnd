@@ -12,6 +12,7 @@ import {
   XMarkIcon as XIcon,
   ChevronDownIcon,
   ChevronRightIcon,
+  BellIcon,
 } from "@heroicons/react/24/outline";
 import { useAuth } from "../Context/AuthContext";
 import { getSidebarMenu } from "../Service/ApiService";
@@ -24,6 +25,7 @@ const iconMap = {
   LifebuoyIcon: SupportIcon,
   DocumentChartBarIcon: DocumentReportIcon,
   CogIcon,
+  BellIcon,
 };
 
 function SideBar() {
