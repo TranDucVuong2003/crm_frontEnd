@@ -15,6 +15,7 @@
     "@hello-pangea/dnd": "^18.0.1",
     "@heroicons/react": "^2.2.0",
     "@microsoft/signalr": "^10.0.0",
+    "@monaco-editor/react": "^4.7.0",
     "@tailwindcss/vite": "^4.1.14",
     "axios": "^1.12.2",
     "chart.js": "^4.5.1",
@@ -27,6 +28,7 @@
     "react": "^19.1.1",
     "react-chartjs-2": "^5.3.1",
     "react-dom": "^19.1.1",
+    "react-quill-new": "^3.7.0",
     "react-router-dom": "^7.9.3",
     "sweetalert2": "^11.26.2",
     "tailwindcss": "^4.1.14"

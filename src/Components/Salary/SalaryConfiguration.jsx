@@ -8,15 +8,34 @@ import {
   CheckCircleIcon,
   ArrowLeftIcon,
   ChevronDownIcon,
+  PaperClipIcon,
+  XMarkIcon,
+  TrashIcon,
+  PencilIcon,
+  EyeIcon,
+  DocumentArrowDownIcon,
 } from "@heroicons/react/24/outline";
-import { createSalaryContract, getAllUsers } from "../../Service/ApiService";
-import { showSuccessAlert, showErrorAlert } from "../../utils/sweetAlert";
+import {
+  createSalaryContract,
+  getAllUsers,
+  getAllSalaryContracts,
+  deleteSalaryContract,
+  updateSalaryContract,
+  downloadCommitment08Template,
+} from "../../Service/ApiService";
+import {
+  showSuccessAlert,
+  showErrorAlert,
+  showDeleteConfirm,
+} from "../../utils/sweetAlert";
 
 const SalaryConfiguration = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [users, setUsers] = useState([]);
   const [loadingUsers, setLoadingUsers] = useState(true);
+  const [contracts, setContracts] = useState([]);
+  const [loadingContracts, setLoadingContracts] = useState(true);
   const [sameAsBaseSalary, setSameAsBaseSalary] = useState(true);
   const [userSearchTerm, setUserSearchTerm] = useState("");
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
@@ -31,6 +50,8 @@ const SalaryConfiguration = () => {
     dependentsCount: 0,
     hasCommitment08: false,
   });
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [filePreview, setFilePreview] = useState(null);
 
   const contractTypes = [
     { value: "OFFICIAL", label: "Chính thức" },
@@ -41,6 +62,7 @@ const SalaryConfiguration = () => {
 
   useEffect(() => {
     fetchUsers();
+    fetchContracts();
   }, []);
 
   useEffect(() => {
@@ -73,6 +95,49 @@ const SalaryConfiguration = () => {
     }
   };
 
+  const fetchContracts = async () => {
+    setLoadingContracts(true);
+    try {
+      const response = await getAllSalaryContracts();
+      // Handle different response formats
+      const contractsList = Array.isArray(response.data)
+        ? response.data
+        : response.data?.data || [];
+      setContracts(contractsList);
+    } catch (error) {
+      console.error("Error fetching contracts:", error);
+      setContracts([]); // Ensure contracts is always an array
+    } finally {
+      setLoadingContracts(false);
+    }
+  };
+
+  const handleDeleteContract = async (id) => {
+    const result = await showDeleteConfirm(
+      "Bạn có chắc chắn muốn xóa cấu hình lương này?",
+      "Hành động này không thể hoàn tác!"
+    );
+
+    if (result.isConfirmed) {
+      try {
+        await deleteSalaryContract(id);
+        await fetchContracts();
+        showSuccessAlert("Thành công", "Đã xóa cấu hình lương");
+      } catch (error) {
+        console.error("Error deleting contract:", error);
+        showErrorAlert("Lỗi", "Không thể xóa cấu hình lương");
+      }
+    }
+  };
+
+  const handleDownloadAttachment = (contract) => {
+    if (contract.attachmentPath) {
+      const baseUrl = import.meta.env.VITE_BASE_URL || "http://localhost:5000";
+      const fileUrl = `${baseUrl}${contract.attachmentPath}`;
+      window.open(fileUrl, "_blank");
+    }
+  };
+
   const handleUserSearchChange = (e) => {
     setUserSearchTerm(e.target.value);
     setIsUserDropdownOpen(true);
@@ -101,6 +166,12 @@ const SalaryConfiguration = () => {
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
+
+    // If unchecking hasCommitment08, clear the file
+    if (name === "hasCommitment08" && !checked) {
+      handleRemoveFile();
+    }
+
     setFormData((prev) => ({
       ...prev,
       [name]: type === "checkbox" ? checked : value,
@@ -160,6 +231,74 @@ const SalaryConfiguration = () => {
     return new Intl.NumberFormat("vi-VN").format(value);
   };
 
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Validate file type
+    const allowedTypes = [
+      "application/pdf",
+      "application/msword",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "image/jpeg",
+      "image/jpg",
+      "image/png",
+    ];
+
+    if (!allowedTypes.includes(file.type)) {
+      showErrorAlert(
+        "Lỗi",
+        "File không hợp lệ. Chỉ chấp nhận: PDF, DOC, DOCX, JPG, PNG"
+      );
+      e.target.value = null;
+      return;
+    }
+
+    // Validate file size (5MB)
+    const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+    if (file.size > maxSize) {
+      showErrorAlert("Lỗi", "File quá lớn. Kích thước tối đa: 5MB");
+      e.target.value = null;
+      return;
+    }
+
+    setSelectedFile(file);
+    setFilePreview({
+      name: file.name,
+      size: (file.size / 1024).toFixed(2), // Convert to KB
+      type: file.type,
+    });
+  };
+
+  const handleRemoveFile = () => {
+    setSelectedFile(null);
+    setFilePreview(null);
+    // Clear file input
+    const fileInput = document.getElementById("attachment");
+    if (fileInput) fileInput.value = null;
+  };
+
+  const handleDownloadTemplate = async () => {
+    try {
+      const response = await downloadCommitment08Template();
+
+      const blob = response.data;
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "mau-so-8-mst-tt86.docx";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      showSuccessAlert("Thành công", "Đã tải file mẫu thành công");
+    } catch (error) {
+      console.error("Error downloading template:", error);
+      showErrorAlert("Lỗi", "Không thể tải file mẫu. Vui lòng thử lại");
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -179,16 +318,27 @@ const SalaryConfiguration = () => {
 
     setLoading(true);
     try {
-      const payload = {
-        userId: parseInt(formData.userId),
-        baseSalary: parseInt(formData.baseSalary),
-        insuranceSalary: parseInt(formData.insuranceSalary),
-        contractType: formData.contractType,
-        dependentsCount: parseInt(formData.dependentsCount),
-        hasCommitment08: formData.hasCommitment08,
-      };
+      // Create FormData for multipart/form-data request
+      const formDataToSend = new FormData();
+      formDataToSend.append("UserId", parseInt(formData.userId));
+      formDataToSend.append("BaseSalary", parseInt(formData.baseSalary));
+      formDataToSend.append(
+        "InsuranceSalary",
+        parseInt(formData.insuranceSalary)
+      );
+      formDataToSend.append("ContractType", formData.contractType);
+      formDataToSend.append(
+        "DependentsCount",
+        parseInt(formData.dependentsCount)
+      );
+      formDataToSend.append("HasCommitment08", formData.hasCommitment08);
 
-      await createSalaryContract(payload);
+      // Append file if selected
+      if (selectedFile) {
+        formDataToSend.append("Attachment", selectedFile);
+      }
+
+      await createSalaryContract(formDataToSend);
       showSuccessAlert("Thành công", "Đã tạo cấu hình lương thành công");
       navigate("/accounting/salary");
     } catch (error) {
@@ -491,6 +641,101 @@ const SalaryConfiguration = () => {
               </div>
             </div>
 
+            {/* Download Template - Only show when hasCommitment08 is checked */}
+            {formData.hasCommitment08 && (
+              <div className="mb-6">
+                <button
+                  type="button"
+                  onClick={handleDownloadTemplate}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all shadow-sm hover:shadow-md"
+                >
+                  <svg
+                    className="h-5 w-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                    />
+                  </svg>
+                  <span className="font-medium">
+                    Tải mẫu Cam kết Thông tư 08
+                  </span>
+                </button>
+                <p className="text-xs text-gray-500 mt-2 text-center">
+                  File mẫu định dạng HTML để nhân viên điền thông tin
+                </p>
+              </div>
+            )}
+
+            {/* File Attachment Upload - Only show when hasCommitment08 is checked */}
+            {formData.hasCommitment08 && (
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <div className="flex items-center gap-2">
+                    <PaperClipIcon className="h-5 w-5 text-gray-500" />
+                    File đính kèm (Hợp đồng, Thông tư, Cam kết...)
+                  </div>
+                </label>
+
+                {!filePreview ? (
+                  <div className="relative">
+                    <input
+                      type="file"
+                      id="attachment"
+                      onChange={handleFileChange}
+                      accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                      className="hidden"
+                    />
+                    <label
+                      htmlFor="attachment"
+                      className="flex items-center justify-center w-full px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-500 cursor-pointer transition-colors bg-gray-50 hover:bg-blue-50"
+                    >
+                      <div className="text-center">
+                        <PaperClipIcon className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                        <p className="text-sm text-gray-600">
+                          <span className="text-blue-600 font-medium">
+                            Chọn file
+                          </span>{" "}
+                          hoặc kéo thả vào đây
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          PDF, DOC, DOCX, JPG, PNG (Tối đa 5MB)
+                        </p>
+                      </div>
+                    </label>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between p-4 border border-gray-300 rounded-lg bg-blue-50">
+                    <div className="flex items-center gap-3 flex-1">
+                      <div className="flex-shrink-0">
+                        <PaperClipIcon className="h-8 w-8 text-blue-600" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 truncate">
+                          {filePreview.name}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {filePreview.size} KB
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleRemoveFile}
+                      className="flex-shrink-0 p-1 hover:bg-red-100 rounded-full transition-colors"
+                    >
+                      <XMarkIcon className="h-5 w-5 text-red-600" />
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Action Buttons */}
             <div className="flex flex-col gap-3">
               <button
@@ -520,6 +765,169 @@ const SalaryConfiguration = () => {
                 Hủy
               </button>
             </div>
+          </div>
+        </div>
+
+        {/* Contracts List Table */}
+        <div className="lg:col-span-3 bg-white rounded-xl shadow-lg mt-6">
+          <div className="p-4 md:p-6 border-b border-gray-200">
+            <h3 className="text-base md:text-lg font-semibold text-gray-900 flex items-center gap-2">
+              <DocumentTextIcon className="h-5 w-5 md:h-6 md:w-6 text-blue-600" />
+              Danh sách cấu hình lương đã tạo
+            </h3>
+            <p className="text-xs md:text-sm text-gray-600 mt-1">
+              Tổng số: {Array.isArray(contracts) ? contracts.length : 0} cấu
+              hình
+            </p>
+          </div>
+
+          {/* Responsive Table Container */}
+          <div className="w-full overflow-x-auto">
+            <table className="w-full min-w-max">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                    ID
+                  </th>
+                  <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[150px]">
+                    Nhân viên
+                  </th>
+                  <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                    Lương cơ bản
+                  </th>
+                  <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                    Lương BHXH
+                  </th>
+                  <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                    Loại HĐ
+                  </th>
+                  <th className="px-3 md:px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                    NPT
+                  </th>
+                  <th className="px-3 md:px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                    Cam kết 08
+                  </th>
+                  <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                    Ngày tạo
+                  </th>
+                  <th className="px-3 md:px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap sticky right-0 bg-gray-50">
+                    Thao tác
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {loadingContracts ? (
+                  <tr>
+                    <td colSpan="9" className="px-3 md:px-6 py-12 text-center">
+                      <div className="flex justify-center items-center">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                      </div>
+                    </td>
+                  </tr>
+                ) : contracts.length === 0 ? (
+                  <tr>
+                    <td colSpan="9" className="px-3 md:px-6 py-12 text-center">
+                      <p className="text-gray-500 text-sm">
+                        Chưa có cấu hình lương nào
+                      </p>
+                    </td>
+                  </tr>
+                ) : (
+                  Array.isArray(contracts) &&
+                  contracts.map((contract) => (
+                    <tr
+                      key={contract.id}
+                      className="hover:bg-gray-50 transition-colors"
+                    >
+                      <td className="px-3 md:px-6 py-4 whitespace-nowrap">
+                        <span className="text-xs md:text-sm font-medium text-gray-900">
+                          #{contract.id}
+                        </span>
+                      </td>
+                      <td className="px-3 md:px-6 py-4 whitespace-nowrap">
+                        <div className="flex flex-col min-w-[150px]">
+                          <span className="text-xs md:text-sm font-medium text-gray-900 truncate">
+                            {contract.userName || "N/A"}
+                          </span>
+                          <span className="text-xs text-gray-500 truncate">
+                            {contract.userEmail}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-3 md:px-6 py-4 whitespace-nowrap">
+                        <span className="text-xs md:text-sm font-semibold text-blue-600">
+                          {formatCurrency(contract.baseSalary)} đ
+                        </span>
+                      </td>
+                      <td className="px-3 md:px-6 py-4 whitespace-nowrap">
+                        <span className="text-xs md:text-sm text-gray-900">
+                          {formatCurrency(contract.insuranceSalary)} đ
+                        </span>
+                      </td>
+                      <td className="px-3 md:px-6 py-4 whitespace-nowrap">
+                        <span
+                          className={`px-2 py-1 text-xs font-medium rounded-full whitespace-nowrap ${
+                            contract.contractType === "OFFICIAL"
+                              ? "bg-green-100 text-green-800"
+                              : "bg-purple-100 text-purple-800"
+                          }`}
+                        >
+                          {contract.contractType === "OFFICIAL"
+                            ? "Chính thức"
+                            : contract.contractType}
+                        </span>
+                      </td>
+                      <td className="px-3 md:px-6 py-4 whitespace-nowrap text-center">
+                        <span className="text-xs md:text-sm font-medium text-gray-900">
+                          {contract.dependentsCount}
+                        </span>
+                      </td>
+                      <td className="px-3 md:px-6 py-4 whitespace-nowrap text-center">
+                        {contract.hasCommitment08 ? (
+                          <CheckCircleIcon className="h-5 w-5 md:h-6 md:w-6 text-green-500 mx-auto" />
+                        ) : (
+                          <XMarkIcon className="h-5 w-5 md:h-6 md:w-6 text-gray-300 mx-auto" />
+                        )}
+                      </td>
+                      <td className="px-3 md:px-6 py-4 whitespace-nowrap">
+                        <span className="text-xs md:text-sm text-gray-600">
+                          {new Date(contract.createdAt).toLocaleDateString(
+                            "vi-VN"
+                          )}
+                        </span>
+                      </td>
+                      <td className="px-3 md:px-6 py-4 whitespace-nowrap sticky right-0 bg-white">
+                        <div className="flex items-center justify-center gap-1 md:gap-2">
+                          {contract.attachmentPath && (
+                            <button
+                              onClick={() => handleDownloadAttachment(contract)}
+                              className="p-1.5 md:p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                              title="Tải file đính kèm"
+                            >
+                              <DocumentArrowDownIcon className="h-4 w-4 md:h-5 md:w-5" />
+                            </button>
+                          )}
+                          <button
+                            onClick={() => handleDeleteContract(contract.id)}
+                            className="p-1.5 md:p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Xóa"
+                          >
+                            <TrashIcon className="h-4 w-4 md:h-5 md:w-5" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Scroll hint for mobile */}
+          <div className="md:hidden px-4 py-2 bg-blue-50 border-t border-blue-200">
+            <p className="text-xs text-blue-600 text-center">
+              ← Vuốt sang trái để xem thêm →
+            </p>
           </div>
         </div>
       </div>

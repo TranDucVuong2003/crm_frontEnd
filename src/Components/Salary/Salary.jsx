@@ -4,14 +4,16 @@ import {
   UsersIcon,
   CurrencyDollarIcon,
   ChartBarIcon,
-  BuildingOfficeIcon,
   ArrowTrendingUpIcon,
   ArrowTrendingDownIcon,
   AdjustmentsHorizontalIcon,
   DocumentTextIcon,
+  CalendarIcon,
+  CheckCircleIcon,
+  ClockIcon,
 } from "@heroicons/react/24/outline";
 import { useNavigate } from "react-router-dom";
-import { getAllDepartments } from "../../Service/ApiService";
+import { getPayslipsByMonthYear } from "../../Service/ApiService";
 import { showErrorAlert } from "../../utils/sweetAlert";
 import { useAuth } from "../../Context/AuthContext";
 import SalaryReportPreviewModal from "./SalaryReportPreviewModal";
@@ -21,7 +23,7 @@ const Salary = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [departments, setDepartments] = useState([]);
+  const [payslips, setPayslips] = useState([]);
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [showReportPreview, setShowReportPreview] = useState(false);
   const [statistics, setStatistics] = useState({
@@ -31,8 +33,11 @@ const Salary = () => {
     growth: 0,
   });
 
-  // Get current month and year for report filter
+  // Get current month and year for filter
   const currentDate = new Date();
+  const [selectedMonth, setSelectedMonth] = useState(currentDate.getMonth() + 1);
+  const [selectedYear, setSelectedYear] = useState(currentDate.getFullYear());
+  
   const [reportFilter, setReportFilter] = useState({
     month: currentDate.getMonth() + 1,
     year: currentDate.getFullYear(),
@@ -42,43 +47,35 @@ const Salary = () => {
 
   useEffect(() => {
     fetchSalaryData();
-  }, []);
+  }, [selectedMonth, selectedYear]);
 
   const fetchSalaryData = async () => {
     setLoading(true);
     try {
-      // Gọi API lấy danh sách phòng ban
-      const response = await getAllDepartments();
-      const departmentsData = response.data;
+      // Gọi API lấy danh sách payslips theo tháng/năm
+      const response = await getPayslipsByMonthYear(selectedMonth, selectedYear);
+      const data = response.data;
+      
+      // Response có structure: { month, year, payslips, statistics }
+      const payslipsData = data.payslips || [];
+      const statsData = data.statistics || {};
 
-      // Mock data cho statistics (sẽ cần API riêng cho phần này)
+      setPayslips(payslipsData);
+
+      // Sử dụng statistics từ API
       setStatistics({
-        totalSalary: 500000000, // 500 triệu
-        averageSalary: 15000000, // 15 triệu
-        totalEmployees: 33,
-        growth: 8.5,
+        totalSalary: statsData.totalGrossSalary || 0,
+        averageSalary: statsData.totalEmployees > 0 
+          ? statsData.totalGrossSalary / statsData.totalEmployees 
+          : 0,
+        totalEmployees: statsData.totalEmployees || 0,
+        growth: 8.5, // TODO: Cần tính toán growth từ tháng trước
       });
 
-      // Map dữ liệu từ API sang format hiển thị
-      const mappedDepartments = departmentsData.map((dept) => ({
-        id: dept.id,
-        name: dept.name,
-        city: dept.resion?.city || "N/A",
-        employeeCount: 0, // TODO: Cần API để lấy số nhân viên
-        totalSalary: 0, // TODO: Cần API để lấy tổng lương
-        averageSalary: 0, // TODO: Cần API để lấy lương TB
-        growth: 0, // TODO: Cần API để lấy % tăng trưởng
-        createdAt: dept.createdAt,
-      }));
-
-      setDepartments(mappedDepartments);
       setLoading(false);
     } catch (error) {
       console.error("Error fetching salary data:", error);
-      showErrorAlert(
-        "Lỗi",
-        "Không thể tải dữ liệu phòng ban. Vui lòng thử lại"
-      );
+      showErrorAlert("Lỗi", "Không thể tải dữ liệu lương. Vui lòng thử lại");
       setLoading(false);
     }
   };
@@ -94,9 +91,9 @@ const Salary = () => {
     return new Intl.NumberFormat("vi-VN").format(num);
   };
 
-  const handleDepartmentClick = (department) => {
-    // Navigate to department detail page
-    navigate(`/accounting/salary/department/${department.id}`);
+  const handleDepartmentClick = (payslip) => {
+    // Navigate to payslip detail page
+    navigate(`/accounting/salary/payslip/${payslip.id}`);
   };
 
   const handleFilterSubmit = (filterData) => {
@@ -110,6 +107,43 @@ const Salary = () => {
     // Close filter modal and open preview modal
     setShowFilterModal(false);
     setShowReportPreview(true);
+  };
+
+  const getStatusBadge = (status) => {
+    const statusConfig = {
+      DRAFT: {
+        label: "Nháp",
+        color: "bg-gray-100 text-gray-700",
+        icon: ClockIcon,
+      },
+      PENDING: {
+        label: "Chờ duyệt",
+        color: "bg-yellow-100 text-yellow-700",
+        icon: ClockIcon,
+      },
+      APPROVED: {
+        label: "Đã duyệt",
+        color: "bg-blue-100 text-blue-700",
+        icon: CheckCircleIcon,
+      },
+      PAID: {
+        label: "Đã thanh toán",
+        color: "bg-green-100 text-green-700",
+        icon: CheckCircleIcon,
+      },
+    };
+
+    const config = statusConfig[status] || statusConfig.DRAFT;
+    const Icon = config.icon;
+
+    return (
+      <span
+        className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${config.color}`}
+      >
+        <Icon className="h-3 w-3" />
+        {config.label}
+      </span>
+    );
   };
 
   const StatCard = ({ icon: Icon, title, value, subtitle, trend }) => (
@@ -145,97 +179,56 @@ const Salary = () => {
     </div>
   );
 
-  const DepartmentCard = ({ department }) => (
-    <div
-      onClick={() => handleDepartmentClick(department)}
-      className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-lg hover:border-blue-300 transition-all cursor-pointer group"
-    >
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex items-center gap-3">
-          <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg group-hover:scale-110 transition-transform">
-            <BuildingOfficeIcon className="h-6 w-6 text-white" />
-          </div>
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900">
-              {department.name}
-            </h3>
-            <p className="text-sm text-gray-500">{department.city}</p>
-          </div>
-        </div>
-        {department.growth !== undefined && department.growth !== 0 && (
-          <div
-            className={`flex items-center gap-1 px-2 py-1 rounded-full ${
-              department.growth >= 0
-                ? "bg-green-100 text-green-700"
-                : "bg-red-100 text-red-700"
-            }`}
-          >
-            {department.growth >= 0 ? (
-              <ArrowTrendingUpIcon className="h-4 w-4" />
-            ) : (
-              <ArrowTrendingDownIcon className="h-4 w-4" />
-            )}
-            <span className="text-xs font-semibold">
-              {Math.abs(department.growth)}%
+  const DepartmentCard = ({ payslip }) => {
+    return (
+      <tr
+        onClick={() => handleDepartmentClick(payslip)}
+        className="hover:bg-gray-50 cursor-pointer transition-colors"
+      >
+        <td className="px-6 py-4 whitespace-nowrap">
+          <div className="flex flex-col">
+            <span className="text-sm font-medium text-gray-900">
+              {payslip.userName}
             </span>
+            <span className="text-sm text-gray-500">{payslip.userEmail}</span>
           </div>
-        )}
-      </div>
-
-      <div className="space-y-3">
-        {department.employeeCount > 0 && (
-          <div className="flex items-center justify-between py-2 border-t border-gray-100">
-            <span className="text-sm text-gray-600">Số nhân viên</span>
-            <span className="text-sm font-semibold text-gray-900">
-              {department.employeeCount} người
-            </span>
-          </div>
-        )}
-        {department.totalSalary > 0 && (
-          <div className="flex items-center justify-between py-2 border-t border-gray-100">
-            <span className="text-sm text-gray-600">Tổng lương</span>
-            <span className="text-sm font-semibold text-gray-900">
-              {formatCurrency(department.totalSalary)}
-            </span>
-          </div>
-        )}
-        {department.averageSalary > 0 && (
-          <div className="flex items-center justify-between py-2 border-t border-gray-100">
-            <span className="text-sm text-gray-600">Lương TB</span>
-            <span className="text-sm font-semibold text-blue-600">
-              {formatCurrency(department.averageSalary)}
-            </span>
-          </div>
-        )}
-        {department.employeeCount === 0 && department.totalSalary === 0 && (
-          <div className="py-2 border-t border-gray-100">
-            <p className="text-sm text-gray-500 text-center italic">
-              Chưa có dữ liệu lương
-            </p>
-          </div>
-        )}
-      </div>
-
-      <div className="mt-4 pt-4 border-t border-gray-100">
-        <button className="w-full text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center justify-center gap-2 group-hover:gap-3 transition-all">
-          Xem chi tiết
-          <svg
-            className="h-4 w-4"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M9 5l7 7-7 7"
-            />
-          </svg>
-        </button>
-      </div>
-    </div>
-  );
+        </td>
+        <td className="px-6 py-4 whitespace-nowrap text-center">
+          <span className="text-sm text-gray-900">
+            {payslip.month}/{payslip.year}
+          </span>
+        </td>
+        <td className="px-6 py-4 whitespace-nowrap text-center">
+          <span className="text-sm text-gray-900">
+            {payslip.standardWorkDays}
+          </span>
+        </td>
+        <td className="px-6 py-4 whitespace-nowrap text-right">
+          <span className="text-sm font-medium text-gray-900">
+            {formatCurrency(payslip.grossSalary)}
+          </span>
+        </td>
+        <td className="px-6 py-4 whitespace-nowrap text-right">
+          <span className="text-sm font-medium text-red-600">
+            {formatCurrency(payslip.insuranceDeduction)}
+          </span>
+        </td>
+        <td className="px-6 py-4 whitespace-nowrap text-right">
+          <span className="text-sm font-medium text-red-600">
+            {formatCurrency(payslip.taxAmount)}
+          </span>
+        </td>
+        <td className="px-6 py-4 whitespace-nowrap text-right">
+          <span className="text-sm font-semibold text-green-600">
+            {formatCurrency(payslip.netSalary)}
+          </span>
+        </td>
+        <td className="px-6 py-4 whitespace-nowrap text-center">
+          {getStatusBadge(payslip.status)}
+        </td>
+      </tr>
+    );
+  };
 
   if (loading) {
     return (
@@ -252,7 +245,7 @@ const Salary = () => {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Quản lý lương</h1>
           <p className="text-gray-600 mt-1">
-            Thống kê và phân tích lương theo phòng ban
+            Thống kê và phân tích lương theo nhân viên
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -294,13 +287,61 @@ const Salary = () => {
         </div>
       </div>
 
+      {/* Month/Year Filter */}
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl shadow-sm border border-blue-100 p-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-blue-500 rounded-lg">
+                <CalendarIcon className="h-5 w-5 text-white" />
+              </div>
+              <span className="text-base font-semibold text-gray-800">Kỳ lương</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <select
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
+                className="px-4 py-2.5 bg-white border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm font-medium text-gray-700 hover:border-blue-300 transition-colors cursor-pointer"
+              >
+                {[...Array(12)].map((_, i) => (
+                  <option key={i + 1} value={i + 1}>
+                    Tháng {i + 1}
+                  </option>
+                ))}
+              </select>
+              <span className="text-gray-400 font-medium">/</span>
+              <select
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                className="px-4 py-2.5 bg-white border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm font-medium text-gray-700 hover:border-blue-300 transition-colors cursor-pointer"
+              >
+                {[...Array(5)].map((_, i) => {
+                  const year = currentDate.getFullYear() - 2 + i;
+                  return (
+                    <option key={year} value={year}>
+                      {year}
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-lg border border-blue-200">
+            <DocumentTextIcon className="h-5 w-5 text-blue-500" />
+            <span className="text-sm text-gray-600">
+              <span className="font-bold text-blue-600 text-lg">{payslips.length}</span> phiếu lương
+            </span>
+          </div>
+        </div>
+      </div>
+
       {/* Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
           icon={BanknotesIcon}
           title="Tổng quỹ lương"
           value={formatCurrency(statistics.totalSalary)}
-          subtitle="Tháng này"
+          subtitle={`Tháng ${selectedMonth}/${selectedYear}`}
         />
         <StatCard
           icon={CurrencyDollarIcon}
@@ -323,34 +364,64 @@ const Salary = () => {
         />
       </div>
 
-      {/* Departments Section */}
+      {/* Payslips Section */}
       <div>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold text-gray-900">
-            Lương theo phòng ban
+            Danh sách phiếu lương
           </h2>
-          <p className="text-sm text-gray-500">
-            {departments.length} phòng ban
-          </p>
+          <p className="text-sm text-gray-500">{payslips.length} phiếu lương</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {departments.map((department) => (
-            <DepartmentCard key={department.id} department={department} />
-          ))}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Nhân viên
+                  </th>
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Tháng/Năm
+                  </th>
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Ngày công
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Lương gộp
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Bảo hiểm
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Thuế
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Thực nhận
+                  </th>
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Trạng thái
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {payslips.map((payslip) => (
+                  <DepartmentCard key={payslip.id} payslip={payslip} />
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
-      {/* Empty State (if no departments) */}
-      {departments.length === 0 && !loading && (
+      {/* Empty State (if no payslips) */}
+      {payslips.length === 0 && !loading && (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
-          <BuildingOfficeIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+          <DocumentTextIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">
             Chưa có dữ liệu
           </h3>
-          <p className="text-gray-600">
-            Chưa có thông tin lương theo phòng ban
-          </p>
+          <p className="text-gray-600">Chưa có thông tin phiếu lương</p>
         </div>
       )}
 

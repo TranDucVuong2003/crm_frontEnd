@@ -249,42 +249,36 @@ const Dashboard = () => {
       ]);
 
       // Prepare Tickets Trend Data (Last 7 days)
-      // Show tickets by their current status, filtered by last update or creation date
+      // Show cumulative count of tickets by status at each day
       const last7Days = Array.from({ length: 7 }, (_, i) => {
         const date = new Date();
         date.setDate(date.getDate() - (6 - i));
+        date.setHours(23, 59, 59, 999); // End of day
         return date;
       });
 
       const ticketsByDay = last7Days.map((date) => {
-        const dateStr = date.toISOString().split("T")[0];
-
-        // Filter tickets that were created OR updated on this date
-        const dayTickets = tickets.filter((ticket) => {
-          const createdDate = new Date(ticket.createdAt)
-            .toISOString()
-            .split("T")[0];
-          const updatedDate = ticket.updatedAt
-            ? new Date(ticket.updatedAt).toISOString().split("T")[0]
-            : createdDate;
-          return createdDate === dateStr || updatedDate === dateStr;
+        // Count tickets that existed up to this date by their CURRENT status
+        const ticketsUpToDate = tickets.filter((ticket) => {
+          const createdDate = new Date(ticket.createdAt);
+          return createdDate <= date;
         });
 
-        // Count tickets by actual status from API
+        // Count by actual status from API
         const statusLower = (status) => (status || "").toLowerCase();
-        const open = dayTickets.filter(
+        const open = ticketsUpToDate.filter(
           (t) =>
             statusLower(t.status) === "new" ||
             statusLower(t.status) === "open" ||
             statusLower(t.status) === "pending"
         ).length;
-        const inProgress = dayTickets.filter(
+        const inProgress = ticketsUpToDate.filter(
           (t) =>
             statusLower(t.status) === "in_progress" ||
             statusLower(t.status) === "in-progress" ||
             statusLower(t.status) === "processing"
         ).length;
-        const resolved = dayTickets.filter(
+        const resolved = ticketsUpToDate.filter(
           (t) =>
             statusLower(t.status) === "resolved" ||
             statusLower(t.status) === "closed" ||

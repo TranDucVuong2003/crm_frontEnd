@@ -46,6 +46,7 @@ const API_ENDPOINT = {
     GET_TYPE_STATISTICS: "/api/Customers/type-statistics",
     GET_INDIVIDUALS: "/api/Customers/individuals",
     GET_COMPANIES: "/api/Customers/companies",
+    GET_WITH_PAID_CONTRACTS: "/api/Customers/with-paid-contracts",
   },
 
   // Companies endpoints
@@ -342,6 +343,13 @@ const API_ENDPOINT = {
   // Salary Contracts endpoints
   SALARY_CONTRACTS: {
     CREATE: "/api/SalaryContracts",
+    GET_ALL: "/api/SalaryContracts",
+    GET_BY_ID: (id) => `/api/SalaryContracts/${id}`,
+    GET_BY_USER: (userId) => `/api/SalaryContracts/user/${userId}`,
+    UPDATE: (id) => `/api/SalaryContracts/${id}`,
+    DELETE: (id) => `/api/SalaryContracts/${id}`,
+    DOWNLOAD_COMMITMENT08_TEMPLATE:
+      "/api/SalaryContracts/download-commitment08-template",
   },
 
   // Monthly Attendances endpoints
@@ -411,6 +419,21 @@ const API_ENDPOINT = {
     GET_RECIPIENTS: (id) => `/api/notifications/${id}/recipients`,
     GET_READ_STATUS: (id) => `/api/notifications/${id}/read-status`,
     UPDATE: (id) => `/api/notifications/${id}`,
+  },
+
+  // DocumentTemplates endpoints
+  DOCUMENT_TEMPLATES: {
+    GET_ALL: "/api/DocumentTemplates",
+    CREATE: "/api/DocumentTemplates",
+    GET_BY_ID: (id) => `/api/DocumentTemplates/${id}`,
+    GET_BY_CODE: (code) => `/api/DocumentTemplates/by-code/${code}`,
+    GET_DEFAULT_BY_TYPE: (templateType) =>
+      `/api/DocumentTemplates/default/${templateType}`,
+    GET_TYPES: "/api/DocumentTemplates/types",
+    UPDATE: (id) => `/api/DocumentTemplates/${id}`,
+    DELETE: (id) => `/api/DocumentTemplates/${id}`,
+    SET_DEFAULT: (id) => `/api/DocumentTemplates/${id}/set-default`,
+    MIGRATE_FROM_FILES: "/api/DocumentTemplates/migrate-from-files",
   },
 };
 

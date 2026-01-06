@@ -5,6 +5,7 @@ import {
   FolderIcon,
   CubeIcon,
   ShieldCheckIcon,
+  DocumentDuplicateIcon,
 } from "@heroicons/react/24/outline";
 import RoleManagement from "./Configuration/RoleManagement";
 import PositionManagement from "./Configuration/PositionManagement";
@@ -13,6 +14,7 @@ import TaxManagement from "./Configuration/TaxManagement";
 import ResionManagement from "./Configuration/ReasionManagement";
 import CategoryServiceAddonManagement from "./Configuration/CategoryServiceAddonManagement";
 import InsuranceManagement from "./Configuration/InsuranceManagement";
+import TemplateManagement from "./Configuration/TemplateManagement";
 
 const Configuration = () => {
   const [activeTab, setActiveTab] = useState("personal");
@@ -53,6 +55,11 @@ const Configuration = () => {
       label: "Danh mục dịch vụ",
       icon: CubeIcon,
     },
+    {
+      id: "template",
+      label: "Bản mẫu",
+      icon: DocumentDuplicateIcon,
+    },
   ];
 
   const renderContent = () => {
@@ -71,6 +78,8 @@ const Configuration = () => {
         return <ResionManagement />;
       case "category":
         return <CategoryServiceAddonManagement />;
+      case "template":
+        return <TemplateManagement />;
       default:
         return <RoleManagement />;
     }

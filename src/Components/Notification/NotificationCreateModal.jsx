@@ -12,7 +12,7 @@ import {
   createNotification,
   getAllUsers,
   getAllDepartments,
-  getAllRoles,
+  getCustomersWithPaidContracts,
 } from "../../Service/ApiService";
 import Swal from "sweetalert2";
 
@@ -27,7 +27,7 @@ const NotificationCreateModal = ({ isOpen, onClose, onSuccess }) => {
   const [errors, setErrors] = useState({});
   const [users, setUsers] = useState([]);
   const [departments, setDepartments] = useState([]);
-  const [roles, setRoles] = useState([]);
+  const [customers, setCustomers] = useState([]);
   const [loadingOptions, setLoadingOptions] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
 
@@ -39,10 +39,10 @@ const NotificationCreateModal = ({ isOpen, onClose, onSuccess }) => {
       description: "Gửi đến tất cả users trong hệ thống",
     },
     {
-      value: "Role",
-      label: "Theo vai trò",
+      value: "Customer",
+      label: "Khách hàng",
       icon: UserGroupIcon,
-      description: "Gửi đến các role cụ thể (Admin, Manager, User)",
+      description: "Gửi email trực tiếp đến khách hàng (không tạo thông báo hệ thống)",
     },
     {
       value: "Department",
@@ -85,15 +85,15 @@ const NotificationCreateModal = ({ isOpen, onClose, onSuccess }) => {
         } finally {
           setLoadingOptions(false);
         }
-      } else if (formData.targetType === "Role") {
+      } else if (formData.targetType === "Customer") {
         try {
           setLoadingOptions(true);
-          const response = await getAllRoles();
-          if (response.data) {
-            setRoles(response.data);
+          const response = await getCustomersWithPaidContracts();
+          if (response.data && response.data.data) {
+            setCustomers(response.data.data);
           }
         } catch (error) {
-          console.error("Error fetching roles:", error);
+          console.error("Error fetching customers:", error);
         } finally {
           setLoadingOptions(false);
         }
@@ -227,9 +227,9 @@ const NotificationCreateModal = ({ isOpen, onClose, onSuccess }) => {
   const getSelectedText = () => {
     if (formData.targetIds.length === 0) return "Chọn...";
 
-    if (formData.targetType === "Role") {
-      const selected = roles.filter((r) => formData.targetIds.includes(r.id));
-      return selected.map((r) => r.name).join(", ");
+    if (formData.targetType === "Customer") {
+      const selected = customers.filter((c) => formData.targetIds.includes(c.id));
+      return selected.map((c) => c.name).join(", ");
     } else if (formData.targetType === "Department") {
       const selected = departments.filter((d) =>
         formData.targetIds.includes(d.id)
@@ -367,10 +367,10 @@ const NotificationCreateModal = ({ isOpen, onClose, onSuccess }) => {
               </div>
 
               {/* Target Selection - Show based on targetType */}
-              {formData.targetType === "Role" && (
+              {formData.targetType === "Customer" && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Chọn vai trò <span className="text-red-500">*</span>
+                    Chọn khách hàng <span className="text-red-500">*</span>
                   </label>
                   {loadingOptions ? (
                     <div className="flex items-center justify-center py-4 border rounded-lg">
@@ -408,28 +408,47 @@ const NotificationCreateModal = ({ isOpen, onClose, onSuccess }) => {
                         </button>
 
                         {showDropdown && (
-                          <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-40 overflow-auto">
-                            {roles.length === 0 ? (
+                          <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto">
+                            {customers.length === 0 ? (
                               <div className="px-4 py-3 text-sm text-gray-500 text-center">
-                                Không có vai trò nào
+                                Không có khách hàng nào có hợp đồng đã thanh toán
                               </div>
                             ) : (
-                              roles.map((role) => (
+                              customers.map((customer) => (
                                 <label
-                                  key={role.id}
-                                  className="flex items-center px-4 py-2 hover:bg-gray-50 cursor-pointer"
+                                  key={customer.id}
+                                  className="flex items-center px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
                                 >
                                   <input
                                     type="checkbox"
                                     checked={formData.targetIds.includes(
-                                      role.id
+                                      customer.id
                                     )}
-                                    onChange={() => toggleOption(role.id)}
+                                    onChange={() => toggleOption(customer.id)}
                                     className="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
                                   />
-                                  <span className="ml-3 text-sm text-gray-900">
-                                    {role.name}
-                                  </span>
+                                  <div className="ml-3 flex-1">
+                                    <div className="flex items-center justify-between">
+                                      <div className="text-sm font-medium text-gray-900">
+                                        {customer.name}
+                                      </div>
+                                      <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700">
+                                        {customer.paidContractsCount} HĐ
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center gap-2 mt-1">
+                                      {customer.email && (
+                                        <div className="text-xs text-gray-500">
+                                          {customer.email}
+                                        </div>
+                                      )}
+                                      {customer.customerType && (
+                                        <span className="text-xs px-1.5 py-0.5 rounded bg-gray-100 text-gray-600">
+                                          {customer.customerType === 'individual' ? 'Cá nhân' : 'Doanh nghiệp'}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
                                 </label>
                               ))
                             )}
@@ -441,8 +460,13 @@ const NotificationCreateModal = ({ isOpen, onClose, onSuccess }) => {
                           {errors.targetIds}
                         </p>
                       )}
+                      <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                        <p className="text-xs text-blue-700">
+                          ⚠️ Lưu ý: Gửi email trực tiếp đến khách hàng. Không tạo thông báo hệ thống.
+                        </p>
+                      </div>
                       <p className="mt-1 text-xs text-gray-500">
-                        Chọn nhiều vai trò nếu cần
+                        Chọn nhiều khách hàng nếu cần. Chỉ hiển thị khách hàng có hợp đồng đã thanh toán.
                       </p>
                     </>
                   )}

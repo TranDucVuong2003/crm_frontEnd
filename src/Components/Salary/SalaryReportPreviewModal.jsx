@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { XMarkIcon, ArrowDownTrayIcon } from "@heroicons/react/24/outline";
-import { previewSalaryReport, exportSalaryReport } from "../../Service/ApiService";
+import {
+  previewSalaryReport,
+  exportSalaryReport,
+} from "../../Service/ApiService";
 
 const SalaryReportPreviewModal = ({ isOpen, onClose, filterParams = {} }) => {
   const [previewHTML, setPreviewHTML] = useState("");
@@ -24,7 +27,12 @@ const SalaryReportPreviewModal = ({ isOpen, onClose, filterParams = {} }) => {
       setPreviewHTML(response.data);
     } catch (err) {
       console.error("Error loading preview:", err);
-      setError("Không thể tải xem trước báo cáo lương");
+      // Lấy message từ response nếu có
+      const errorMessage =
+        err.response?.data?.message ||
+        err.response?.data?.Message ||
+        "Không thể tải xem trước báo cáo lương";
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }

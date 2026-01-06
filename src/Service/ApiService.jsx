@@ -215,6 +215,10 @@ export const getAllCustomers = () => {
   return apiClient.get(API_ENDPOINT.CUSTOMERS.GET_ALL);
 };
 
+export const getCustomersWithPaidContracts = () => {
+  return apiClient.get(API_ENDPOINT.CUSTOMERS.GET_WITH_PAID_CONTRACTS);
+};
+
 export const createCustomer = (customerData) => {
   return apiClient.post(API_ENDPOINT.CUSTOMERS.CREATE, customerData);
 };
@@ -1190,8 +1194,45 @@ export const toggleInsuranceStatus = (id) => {
 // =============================
 // SALARY CONTRACTS
 // =============================
-export const createSalaryContract = (contractData) => {
-  return apiClient.post(API_ENDPOINT.SALARY_CONTRACTS.CREATE, contractData);
+export const createSalaryContract = (formData) => {
+  return apiClient.post(API_ENDPOINT.SALARY_CONTRACTS.CREATE, formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+};
+
+export const getAllSalaryContracts = () => {
+  return apiClient.get(API_ENDPOINT.SALARY_CONTRACTS.GET_ALL);
+};
+
+export const getSalaryContractById = (id) => {
+  return apiClient.get(API_ENDPOINT.SALARY_CONTRACTS.GET_BY_ID(id));
+};
+
+export const getSalaryContractByUser = (userId) => {
+  return apiClient.get(API_ENDPOINT.SALARY_CONTRACTS.GET_BY_USER(userId));
+};
+
+export const updateSalaryContract = (id, formData) => {
+  return apiClient.put(API_ENDPOINT.SALARY_CONTRACTS.UPDATE(id), formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+};
+
+export const deleteSalaryContract = (id) => {
+  return apiClient.delete(API_ENDPOINT.SALARY_CONTRACTS.DELETE(id));
+};
+
+export const downloadCommitment08Template = () => {
+  return apiClient.get(
+    API_ENDPOINT.SALARY_CONTRACTS.DOWNLOAD_COMMITMENT08_TEMPLATE,
+    {
+      responseType: "blob",
+    }
+  );
 };
 
 // =============================
@@ -1404,4 +1445,52 @@ export const getNotificationReadStatus = (notificationId) => {
 // Admin - Update notification
 export const updateNotification = (id, data) => {
   return apiClient.put(API_ENDPOINT.NOTIFICATIONS.UPDATE(id), data);
+};
+
+// =============================
+// DOCUMENT TEMPLATES APIs
+// =============================
+export const getAllDocumentTemplates = (type = null) => {
+  const url = type
+    ? `${API_ENDPOINT.DOCUMENT_TEMPLATES.GET_ALL}?type=${type}`
+    : API_ENDPOINT.DOCUMENT_TEMPLATES.GET_ALL;
+  return apiClient.get(url);
+};
+
+export const getDocumentTemplateById = (id) => {
+  return apiClient.get(API_ENDPOINT.DOCUMENT_TEMPLATES.GET_BY_ID(id));
+};
+
+export const getDocumentTemplateByCode = (code) => {
+  return apiClient.get(API_ENDPOINT.DOCUMENT_TEMPLATES.GET_BY_CODE(code));
+};
+
+export const getDefaultDocumentTemplateByType = (templateType) => {
+  return apiClient.get(
+    API_ENDPOINT.DOCUMENT_TEMPLATES.GET_DEFAULT_BY_TYPE(templateType)
+  );
+};
+
+export const getDocumentTemplateTypes = () => {
+  return apiClient.get(API_ENDPOINT.DOCUMENT_TEMPLATES.GET_TYPES);
+};
+
+export const createDocumentTemplate = (data) => {
+  return apiClient.post(API_ENDPOINT.DOCUMENT_TEMPLATES.CREATE, data);
+};
+
+export const updateDocumentTemplate = (id, data) => {
+  return apiClient.put(API_ENDPOINT.DOCUMENT_TEMPLATES.UPDATE(id), data);
+};
+
+export const deleteDocumentTemplate = (id) => {
+  return apiClient.delete(API_ENDPOINT.DOCUMENT_TEMPLATES.DELETE(id));
+};
+
+export const setDefaultDocumentTemplate = (id) => {
+  return apiClient.patch(API_ENDPOINT.DOCUMENT_TEMPLATES.SET_DEFAULT(id));
+};
+
+export const migrateDocumentTemplatesFromFiles = () => {
+  return apiClient.post(API_ENDPOINT.DOCUMENT_TEMPLATES.MIGRATE_FROM_FILES);
 };
