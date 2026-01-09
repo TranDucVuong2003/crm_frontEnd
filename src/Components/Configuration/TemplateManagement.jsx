@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import {
   PlusIcon,
   PencilIcon,
@@ -9,6 +9,7 @@ import {
   StarIcon,
   ArrowDownTrayIcon,
   CodeBracketIcon,
+  SparklesIcon,
 } from "@heroicons/react/24/outline";
 import {
   getAllDocumentTemplates,
@@ -17,8 +18,14 @@ import {
   deleteDocumentTemplate,
   setDefaultDocumentTemplate,
   migrateDocumentTemplatesFromFiles,
+  getSchemaEntities,
 } from "../../Service/ApiService";
+import { templateService } from "../../Service/templateService";
 import Swal from "sweetalert2";
+import Editor from "react-simple-code-editor";
+import { highlight, languages } from "prismjs";
+import "prismjs/components/prism-markup";
+import "prismjs/themes/prism-tomorrow.css";
 
 const TemplateManagement = () => {
   const [templates, setTemplates] = useState([]);
@@ -29,13 +36,37 @@ const TemplateManagement = () => {
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState(null);
   const [viewingTemplate, setViewingTemplate] = useState(null);
+  const [detectedPlaceholders, setDetectedPlaceholders] = useState([]);
+  const [availableTemplates, setAvailableTemplates] = useState([]);
+  const [schemaPlaceholders, setSchemaPlaceholders] = useState({}); // Schema data from API
+  const [loadingSchema, setLoadingSchema] = useState(false);
+  const [selectedEntity, setSelectedEntity] = useState(""); // Selected entity tab
+  const [placeholderSearch, setPlaceholderSearch] = useState(""); // Search in placeholders
+  const [availableEntities, setAvailableEntities] = useState([]); // Available entities from schema API
+  const [loadingEntities, setLoadingEntities] = useState(false);
+  const [cursorPosition, setCursorPosition] = useState(0); // Track cursor position
+  const editorRef = useRef(null); // Reference to editor textarea
   const [formData, setFormData] = useState({
     name: "",
     templateType: "contract",
     code: "",
-    htmlContent: "",
+    htmlContent: `
+<!-- Đây là template trắng. --> </br>
+<!-- Bạn có thể sửa từ template trắng hoặc load template từ kho--> </br>
+    <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    
+</body>
+</html>`,
     description: "",
-    availablePlaceholders: "",
+    selectedSchemaEntity: "",
+    version: 1,
     isActive: true,
     isDefault: false,
   });
@@ -97,6 +128,28 @@ const TemplateManagement = () => {
     fetchTemplates();
   }, [filterType]);
 
+  // Auto-detect placeholders khi HTML thay đổi
+  useEffect(() => {
+    const detectPlaceholders = async () => {
+      if (!formData.htmlContent || formData.htmlContent.length < 10) {
+        setDetectedPlaceholders([]);
+        return;
+      }
+
+      try {
+        const placeholders = await templateService.extractPlaceholders(
+          formData.htmlContent
+        );
+        setDetectedPlaceholders(placeholders);
+      } catch (error) {
+        console.error("Error detecting placeholders:", error);
+      }
+    };
+
+    const debounce = setTimeout(detectPlaceholders, 800);
+    return () => clearTimeout(debounce);
+  }, [formData.htmlContent]);
+
   const fetchTemplates = async () => {
     try {
       setLoading(true);
@@ -116,7 +169,7 @@ const TemplateManagement = () => {
     }
   };
 
-  const handleOpenModal = (template = null) => {
+  const handleOpenModal = async (template = null) => {
     if (template) {
       setEditingTemplate(template);
       setFormData({
@@ -125,37 +178,162 @@ const TemplateManagement = () => {
         code: template.code,
         htmlContent: template.htmlContent,
         description: template.description || "",
-        availablePlaceholders: template.availablePlaceholders || "",
+        selectedSchemaEntity: "",
+        version: template.version || 1,
         isActive: template.isActive,
         isDefault: template.isDefault,
       });
+      setAvailableTemplates([]); // Không cần load templates khi edit
+
+      // Load schema and entities for editing template
+      await fetchSchemaEntities(template.templateType);
     } else {
       setEditingTemplate(null);
       setFormData({
         name: "",
         templateType: "contract",
         code: "",
-        htmlContent: "",
+        htmlContent: `
+<!-- Đây là template trắng. -->
+<!-- Bạn có thể sửa từ template trắng hoặc load template từ kho-->
+
+        <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    
+</body>
+</html>`,
         description: "",
-        availablePlaceholders: "",
+        selectedSchemaEntity: "",
+        version: 1,
         isActive: true,
         isDefault: false,
       });
+
+      // Load tất cả templates để chọn (không filter)
+      try {
+        const response = await getAllDocumentTemplates(null);
+        if (response.data && response.data.data) {
+          setAvailableTemplates(response.data.data);
+        } else {
+          setAvailableTemplates([]);
+        }
+      } catch (error) {
+        console.error("Error loading available templates:", error);
+        setAvailableTemplates([]);
+      }
+
+      // Load schema and entities for new template (default: contract)
+      await fetchSchemaEntities("contract");
     }
-    setViewMode("html"); // Default to HTML mode for editing
+    setViewMode("html");
+    setPlaceholderSearch("");
     setIsModalOpen(true);
+  };
+
+  const fetchSchemaEntities = async (templateType) => {
+    try {
+      setLoadingEntities(true);
+      const response = await templateService.getAvailablePlaceholders(
+        templateType
+      );
+
+      console.log("Schema response:", response); // Debug log
+
+      // Response structure: { data: { Contract: [...], Customer: [...] } }
+      if (response && typeof response === "object") {
+        // Get entities from data object keys
+        const entities = Object.keys(response);
+        setAvailableEntities(entities);
+        // Store the full schema data for later use
+        setSchemaPlaceholders(response);
+
+        console.log("Entities found:", entities); // Debug log
+      } else {
+        setAvailableEntities([]);
+        setSchemaPlaceholders({});
+      }
+    } catch (error) {
+      console.error("Error fetching schema entities:", error);
+      setAvailableEntities([]);
+      setSchemaPlaceholders({});
+      Swal.fire({
+        icon: "error",
+        title: "Lỗi",
+        text: "Không thể tải danh sách entities",
+      });
+    } finally {
+      setLoadingEntities(false);
+    }
+  };
+
+  const handleLoadFromTemplate = (templateId) => {
+    if (!templateId) return;
+
+    const selectedTemplate = availableTemplates.find(
+      (t) => t.id === parseInt(templateId)
+    );
+
+    if (selectedTemplate) {
+      Swal.fire({
+        title: "Tải nội dung từ template?",
+        text: `Bạn muốn tải nội dung từ template "${selectedTemplate.name}"?`,
+        icon: "question",
+        showCancelButton: true,
+        confirmButtonText: "Tải",
+        cancelButtonText: "Hủy",
+        confirmButtonColor: "#3085d6",
+        cancelButtonColor: "#d33",
+      }).then((result) => {
+        if (result.isConfirmed) {
+          setFormData({
+            ...formData,
+            htmlContent: selectedTemplate.htmlContent,
+            templateType: selectedTemplate.templateType,
+          });
+
+          Swal.fire({
+            icon: "success",
+            title: "Đã tải!",
+            text: `Đã tải nội dung từ template "${selectedTemplate.name}"`,
+            timer: 1500,
+            showConfirmButton: false,
+          });
+        }
+      });
+    }
   };
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setEditingTemplate(null);
+    setDetectedPlaceholders([]);
+    setAvailableTemplates([]);
+    setSchemaPlaceholders({});
+    setSelectedEntity("");
+    setPlaceholderSearch("");
     setFormData({
       name: "",
       templateType: "contract",
       code: "",
-      htmlContent: "",
+      htmlContent: `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    
+</body>
+</html>`,
       description: "",
-      availablePlaceholders: "",
+      version: 1,
       isActive: true,
       isDefault: false,
     });
@@ -165,6 +343,32 @@ const TemplateManagement = () => {
     setViewingTemplate(template);
     setViewMode("preview"); // Default to preview mode for viewing
     setIsViewModalOpen(true);
+  };
+
+  // Insert placeholder at cursor position
+  const insertPlaceholderAtCursor = (placeholder) => {
+    const textarea = document.querySelector("#htmlContentTextarea textarea");
+    if (textarea) {
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const textBefore = formData.htmlContent.substring(0, start);
+      const textAfter = formData.htmlContent.substring(end);
+      const newContent = textBefore + placeholder + textAfter;
+
+      setFormData({
+        ...formData,
+        htmlContent: newContent,
+      });
+
+      // Set cursor position after the inserted placeholder
+      setTimeout(() => {
+        if (textarea) {
+          const newPosition = start + placeholder.length;
+          textarea.setSelectionRange(newPosition, newPosition);
+          textarea.focus();
+        }
+      }, 0);
+    }
   };
 
   const handleCloseViewModal = () => {
@@ -203,6 +407,52 @@ const TemplateManagement = () => {
       return;
     }
 
+    // Validate placeholders với Schema API
+    if (detectedPlaceholders.length > 0) {
+      try {
+        const placeholdersToValidate = detectedPlaceholders.map(
+          (p) => `{{${p}}}`
+        );
+        const validation = await templateService.validatePlaceholderSchema(
+          placeholdersToValidate,
+          formData.templateType
+        );
+
+        if (!validation.isValid && validation.invalidPlaceholders) {
+          const result = await Swal.fire({
+            icon: "warning",
+            title: "Placeholders không hợp lệ",
+            html: `
+              <p>Phát hiện ${
+                validation.invalidPlaceholders.length
+              } placeholders không hợp lệ:</p>
+              <div style="max-height: 200px; overflow-y: auto; text-align: left; margin-top: 10px; padding: 10px; background: #f3f4f6; border-radius: 8px;">
+                ${validation.invalidPlaceholders
+                  .map(
+                    (p) =>
+                      `<div style="font-family: monospace; color: #dc2626; margin: 4px 0;">⚠️ ${p}</div>`
+                  )
+                  .join("")}
+              </div>
+              <p style="margin-top: 10px;">Bạn có muốn tiếp tục lưu?</p>
+            `,
+            showCancelButton: true,
+            confirmButtonText: "Tiếp tục lưu",
+            cancelButtonText: "Kiểm tra lại",
+            confirmButtonColor: "#3085d6",
+            cancelButtonColor: "#d33",
+          });
+
+          if (!result.isConfirmed) {
+            return; // User chọn "Kiểm tra lại"
+          }
+        }
+      } catch (error) {
+        console.error("Error validating placeholders:", error);
+        // Không block nếu validation API fail, chỉ log error
+      }
+    }
+
     try {
       const payload = {
         name: formData.name.trim(),
@@ -210,7 +460,7 @@ const TemplateManagement = () => {
         code: formData.code.trim(),
         htmlContent: formData.htmlContent.trim(),
         description: formData.description.trim() || null,
-        availablePlaceholders: formData.availablePlaceholders.trim() || null,
+        version: editingTemplate ? formData.version : 1,
         isActive: formData.isActive,
         isDefault: formData.isDefault,
       };
@@ -387,7 +637,7 @@ const TemplateManagement = () => {
               className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
               <PlusIcon className="h-5 w-5" />
-              Thêm mới
+              Thêm bản mẫu mới
             </button>
           </div>
         </div>
@@ -594,6 +844,37 @@ const TemplateManagement = () => {
               >
                 {/* Left Column - Form Fields */}
                 <div className="w-96 border-r border-gray-200 overflow-y-auto p-6 space-y-4">
+                  {/* Load from Template - Only show when creating new */}
+                  {!editingTemplate && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Tải từ template có sẵn
+                      </label>
+                      <select
+                        onChange={(e) => {
+                          console.log("Selected template ID:", e.target.value);
+                          handleLoadFromTemplate(e.target.value);
+                        }}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        defaultValue=""
+                      >
+                        <option value="" disabled>
+                          {availableTemplates.length === 0
+                            ? "Đang tải..."
+                            : `Chọn template (${availableTemplates.length} có sẵn)`}
+                        </option>
+                        {availableTemplates.map((template) => (
+                          <option key={template.id} value={template.id}>
+                            {template.name} - [{template.code}]
+                          </option>
+                        ))}
+                      </select>
+                      <p className="mt-1 text-xs text-gray-500">
+                        Chọn để tự động điền HTML, loại và placeholders
+                      </p>
+                    </div>
+                  )}
+
                   {/* Name */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -631,25 +912,38 @@ const TemplateManagement = () => {
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Loại bản mẫu <span className="text-red-500">*</span>
                     </label>
-                    <input
-                      type="text"
-                      list="templateTypeOptions"
+                    <select
                       value={formData.templateType}
-                      onChange={(e) =>
+                      onChange={(e) => {
+                        const newType = e.target.value;
                         setFormData({
                           ...formData,
-                          templateType: e.target.value,
-                        })
-                      }
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="Chọn hoặc nhập loại bản mẫu..."
-                    />
-                    <datalist id="templateTypeOptions">
+                          templateType: newType,
+                          selectedSchemaEntity: "",
+                        });
+                        // Reload schema and entities when template type changes
+                        if (newType && newType !== formData.templateType) {
+                          fetchSchemaEntities(newType);
+                        }
+                      }}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                      required
+                    >
+                      <option value="" disabled>
+                        Chọn loại bản mẫu...
+                      </option>
                       <option value="contract">Hợp đồng</option>
                       <option value="quote">Báo giá</option>
                       <option value="email">Email</option>
                       <option value="salary_report">Báo cáo lương</option>
-                    </datalist>
+                      <option value="invoice">Hóa đơn</option>
+                      <option value="salary_notification">
+                        Thông báo lương
+                      </option>
+                    </select>
+                    <p className="mt-1 text-xs text-gray-500">
+                      Schema sẽ tự động cập nhật khi đổi loại
+                    </p>
                   </div>
 
                   {/* Checkboxes */}
@@ -706,77 +1000,233 @@ const TemplateManagement = () => {
                     />
                   </div>
 
-                  {/* Available Placeholders */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Placeholders có sẵn
-                    </label>
-                    <textarea
-                      value={formData.availablePlaceholders}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          availablePlaceholders: e.target.value,
-                        })
-                      }
-                      rows={3}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none font-mono text-xs"
-                      placeholder='["{{CustomerName}}","{{ContractNumber}}"]'
-                    />
-                    <p className="mt-1 text-xs text-gray-500">
-                      JSON array các placeholder (tùy chọn)
-                    </p>
+                  {/* Schema-based Placeholders Browser */}
+                  <div className="border border-gray-300 rounded-lg overflow-hidden">
+                    <div className="bg-gray-50 px-3 py-2 border-b border-gray-300">
+                      <label className="text-sm font-medium text-gray-700">
+                        📋 Chèn biến động (Schema)
+                      </label>
+                    </div>
+
+                    {loadingSchema ? (
+                      <div className="p-4 text-center text-sm text-gray-500">
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                        Đang tải schema...
+                      </div>
+                    ) : Object.keys(schemaPlaceholders).length === 0 ? (
+                      <div className="p-4 text-center text-sm text-gray-500">
+                        Không có placeholders cho loại template này
+                      </div>
+                    ) : (
+                      <>
+                        {/* Entity Tabs */}
+                        <div className="flex overflow-x-auto border-b border-gray-200">
+                          {Object.keys(schemaPlaceholders).map((entity) => (
+                            <button
+                              key={entity}
+                              type="button"
+                              onClick={() => setSelectedEntity(entity)}
+                              className={
+                                "px-3 py-2 text-xs font-medium whitespace-nowrap border-b-2 transition-colors " +
+                                (selectedEntity === entity
+                                  ? "border-blue-600 text-blue-600 bg-blue-50"
+                                  : "border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50")
+                              }
+                            >
+                              {entity}
+                              <span className="ml-1 text-gray-400">
+                                ({schemaPlaceholders[entity].length})
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+
+                        {/* Search */}
+                        <div className="p-2 border-b border-gray-200">
+                          <input
+                            type="text"
+                            placeholder="🔍 Tìm kiếm..."
+                            value={placeholderSearch}
+                            onChange={(e) =>
+                              setPlaceholderSearch(e.target.value)
+                            }
+                            className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent"
+                          />
+                        </div>
+
+                        {/* Placeholder List */}
+                        <div className="max-h-64 overflow-y-auto">
+                          {selectedEntity &&
+                            schemaPlaceholders[selectedEntity] &&
+                            schemaPlaceholders[selectedEntity]
+                              .filter(
+                                (field) =>
+                                  !placeholderSearch ||
+                                  field.name
+                                    .toLowerCase()
+                                    .includes(
+                                      placeholderSearch.toLowerCase()
+                                    ) ||
+                                  field.placeholder
+                                    .toLowerCase()
+                                    .includes(placeholderSearch.toLowerCase())
+                              )
+                              .map((field) => (
+                                <button
+                                  key={field.name}
+                                  type="button"
+                                  onClick={() => {
+                                    insertPlaceholderAtCursor(
+                                      field.placeholder
+                                    );
+                                  }}
+                                  className="w-full text-left px-3 py-2 hover:bg-blue-50 border-b border-gray-100 transition-colors group"
+                                >
+                                  <div className="flex items-start justify-between gap-2">
+                                    <div className="flex-1 min-w-0">
+                                      <div className="font-mono text-xs text-blue-600 group-hover:text-blue-700 truncate">
+                                        {field.placeholder}
+                                      </div>
+                                      {field.description && (
+                                        <div className="text-xs text-gray-500 mt-0.5">
+                                          {field.description}
+                                        </div>
+                                      )}
+                                      {field.example && (
+                                        <div className="text-xs text-gray-400 mt-0.5 italic">
+                                          VD: {field.example}
+                                        </div>
+                                      )}
+                                    </div>
+                                    <div className="flex flex-col gap-1">
+                                      <span
+                                        className={
+                                          "px-1.5 py-0.5 text-xs rounded whitespace-nowrap " +
+                                          (field.type === "string"
+                                            ? "bg-green-100 text-green-700"
+                                            : field.type === "number"
+                                            ? "bg-blue-100 text-blue-700"
+                                            : field.type === "date"
+                                            ? "bg-purple-100 text-purple-700"
+                                            : field.type === "boolean"
+                                            ? "bg-yellow-100 text-yellow-700"
+                                            : "bg-gray-100 text-gray-700")
+                                        }
+                                      >
+                                        {field.type}
+                                      </span>
+                                      {field.isRequired && (
+                                        <span className="px-1.5 py-0.5 text-xs rounded bg-red-100 text-red-700 whitespace-nowrap">
+                                          required
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                </button>
+                              ))}
+                        </div>
+                      </>
+                    )}
                   </div>
 
-                  {/* Placeholders Dropdown */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Chèn biến động
-                    </label>
-                    <select
-                      onChange={(e) => {
-                        if (e.target.value) {
-                          const textarea = document.getElementById(
-                            "htmlContentTextarea"
-                          );
-                          if (textarea) {
-                            const start = textarea.selectionStart;
-                            const end = textarea.selectionEnd;
-                            const text = formData.htmlContent;
-                            const newText =
-                              text.substring(0, start) +
-                              e.target.value +
-                              text.substring(end);
-                            setFormData({
-                              ...formData,
-                              htmlContent: newText,
-                            });
-                            // Restore cursor position
-                            setTimeout(() => {
-                              textarea.focus();
-                              textarea.setSelectionRange(
-                                start + e.target.value.length,
-                                start + e.target.value.length
-                              );
-                            }, 0);
+                  {/* Legacy Dropdown - Fallback */}
+                  {Object.keys(schemaPlaceholders).length === 0 &&
+                    !loadingSchema && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Chèn biến động (Legacy)
+                        </label>
+                        <select
+                          onChange={(e) => {
+                            if (e.target.value) {
+                              insertPlaceholderAtCursor(e.target.value);
+                              e.target.value = "";
+                            }
+                          }}
+                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        >
+                          <option value="">Chọn placeholder...</option>
+                          {placeholdersByType[formData.templateType]?.map(
+                            (placeholder) => (
+                              <option
+                                key={placeholder.value}
+                                value={placeholder.value}
+                              >
+                                {placeholder.label} - {placeholder.value}
+                              </option>
+                            )
+                          )}
+                        </select>
+                      </div>
+                    )}
+
+                  {/* Auto-Detected Placeholders */}
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <h4 className="text-sm font-semibold text-green-800 mb-2 flex items-center">
+                      <SparklesIcon className="h-4 w-4 mr-1" />
+                      Đã phát hiện ({detectedPlaceholders.length})
+                    </h4>
+                    {detectedPlaceholders.length === 0 ? (
+                      <p className="text-xs text-gray-600">
+                        Chưa có placeholder nào. Sử dụng syntax{" "}
+                        <code className="bg-white px-1 py-0.5 rounded text-green-700">
+                          {`{{Entity.Property}}`} hoặc {`{{Property}}`}
+                        </code>
+                      </p>
+                    ) : (
+                      <div className="space-y-1 max-h-32 overflow-y-auto">
+                        {detectedPlaceholders.map((p, index) => {
+                          // Check if placeholder is valid in schema
+                          const fullPlaceholder = `{{${p}}}`;
+                          let isValid = false;
+                          let fieldInfo = null;
+
+                          // Search in schema
+                          for (const [entity, fields] of Object.entries(
+                            schemaPlaceholders
+                          )) {
+                            const found = fields.find(
+                              (f) => f.placeholder === fullPlaceholder
+                            );
+                            if (found) {
+                              isValid = true;
+                              fieldInfo = found;
+                              break;
+                            }
                           }
-                          e.target.value = "";
-                        }
-                      }}
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    >
-                      <option value="">Chọn placeholder...</option>
-                      {placeholdersByType[formData.templateType]?.map(
-                        (placeholder) => (
-                          <option
-                            key={placeholder.value}
-                            value={placeholder.value}
-                          >
-                            {placeholder.label} - {placeholder.value}
-                          </option>
-                        )
-                      )}
-                    </select>
+
+                          return (
+                            <div
+                              key={index}
+                              className={
+                                "text-xs font-mono bg-white px-2 py-1 rounded flex items-center justify-between " +
+                                (isValid ? "text-green-700" : "text-orange-600")
+                              }
+                            >
+                              <span>
+                                {isValid ? "✓" : "⚠"} {fullPlaceholder}
+                              </span>
+                              {fieldInfo && (
+                                <span
+                                  className={
+                                    "px-1.5 py-0.5 text-xs rounded ml-2 " +
+                                    (fieldInfo.type === "string"
+                                      ? "bg-green-100 text-green-700"
+                                      : fieldInfo.type === "number"
+                                      ? "bg-blue-100 text-blue-700"
+                                      : fieldInfo.type === "date"
+                                      ? "bg-purple-100 text-purple-700"
+                                      : "bg-gray-100 text-gray-700")
+                                  }
+                                >
+                                  {fieldInfo.type}
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -820,19 +1270,33 @@ const TemplateManagement = () => {
                   {/* Editor Content */}
                   <div className="flex-1 overflow-auto p-6">
                     {viewMode === "html" ? (
-                      <textarea
+                      <div
                         id="htmlContentTextarea"
-                        value={formData.htmlContent}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            htmlContent: e.target.value,
-                          })
-                        }
-                        className="w-full h-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none font-mono text-sm"
-                        placeholder="<html>...</html>"
+                        className="w-full h-full border border-gray-300 rounded-lg overflow-auto"
                         style={{ minHeight: "600px" }}
-                      />
+                      >
+                        <Editor
+                          value={formData.htmlContent}
+                          onValueChange={(code) =>
+                            setFormData({
+                              ...formData,
+                              htmlContent: code,
+                            })
+                          }
+                          highlight={(code) =>
+                            highlight(code, languages.markup, "markup")
+                          }
+                          padding={16}
+                          style={{
+                            fontFamily: '"Fira Code", "Courier New", monospace',
+                            fontSize: 14,
+                            minHeight: "600px",
+                            backgroundColor: "#1e1e1e",
+                            color: "#d4d4d4",
+                          }}
+                          textareaClassName="focus:outline-none"
+                        />
+                      </div>
                     ) : (
                       <div className="h-full border border-gray-300 rounded-lg overflow-hidden">
                         <iframe
@@ -992,18 +1456,6 @@ const TemplateManagement = () => {
                     </div>
                   )}
 
-                  {/* Placeholders */}
-                  {viewingTemplate.availablePlaceholders && (
-                    <div className="pt-4 border-t border-gray-200">
-                      <label className="text-sm font-medium text-gray-500">
-                        Placeholders
-                      </label>
-                      <pre className="mt-1 text-xs text-gray-900 bg-gray-50 p-3 rounded-lg overflow-x-auto max-h-40">
-                        {viewingTemplate.availablePlaceholders}
-                      </pre>
-                    </div>
-                  )}
-
                   {/* Metadata */}
                   <div className="pt-4 border-t border-gray-200">
                     <div className="space-y-2 text-xs text-gray-500">
@@ -1072,9 +1524,25 @@ const TemplateManagement = () => {
                   {/* Preview Content */}
                   <div className="flex-1 overflow-auto p-6">
                     {viewMode === "html" ? (
-                      <pre className="text-xs text-gray-900 bg-gray-50 p-4 rounded-lg overflow-x-auto h-full">
-                        {viewingTemplate.htmlContent}
-                      </pre>
+                      <div className="w-full h-full border border-gray-300 rounded-lg overflow-auto">
+                        <Editor
+                          value={viewingTemplate.htmlContent}
+                          onValueChange={() => {}}
+                          highlight={(code) =>
+                            highlight(code, languages.markup, "markup")
+                          }
+                          padding={16}
+                          style={{
+                            fontFamily: '"Fira Code", "Courier New", monospace',
+                            fontSize: 14,
+                            minHeight: "800px",
+                            backgroundColor: "#1e1e1e",
+                            color: "#d4d4d4",
+                          }}
+                          textareaClassName="focus:outline-none"
+                          disabled={true}
+                        />
+                      </div>
                     ) : (
                       <div className="h-full">
                         <iframe

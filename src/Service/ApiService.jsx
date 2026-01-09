@@ -38,12 +38,29 @@ const apiClient = axios.create({
 });
 
 // Add token to request headers
+// apiClient.interceptors.request.use(
+//   (config) => {
+//     const token = getToken();
+//     if (token) {
+//       config.headers["Authorization"] = `Bearer ${token}`;
+//     }
+//     return config;
+//   },
+//   (error) => Promise.reject(error)
+// );
 apiClient.interceptors.request.use(
   (config) => {
     const token = getToken();
     if (token) {
       config.headers["Authorization"] = `Bearer ${token}`;
     }
+
+    // THÊM ĐOẠN NÀY:
+    if (config.data instanceof FormData) {
+      // Xóa Content-Type để browser tự động set multipart/form-data kèm boundary
+      delete config.headers["Content-Type"];
+    }
+
     return config;
   },
   (error) => Promise.reject(error)
@@ -1222,6 +1239,17 @@ export const updateSalaryContract = (id, formData) => {
   });
 };
 
+export const uploadCommitment08 = (contractId, file) => {
+  const formData = new FormData();
+  formData.append("File", file);
+
+  // Không cần options headers nữa, Interceptor lo hết rồi
+  return apiClient.post(
+    API_ENDPOINT.SALARY_CONTRACTS.UPLOAD_COMMITMENT08(contractId),
+    formData
+  );
+};
+
 export const deleteSalaryContract = (id) => {
   return apiClient.delete(API_ENDPOINT.SALARY_CONTRACTS.DELETE(id));
 };
@@ -1493,4 +1521,41 @@ export const setDefaultDocumentTemplate = (id) => {
 
 export const migrateDocumentTemplatesFromFiles = () => {
   return apiClient.post(API_ENDPOINT.DOCUMENT_TEMPLATES.MIGRATE_FROM_FILES);
+};
+
+// Template Editor APIs - New functions for auto-detect, validate, render
+export const extractPlaceholdersFromTemplate = (htmlContent) => {
+  return apiClient.post(API_ENDPOINT.DOCUMENT_TEMPLATES.EXTRACT_PLACEHOLDERS, {
+    htmlContent,
+  });
+};
+
+export const getDocumentTemplateWithPlaceholders = (id) => {
+  return apiClient.get(
+    API_ENDPOINT.DOCUMENT_TEMPLATES.GET_WITH_PLACEHOLDERS(id)
+  );
+};
+
+export const validateTemplateData = (id, data) => {
+  return apiClient.post(API_ENDPOINT.DOCUMENT_TEMPLATES.VALIDATE(id), data);
+};
+
+export const renderDocumentTemplate = (id, data) => {
+  return apiClient.post(API_ENDPOINT.DOCUMENT_TEMPLATES.RENDER(id), data, {
+    responseType: "text",
+  });
+};
+
+export const renderDocumentTemplateByCode = (code, data) => {
+  return apiClient.post(
+    API_ENDPOINT.DOCUMENT_TEMPLATES.RENDER_BY_CODE(code),
+    data,
+    {
+      responseType: "text",
+    }
+  );
+};
+
+export const getSchemaEntities = () => {
+  return apiClient.get(API_ENDPOINT.DOCUMENT_TEMPLATES.GET_SCHEMA_ENTITIES);
 };

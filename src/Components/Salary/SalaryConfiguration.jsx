@@ -118,7 +118,7 @@ const SalaryConfiguration = () => {
       "Hành động này không thể hoàn tác!"
     );
 
-    if (result.isConfirmed) {
+    if (result) {
       try {
         await deleteSalaryContract(id);
         await fetchContracts();
@@ -640,101 +640,6 @@ const SalaryConfiguration = () => {
                 </p>
               </div>
             </div>
-
-            {/* Download Template - Only show when hasCommitment08 is checked */}
-            {formData.hasCommitment08 && (
-              <div className="mb-6">
-                <button
-                  type="button"
-                  onClick={handleDownloadTemplate}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all shadow-sm hover:shadow-md"
-                >
-                  <svg
-                    className="h-5 w-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                    />
-                  </svg>
-                  <span className="font-medium">
-                    Tải mẫu Cam kết Thông tư 08
-                  </span>
-                </button>
-                <p className="text-xs text-gray-500 mt-2 text-center">
-                  File mẫu định dạng HTML để nhân viên điền thông tin
-                </p>
-              </div>
-            )}
-
-            {/* File Attachment Upload - Only show when hasCommitment08 is checked */}
-            {formData.hasCommitment08 && (
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <div className="flex items-center gap-2">
-                    <PaperClipIcon className="h-5 w-5 text-gray-500" />
-                    File đính kèm (Hợp đồng, Thông tư, Cam kết...)
-                  </div>
-                </label>
-
-                {!filePreview ? (
-                  <div className="relative">
-                    <input
-                      type="file"
-                      id="attachment"
-                      onChange={handleFileChange}
-                      accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                      className="hidden"
-                    />
-                    <label
-                      htmlFor="attachment"
-                      className="flex items-center justify-center w-full px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-500 cursor-pointer transition-colors bg-gray-50 hover:bg-blue-50"
-                    >
-                      <div className="text-center">
-                        <PaperClipIcon className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                        <p className="text-sm text-gray-600">
-                          <span className="text-blue-600 font-medium">
-                            Chọn file
-                          </span>{" "}
-                          hoặc kéo thả vào đây
-                        </p>
-                        <p className="text-xs text-gray-500 mt-1">
-                          PDF, DOC, DOCX, JPG, PNG (Tối đa 5MB)
-                        </p>
-                      </div>
-                    </label>
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-between p-4 border border-gray-300 rounded-lg bg-blue-50">
-                    <div className="flex items-center gap-3 flex-1">
-                      <div className="flex-shrink-0">
-                        <PaperClipIcon className="h-8 w-8 text-blue-600" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 truncate">
-                          {filePreview.name}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          {filePreview.size} KB
-                        </p>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={handleRemoveFile}
-                      className="flex-shrink-0 p-1 hover:bg-red-100 rounded-full transition-colors"
-                    >
-                      <XMarkIcon className="h-5 w-5 text-red-600" />
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
 
             {/* Action Buttons */}
             <div className="flex flex-col gap-3">

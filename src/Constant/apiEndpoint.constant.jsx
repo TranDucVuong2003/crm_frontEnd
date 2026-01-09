@@ -348,6 +348,8 @@ const API_ENDPOINT = {
     GET_BY_USER: (userId) => `/api/SalaryContracts/user/${userId}`,
     UPDATE: (id) => `/api/SalaryContracts/${id}`,
     DELETE: (id) => `/api/SalaryContracts/${id}`,
+    UPLOAD_COMMITMENT08: (id) =>
+      `/api/SalaryContracts/upload-commitment08/${id}`,
     DOWNLOAD_COMMITMENT08_TEMPLATE:
       "/api/SalaryContracts/download-commitment08-template",
   },
@@ -434,6 +436,25 @@ const API_ENDPOINT = {
     DELETE: (id) => `/api/DocumentTemplates/${id}`,
     SET_DEFAULT: (id) => `/api/DocumentTemplates/${id}/set-default`,
     MIGRATE_FROM_FILES: "/api/DocumentTemplates/migrate-from-files",
+    // Template Editor endpoints
+    EXTRACT_PLACEHOLDERS: "/api/DocumentTemplates/extract-placeholders",
+    GET_WITH_PLACEHOLDERS: (id) =>
+      `/api/DocumentTemplates/with-placeholders/${id}`,
+    VALIDATE: (id) => `/api/DocumentTemplates/validate/${id}`,
+    RENDER: (id) => `/api/DocumentTemplates/render/${id}`,
+    RENDER_BY_CODE: (code) => `/api/DocumentTemplates/render-by-code/${code}`,
+    // NEW: Schema APIs
+    GET_SCHEMA_PLACEHOLDERS: "/api/DocumentTemplates/schema/placeholders",
+    GET_SCHEMA_ENTITIES: "/api/DocumentTemplates/schema/entities",
+    GET_ENTITY_PLACEHOLDERS: (entityName) =>
+      `/api/DocumentTemplates/schema/placeholders/${entityName}`,
+    VALIDATE_PLACEHOLDER_SCHEMA:
+      "/api/DocumentTemplates/schema/validate-placeholders",
+    // NEW: Render with Object
+    RENDER_WITH_OBJECT: (id) =>
+      `/api/DocumentTemplates/render-with-object/${id}`,
+    RENDER_WITH_OBJECT_BY_CODE: (code) =>
+      `/api/DocumentTemplates/render-with-object-by-code/${code}`,
   },
 };
 

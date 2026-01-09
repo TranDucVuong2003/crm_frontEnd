@@ -1,9 +1,10 @@
-import React from 'react';
-import { Navigate } from 'react-router-dom';
-import { useAuth } from '../Context/AuthContext';
+import React from "react";
+import { Navigate, useLocation } from "react-router-dom";
+import { useAuth } from "../Context/AuthContext";
 
 const PublicRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
+  const location = useLocation();
 
   // Show loading spinner while checking authentication
   if (loading) {
@@ -14,9 +15,11 @@ const PublicRoute = ({ children }) => {
     );
   }
 
-  // If authenticated, redirect to dashboard
+  // If authenticated, redirect to the intended page or dashboard
   if (isAuthenticated) {
-    return <Navigate to="/" replace />;
+    const from = location.state?.from?.pathname || "/";
+    console.log("🔍 PublicRoute - User authenticated, redirecting to:", from);
+    return <Navigate to={from} replace />;
   }
 
   // If not authenticated, render the public component (login page)

@@ -38,6 +38,7 @@ import SalaryConfiguration from "../Components/Salary/SalaryConfiguration";
 import AttendanceManagement from "../Components/Salary/AttendanceManagement";
 import SalaryAdjustments from "../Components/Salary/SalaryAdjustments";
 import PayslipManagement from "../Components/Salary/PayslipManagement";
+import Circular08Upload from "../Components/Salary/Circular08Upload";
 import {
   KpiManagement,
   MyKpi,
@@ -154,6 +155,10 @@ function AppRouter() {
           element: <SessionManagement />,
         },
         {
+          path: "circular-08",
+          element: <Circular08Upload />,
+        },
+        {
           path: "configuration",
           element: <Configuration />,
         },
@@ -199,6 +204,7 @@ function AppRouter() {
             },
           ],
         },
+
         {
           path: "kpi",
           element: <Outlet />,
@@ -253,6 +259,7 @@ function AppRouter() {
         },
       ],
     },
+
     {
       path: "/activate-account",
       element: <ActiveAccount />,

@@ -88,8 +88,7 @@ export const showDeleteConfirm = async (
     },
     ...options,
   });
-  return result.isConfirmed;
-  // return result
+  return result;
 };
 
 // ========== Loading Alert ==========

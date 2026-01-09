@@ -87,13 +87,6 @@ function Login() {
   const [error, setError] = useState("");
   const [validationErrors, setValidationErrors] = useState({});
 
-  // Redirect if already authenticated
-  React.useEffect(() => {
-    if (isAuthenticated) {
-      navigate("/", { replace: true });
-    }
-  }, [isAuthenticated, navigate]);
-
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
@@ -172,7 +165,9 @@ function Login() {
             login(accessToken, user);
 
             // Redirect to intended page or dashboard
+            console.log("🔍 handleSubmit - location.state:", location.state);
             const from = location.state?.from?.pathname || "/";
+            console.log("🔍 handleSubmit - Redirecting to:", from);
             navigate(from, { replace: true });
           }
         } else {

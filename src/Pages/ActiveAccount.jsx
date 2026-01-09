@@ -173,9 +173,9 @@ function ActiveAccount() {
               Liên hệ với chúng tôi
             </a>
           </p>
-          Kích hoạt thất bại
+          
         </div>
-        Kích hoạt thất bại
+        
       </div>
     </div>
   );
